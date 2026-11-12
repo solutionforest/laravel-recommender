@@ -28,7 +28,7 @@ Example shape (names can differ — you will edit them):
 ## Step 1 — Install
 
 ```bash
-composer require solutionforest/laravel-recommender:^0.0.6
+composer require solutionforest/laravel-recommender:^0.0.7
 php artisan migrate
 ```
 

@@ -65,7 +65,7 @@ That is the whole integration. Everything else is config + schedule.
 ### Step 0 — Install
 
 ```bash
-composer require solutionforest/laravel-recommender:^0.0.6
+composer require solutionforest/laravel-recommender:^0.0.7
 php artisan migrate
 php artisan recommender:make-feed posts
 ```

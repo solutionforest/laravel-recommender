@@ -7,6 +7,12 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.0.7] — 2026-11-12
+
+### Changed
+- README / Packagist: position as a **simple recommendation engine** for Laravel
+- Composer keywords + GitHub topics: `recommendation-engine`, `recommender-system`, `collaborative-filtering`, …
+
 ## [0.0.6] — 2026-11-12
 
 ### Added
@@ -52,7 +58,8 @@ This project uses [Semantic Versioning](https://semver.org/).
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.6...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.7...HEAD
+[0.0.7]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.7
 [0.0.6]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.6
 [0.0.5]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.5
 [0.0.4]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.4
