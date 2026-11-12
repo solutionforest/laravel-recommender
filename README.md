@@ -74,12 +74,12 @@ Formulas behind “hot”, neighbours, and quality: [How we score (maths)](docs/
 ## Install
 
 ```bash
-composer require solutionforest/laravel-recommender:^0.0.1
+composer require solutionforest/laravel-recommender:^0.0.2
 php artisan migrate
 php artisan vendor:publish --tag=recommender-config   # optional
 ```
 
-On [Packagist](https://packagist.org/packages/solutionforest/laravel-recommender). Prefer **`^0.0.1`** (current). An older `v0.1.0` tag also exists — do not use it.
+On [Packagist](https://packagist.org/packages/solutionforest/laravel-recommender). Prefer **`^0.0.2`** (PHP 8.3+ / Laravel 11–13). Ignore the obsolete `v0.1.0` tag.
 
 Changelog: [CHANGELOG.md](CHANGELOG.md) · Releases: [GitHub Releases](https://github.com/solutionforest/laravel-recommender/releases)
 
