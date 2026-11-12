@@ -214,8 +214,11 @@ class Recommender
         }
 
         [$cards, $servedIds, $consumed] = $this->render($feed, $unseen, $perPage, $attributes);
-        $this->cache->markSeen($feed, $userId, $consumed, $sv);
-        $this->recordImpressions($feed, $servedIds);
+        $added = array_flip(array_map('strval', $this->cache->markSeen($feed, $userId, $consumed, $sv)));
+        // Count an impression the first time an item is shown to this user
+        // (within the seen window): refreshes, retries and the page-1
+        // "allow seen items" fallback do not inflate it.
+        $this->recordImpressions($feed, array_values(array_filter($servedIds, fn ($id) => isset($added[(string) $id]))));
         $this->hintIfEmpty($feed, $page, $servedIds);
 
         $remaining = max(0, count($unseen) - count($consumed));
@@ -792,6 +795,10 @@ class Recommender
     }
 
     /**
+     * Write impressions after the response when serving HTTP, so the request
+     * does not wait for the four statements; in the console (tests, jobs) they
+     * run at once. Counting must never break serving.
+     *
      * @param  list<int|string>  $ids
      */
     private function recordImpressions(FeedDefinition $feed, array $ids): void
@@ -800,12 +807,21 @@ class Recommender
             return;
         }
 
-        try {
-            $this->scores->addImpressions($feed->name, $ids, CarbonImmutable::now());
-        } catch (Throwable $e) {
-            // Counting must never break serving.
-            $this->report($feed, 'impressions', $e);
+        $write = function () use ($feed, $ids): void {
+            try {
+                $this->scores->addImpressions($feed->name, $ids, CarbonImmutable::now());
+            } catch (Throwable $e) {
+                $this->report($feed, 'impressions', $e);
+            }
+        };
+
+        if (! app()->runningInConsole() && $feed->get('impressions_after_response', true)) {
+            app()->terminating($write);
+
+            return;
         }
+
+        $write();
     }
 
     /**

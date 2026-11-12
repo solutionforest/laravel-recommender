@@ -81,20 +81,51 @@ final class FeedCache
     }
 
     /**
+     * Add $ids to the user's seen-set and return the ones that were not in it
+     * yet (so a caller can count "first time shown" exactly once, even when
+     * two requests race). The read-merge-write runs under a short per-user
+     * lock where the cache store has locks, so parallel requests (two tabs,
+     * a retry) cannot overwrite each other's additions.
+     *
      * @param  list<int|string>  $ids
+     * @return list<int|string>
      */
-    public function markSeen(FeedDefinition $feed, int|string $userId, array $ids, ?string $variant = null): void
+    public function markSeen(FeedDefinition $feed, int|string $userId, array $ids, ?string $variant = null): array
     {
         if ($ids === []) {
-            return;
+            return [];
         }
-        $seen = $this->seen($feed, $userId, $variant);
-        $seen = array_values(array_unique(array_merge($seen, $ids), SORT_REGULAR));
-        $max = $feed->int('seen_max', 200);
-        if (count($seen) > $max) {
-            $seen = array_slice($seen, -$max);
+
+        $write = function () use ($feed, $userId, $ids, $variant): array {
+            $seen = $this->seen($feed, $userId, $variant);
+            $known = array_flip(array_map('strval', $seen));
+            $added = [];
+            foreach ($ids as $id) {
+                if (! isset($known[(string) $id])) {
+                    $known[(string) $id] = true;
+                    $added[] = $id;
+                }
+            }
+            $seen = array_values(array_unique(array_merge($seen, $ids), SORT_REGULAR));
+            $max = $feed->int('seen_max', 200);
+            if (count($seen) > $max) {
+                $seen = array_slice($seen, -$max);
+            }
+            $this->store()->put($this->key($feed, "seen:{$userId}".self::suffix($variant)), self::pack($seen), $feed->int('seen_ttl', 259200));
+
+            return $added;
+        };
+
+        $provider = $this->lockProvider();
+        if ($provider === null) {
+            return $write();
         }
-        $this->store()->put($this->key($feed, "seen:{$userId}".self::suffix($variant)), self::pack($seen), $feed->int('seen_ttl', 259200));
+
+        try {
+            return $provider->lock($this->key($feed, "seenlock:{$userId}".self::suffix($variant)), 5)->block(2, $write);
+        } catch (\Illuminate\Contracts\Cache\LockTimeoutException) {
+            return $write(); // best effort: never fail a page over a busy lock
+        }
     }
 
     /**
