@@ -12,13 +12,13 @@
 
 # Laravel Recommender
 
-**Self-hosted “for you” feeds for Laravel apps.** Requires **PHP 8.3+** and **Laravel 11–13**.
+**A simple recommendation engine for Laravel.** Self-hosted “for you” feeds — collaborative filtering, time-decayed trending, and explainable blends. Requires **PHP 8.3+** and **Laravel 11–13**.
 
 If your product already stores likes, views, or similar interactions, this package turns them into a personalised ranked feed — without Amazon Personalize, a Python microservice, or shipping user events to a third party.
 
 | You have… | This package gives you… |
 |---|---|
-| Likes / views in **your** tables | Background jobs that learn “liked together” + trending |
+| Likes / views in **your** tables | A recommendation engine: “liked together” + trending |
 | A Laravel API or Livewire UI | `Recommender::page()` → cards / Laravel paginator JSON |
 | Cache store + a queue worker | Fast cached lists, seen-set paging, explainable rankings |
 
@@ -28,9 +28,10 @@ Built for real product feeds (blog posts, inspiration / reviews, shops).
 
 ## Why use it?
 
+- **Simple recommendation engine** — item–item CF + trending + your own rules; no ML ops stack.
 - **Stays in your stack** — reads existing tables; only adds 3 small `rec_*` tables + cache keys.
 - **Cheap on the request path** — scroll serves from cache; no `ORDER BY RAND()`, no external API call.
-- **Explainable** — `recommender:explain` shows which sources scored each card (co-interaction, trending, your rules).
+- **Explainable** — `recommender:explain` shows which sources scored each card.
 - **Tunable** — weights, exploration, diversity caps — not a black-box model.
 - **Runnable sample** — [`examples/blog`](examples/blog) (~200 lines), covered by tests.
 
@@ -38,7 +39,7 @@ Built for real product feeds (blog posts, inspiration / reviews, shops).
 
 ## How we recommend
 
-No neural net. We assemble a ranked list from a few clear signals, then serve it from cache.
+No neural net. A small, transparent recommendation engine: assemble a ranked list from a few clear signals, then serve it from cache.
 
 ```text
 your likes/views  →  background jobs  →  personal ranked list  →  next page of cards

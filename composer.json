@@ -1,13 +1,20 @@
 {
     "name": "solutionforest/laravel-recommender",
-    "description": "Self-hosted, low-overhead recommendation feeds for Laravel (co-interaction similarity, time-decayed trending, Redis-cached feeds).",
+    "description": "Simple recommendation engine for Laravel — self-hosted for-you feeds (collaborative filtering, trending, cached pages).",
     "type": "library",
     "license": "MIT",
     "keywords": [
         "laravel",
+        "php",
         "recommendation",
+        "recommendation-engine",
+        "recommender-system",
+        "collaborative-filtering",
+        "personalization",
         "feed",
-        "personalization"
+        "trending",
+        "content-discovery",
+        "laravel-package"
     ],
     "require": {
         "php": "^8.3",
