@@ -57,7 +57,7 @@ Historical imports: set `scores_backfill_days` before the first score run. For a
 
 ## Implementing sources (app or package examples)
 
-- `Context` = ranking bag for sources/filters/boosters (not HTTP). `$context->userId` from `page($feed, $userId)`; `null` = guest. See `docs/reference.md` § What is Context?
+- `Context` = ranking bag for sources/filters/boosters (not HTTP). `$context->userId` from `recommendations($feed, $user)` / `page($feed, $user)`; `null` = guest. See `docs/reference.md` § What is Context?
 - Indexed queries + `LIMIT`; avoid huge `IN (subquery)`.
 - Cards: no viewer-specific fields; poster/thumbnail for video URLs.
 
@@ -66,7 +66,7 @@ Historical imports: set `scores_backfill_days` before the first score run. For a
 - Bulk writes only (`write_chunk` / `delete_chunk`).
 - Console commands registered outside CLI (Livewire `Artisan::call`).
 - Support PHP ^8.3 and Illuminate ^11–^13.
-- Keep **README.md thin**; put depth in `docs/`. Update [CHANGELOG.md](CHANGELOG.md) on release (`## [x.y.z]`), then `git tag -a vX.Y.Z` + `git push origin vX.Y.Z` — [release.yml](.github/workflows/release.yml) publishes the GitHub Release from that changelog section.
+- Keep **README.md thin**; put depth in `docs/`. Update [CHANGELOG.md](CHANGELOG.md) on release (`## [x.y.z]`) and [UPGRADE.md](UPGRADE.md) for behaviour changes, then `git tag -a vX.Y.Z` + `git push origin vX.Y.Z` — [release.yml](.github/workflows/release.yml) publishes the GitHub Release from that changelog section.
 
 ## Common failures
 

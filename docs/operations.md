@@ -30,14 +30,14 @@ Commands register outside CLI so Ops panels work. Prefer queued jobs in producti
 GitHub Releases are automated: push a `v*.*.*` tag → [`.github/workflows/release.yml`](../.github/workflows/release.yml) creates/updates the Release using the matching `## [x.y.z]` section from [`CHANGELOG.md`](../CHANGELOG.md).
 
 1. Move notes out of `## [Unreleased]` into a new `## [x.y.z] — YYYY-MM-DD` section (Keep a Changelog).
-2. Bump version mentions in README / getting-started if needed.
+2. Add upgrade steps to [`UPGRADE.md`](../UPGRADE.md) for anything that changes behaviour, and bump `extra.branch-alias` in `composer.json` on a new minor (`0.2.x-dev`).
 3. Commit on `main`, wait for [tests](../.github/workflows/tests.yml) to go green.
 4. Tag and push:
 
 ```bash
-git tag -a v0.0.16 -m "v0.0.16"
+git tag -a v0.1.1 -m "v0.1.1"
 git push origin main
-git push origin v0.0.16
+git push origin v0.1.1
 ```
 
 5. Confirm the Release on GitHub (notes = that CHANGELOG section). Re-run from **Actions → release → Run workflow** if you only need to refresh notes for an existing tag.

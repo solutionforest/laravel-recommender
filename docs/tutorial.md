@@ -9,21 +9,83 @@ For the generated blog scaffold, these are example fields (not tables the packag
 | Table | Fields used by the generated classes |
 |---|---|
 | `posts` | `id`, `title`, `published`, `author_id`, `created_at` |
-| `post_likes`, `post_views` | numeric `id`, `user_id`, `post_id`, `created_at` |
+| `post_likes`, `post_views` | incrementing `id`, `user_id`, `post_id`, `created_at` |
 
-The scaffold assumes numeric user and item IDs, separate event tables, and an incrementing `id` for `lazyById`. Change the generated code if your schema differs, especially for UUIDs, nullable users, or a single events table. The item filter hides unpublished posts and the signed-in user's own posts by default. You are responsible for recording events and enforcing your app's visibility and authorization rules.
+One table per interaction type, each with a user id, an item id, a timestamp and an incrementing `id`. Ids can be integers, UUIDs or ULIDs. A single events table, or very different columns, needs a small `InteractionSource` class instead (option B below). You are responsible for recording events and enforcing your app's visibility and authorization rules.
 
-## 2. Install and scaffold
+## 2. Install and configure
 
 ```bash
 composer require solutionforest/laravel-recommender
+php artisan vendor:publish --tag=recommender-config
 php artisan migrate
+```
+
+The migration creates `rec_item_scores`, `rec_item_neighbours` and `rec_state`.
+
+### Option A — config only (recommended)
+
+Add the feed to `config/recommender.php`:
+
+```php
+'feeds' => [
+    'posts' => [
+        'model' => App\Models\Post::class,
+        'interactions' => [
+            'post_likes' => 'like',
+            'post_views' => 'view',
+        ],
+    ],
+],
+```
+
+The item column defaults to `{model}_id` (`post_id`); set `item_column`, `user_column` or `timestamp_column` if yours differ, or override per table: `'bookmarks' => ['event' => 'like', 'item' => 'bookmarkable_id']`.
+
+Then tell the package which posts may be shown and what to return for each, on the model:
+
+```php
+use Illuminate\Database\Eloquent\Builder;
+use SolutionForest\Recommender\Eloquent\Recommendable;
+use SolutionForest\Recommender\Support\Context;
+
+class Post extends Model
+{
+    use Recommendable; // refresh cached cards on save / delete
+
+    public function scopeRecommendable(Builder $query, Context $context): void
+    {
+        $query->where('published', true)
+            ->when($context->userId, fn ($q, $id) => $q->where('author_id', '<>', $id));
+    }
+
+    public function toRecommendationCard(): array
+    {
+        return ['id' => $this->id, 'title' => $this->title];
+    }
+}
+```
+
+Both methods are optional: without the scope every existing post may be shown, and without `toRecommendationCard()` the card is `toArray()`. Cards are cached and shared by every viewer, so keep viewer-specific fields out. A complete example is in [`examples/simple`](../examples/simple/).
+
+Check the setup before building anything:
+
+```bash
+php artisan recommender:doctor posts
+```
+
+It lists missing tables or columns, events without a weight and classes that do not exist, each with a fix. Failures before the first `update-scores` / `build-neighbours` run are expected.
+
+### Option B — scaffold classes
+
+When your schema needs custom queries, generate classes instead:
+
+```bash
 php artisan recommender:make-feed posts
 ```
 
 Choose the blog preset and answer the prompts to match your schema. For a non-interactive starting point use `php artisan recommender:make-feed posts --preset=blog -n`. Existing class files are skipped unless `--force` is supplied; an existing feed configuration is left unchanged. Review command output before continuing.
 
-The package migration creates `rec_item_scores`, `rec_item_neighbours` and `rec_state`. The wizard publishes `config/recommender.php` if needed, registers `feeds.posts`, and creates:
+The wizard publishes `config/recommender.php` if needed, registers `feeds.posts`, and creates:
 
 - `app/Recommendation/Posts/PostInteractionSource.php`: reads your interactions. Check `TABLES`, `ITEM_COLUMN`, user and timestamp columns. Its history methods include every configured table, including views; edit them if only stronger actions should contribute to neighbours.
 - `app/Recommendation/Posts/VisiblePostFilter.php`: selects allowed items. Match your publication and ownership rules.
@@ -53,16 +115,11 @@ Add to `routes/web.php` or an appropriate API routes file:
 ```php
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use SolutionForest\Recommender\Facades\Recommender;
 
-Route::get('/posts/recommended', function (Request $request) {
-    $feed = Recommender::page('posts', $request->user()?->id, (int) $request->query('page', 1));
-
-    return response()->json($feed->toPaginatorArray(['path' => $request->url()]));
-});
+Route::get('/posts/recommended', fn (Request $request) => recommendations('posts', $request->user()));
 ```
 
-Visit `/posts/recommended`. The JSON contains `data`, `origin` (`personal` or `trending`) and `has_more`, along with paginator metadata. The exact cards depend on your transformer and data. A guest gets trending. An authenticated user's list can contain trending candidates even when its origin is `personal`.
+Visit `/posts/recommended`. The JSON is Laravel's paginator shape (`data`, `current_page`, `links`, …) plus `origin` (`personal` or `trending`) and `has_more`; `?page=` is read automatically. `Recommender::page('posts', $request->user())` does the same and returns a `FeedPage` you can also turn into `toPaginator()` for Blade. The exact cards depend on your transformer and data. A guest gets trending. An authenticated user's list can contain trending candidates even when its origin is `personal`.
 
 Personal paging consumes a shared per-user seen set; page numbers are metadata rather than stable offsets. Repeat requests, concurrent clients and resets can affect results. Guests use offset paging over the shared trending list. See [reference](reference.md#serving-a-feed).
 
@@ -82,14 +139,23 @@ Run Laravel's scheduler on your server. `onOneServer()` requires a shared cache 
 
 Use a shared cache with locks for multi-server deployments; `php artisan recommender:status` reports lock support. See [operations](operations.md) for cache, monitoring and historical data.
 
+## 6. Watch it
+
+Open `/recommender` for the [dashboard](dashboard.md): health, checks, trending items and *Explain a user*. It is open in the `local` environment; in production allow your team with a gate:
+
+```php
+Gate::define('viewRecommender', fn ($user) => $user->is_admin);
+```
+
 ## Troubleshooting
 
 | Symptom | Check |
 |---|---|
+| Not sure what is wrong | Run `php artisan recommender:doctor posts` or open `/recommender`. |
 | Feed is not configured | Inspect `feeds.posts`, command output and Laravel config cache. |
 | SQL error | Match generated table, ID, foreign key and timestamp columns to your schema. |
 | Empty `data` | Check recent eligible events, score rows, filter rules and card transformer; inspect application logs. A new event needs to be older than one minute before scoring. |
 | Only trending or no neighbours | Check recent user histories, shared item pairs, `history_days` and `neighbours_min_co_count`; sparse data can be expected. |
-| A changed item still shows old card data | Call `Recommender::forgetCard('posts', $id)` and consider invalidating relevant ranked lists; see [operations](operations.md). |
+| A changed item still shows old card data | Add `use Recommendable;` to the model, or call `Recommender::forgetCard('posts', $id)`; consider invalidating relevant ranked lists, see [operations](operations.md). |
 
-Next: [how ranking works](how-it-works.md) · [tuning](tuning.md) · [reference](reference.md).
+Next: [dashboard](dashboard.md) · [how ranking works](how-it-works.md) · [tuning](tuning.md) · [reference](reference.md).
