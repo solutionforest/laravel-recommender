@@ -1,9 +1,11 @@
 # Scaffold tutorial
 
-Follow this page **in order**. About 15–30 minutes if your likes/views tables already exist.
+Follow this page **in order**. About 15–30 minutes if your interaction tables already exist.
 
 You will use `recommender:make-feed` — it creates the three classes + config.  
 Deeper “why”: [getting-started.md](getting-started.md).
+
+**Events are not only likes/views.** Scaffold defaults assume two tables (`*_likes`, `*_views`), but you can stream any types (`share`, `bookmark`, …) from one or more tables — see [README → event types](../README.md#1-event-types--weights-trending-hot).
 
 ---
 
@@ -12,7 +14,7 @@ Deeper “why”: [getting-started.md](getting-started.md).
 You need:
 
 - [ ] Laravel **11–13**, PHP **8.3+**
-- [ ] Tables that store **likes** and **views** (or similar), each with `user_id`, item id, `created_at`
+- [ ] Tables that store user↔item **interactions** (likes, views, shares, …), each with `user_id`, item id, `created_at`
 - [ ] An Eloquent model for the item (e.g. `App\Models\Post`)
 
 Example shape (names can differ — you will edit them):
@@ -22,13 +24,14 @@ Example shape (names can differ — you will edit them):
 | `posts` | `id`, `title`, `author_id`, `published`, `created_at` |
 | `post_likes` | `user_id`, `post_id`, `created_at` |
 | `post_views` | `user_id`, `post_id`, `created_at` |
+| *(optional)* `post_shares` | `user_id`, `post_id`, `created_at` — third event type |
 
 ---
 
 ## Step 1 — Install
 
 ```bash
-composer require solutionforest/laravel-recommender:^0.0.8
+composer require solutionforest/laravel-recommender:^0.0.9
 php artisan migrate
 ```
 
@@ -70,8 +73,9 @@ Open each file and match **your** schema. Defaults assume blog-style `post_*` / 
 
 ### A. `PostInteractionSource`
 
-- `TABLES` → your likes/views table names  
-- `ITEM_COLUMN` → FK to the item (`post_id`, `comment_id`, …)
+- `TABLES` → your interaction table names (map each table → an **event string**, e.g. `like` / `view` / `share`)  
+- `ITEM_COLUMN` → FK to the item (`post_id`, `comment_id`, …)  
+- Add more tables/events as needed; register weights under `feeds.*.events` in config
 
 ### B. `VisiblePostFilter`
 
@@ -156,7 +160,7 @@ Confirm locks with `php artisan recommender:status`.
 
 ## Step 7 — Tune (optional)
 
-Want likes to count more than views? Sponsors? See [README → How to adjust the ratio](../README.md#how-to-adjust-the-ratio).
+Want shares to count more than likes? Extra event types? Sponsors? See [README → How to adjust the ratio](../README.md#how-to-adjust-the-ratio).
 
 After weight changes:
 

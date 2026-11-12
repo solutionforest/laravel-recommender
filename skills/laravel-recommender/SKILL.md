@@ -33,7 +33,7 @@ Human docs (prefer linking over pasting):
 1. **Install**
 
 ```bash
-composer require solutionforest/laravel-recommender:^0.0.8
+composer require solutionforest/laravel-recommender:^0.0.9
 php artisan migrate
 ```
 
@@ -49,7 +49,8 @@ php artisan recommender:make-feed reviews --model=App\\Models\\Comment --likes=u
 
 Produces under `app/Recommendation/{Feed}/`:
 
-- `*InteractionSource` — streams likes/views from **app** tables  
+- `*InteractionSource` — streams interactions from **app** tables (any event names: like / view / share / …)  
+
 - `*ItemFilter` / `Visible*` — who may see an item  
 - `*CardTransformer` — JSON/card shape (no viewer-specific fields)
 
@@ -89,7 +90,8 @@ Bigger weight = that signal counts more (relative).
 
 | Knob | Effect |
 |---|---|
-| `events.view` / `events.like` | Trending “hot” (default like ≈ 4× view) |
+| `events.{name}` | Trending “hot” — **any** event string (`view`/`like`/`share`/…); default like ≈ 4× view |
+| `positive_events` / `exposure_events` | Quality (Wilson) — list which of your events are “good” vs “seen” |
 | `sources` | Blend pool (CoInteraction, Trending, custom…) |
 | `boosters` | Re-score items already in pool (Quality, Sponsored…) |
 | `exploration_ratio` | Reserved slots for explore sources (not a source weight) |

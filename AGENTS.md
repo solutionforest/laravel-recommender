@@ -20,7 +20,7 @@ Human docs live under [`docs/`](docs/). Prefer linking there over pasting walls 
 
 ## When working in a **consuming Laravel app**
 
-1. `composer require solutionforest/laravel-recommender:^0.0.8` → `php artisan migrate`
+1. `composer require solutionforest/laravel-recommender:^0.0.9` → `php artisan migrate`
 2. `php artisan recommender:make-feed {name}` — then edit the three scaffolded classes to match real tables
 3. `recommender:update-scores` → `build-neighbours` → `explain {feed} {userId}`
 4. Serve with `Recommender::page()` → `toPaginator()` / `toPaginatorArray()`
@@ -37,7 +37,8 @@ Do **not** invent an external ML service for this package’s job. Prefer packag
 
 ### Config knobs (relative weights)
 
-- `events.view` / `events.like` → trending hot  
+- `events` map is **any** event names (`view` / `like` / `share` / …) → trending hot; `positive_events` / `exposure_events` for quality  
+
 - `sources` → blend pool · `boosters` → re-rank in-pool · `exploration_ratio` → reserved explore slots  
 - After changes: `Recommender::forgetUser` / `forgetTrending`
 

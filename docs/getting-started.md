@@ -12,8 +12,10 @@ If something fails, stop and check the [“Something wrong?”](#something-wrong
 
 ## The one sentence
 
-Your app already records likes and views.  
-This package **reads** those rows in the background, learns “people who liked this also liked that”, and serves each user a **personal list of cards** from cache.
+Your app already records user↔item interactions (likes, views, shares, bookmarks — **any** event names you choose).
+This package **reads** those rows in the background, learns “people who engaged with this also engaged with that”, and serves each user a **personal list of cards** from cache.
+
+Scaffold examples talk about `like` / `view` because that is common — you are not limited to two types.
 
 You do **not** send data to an external AI service. Everything stays in your Laravel app.
 
@@ -23,7 +25,7 @@ You do **not** send data to an external AI service. Everything stays in your Lar
 
 | School | This package |
 |---|---|
-| Kids tell the kitchen what they like | Your `post_likes` / `post_views` tables |
+| Kids tell the kitchen what they like | Your interaction tables (likes / views / shares / …) |
 | Kitchen cooks once, not every time someone asks | Background jobs (`update-scores`, `build-neighbours`) |
 | Each child gets a tray with today’s picks | Cached ranked id list per user |
 | Teacher hands out the next 10 dishes | `Recommender::page()` → JSON / Blade |
@@ -37,9 +39,9 @@ Nobody re-cooks the whole kitchen on every scroll.
 
 Think of three homework sheets. Fastest: `php artisan recommender:make-feed posts` (or copy [`examples/blog`](../examples/blog)).
 
-### ① InteractionSource — “where are the likes?”
+### ① InteractionSource — “where are the interactions?”
 
-Tell the package how to **stream** likes/views from **your** tables.
+Tell the package how to **stream** events from **your** tables (each row → an event name + weight in config).
 
 - Jobs call this. The hot feed path does not.
 - Use `lazyById` / chunks. Do not `->get()` a million rows into memory.
@@ -65,7 +67,7 @@ That is the whole integration. Everything else is config + schedule.
 ### Step 0 — Install
 
 ```bash
-composer require solutionforest/laravel-recommender:^0.0.8
+composer require solutionforest/laravel-recommender:^0.0.9
 php artisan migrate
 php artisan recommender:make-feed posts
 ```
@@ -79,7 +81,7 @@ Those are the package’s notebooks. Your likes table stays yours.
 
 Generated under `app/Recommendation/Posts/` (for feed `posts`):
 
-1. `PostInteractionSource` — set likes/views table names  
+1. `PostInteractionSource` — set interaction table names (+ event strings)  
 2. `VisiblePostFilter` — published / not-mine rules  
 3. `PostCardTransformer` — card JSON fields  
 
@@ -121,8 +123,8 @@ $schedule->command('recommender:prune')->dailyAt('04:30')->withoutOverlapping(60
 
 | How often | Command | Plain English |
 |---|---|---|
-| ~10 min | `update-scores` | Fold new likes/views into “hot” |
-| Nightly | `build-neighbours` | Rebuild “liked together” graph |
+| ~10 min | `update-scores` | Fold new interactions into “hot” (per event weight) |
+| Nightly | `build-neighbours` | Rebuild “engaged together” graph |
 | Daily | `prune` | Throw away idle score rows |
 
 Cache: set `RECOMMENDER_CACHE_STORE` (or `CACHE_STORE`) to `redis` (prod), `database` (with `cache_locks`), or `array`/`file` (local).

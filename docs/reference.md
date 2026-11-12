@@ -122,8 +122,8 @@ Per feed (defaults, overridable in `feeds.*`):
 | `sources` / `boosters` | – | `class => weight` |
 | `exploration_sources` / `exploration_ratio` | – / 0.15 | exploration |
 | `diversity` | – | `group => max per page` |
-| `events` | view 1, like 4 | trending weights |
-| `positive_events` / `exposure_events` | like / view | quality |
+| `events` | `view` 1, `like` 4 (any names OK) | trending weights per event type |
+| `positive_events` / `exposure_events` | e.g. like(+share) / view | quality (Wilson) |
 | `half_life_days` | 7 | trending decay |
 | `scores_backfill_days` | 30 | first `update-scores` window |
 | `scores_slice_minutes` | 60 | score commit size |

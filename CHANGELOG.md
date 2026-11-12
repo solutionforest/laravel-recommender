@@ -7,6 +7,11 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.0.9] — 2026-11-12
+
+### Changed
+- Docs: clarify interactions are **not only likes/views** — any event names (`share`, `bookmark`, …) via `events` + `InteractionSource`
+
 ## [0.0.8] — 2026-11-12
 
 ### Added
@@ -65,7 +70,8 @@ This project uses [Semantic Versioning](https://semver.org/).
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.8...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.9...HEAD
+[0.0.9]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.9
 [0.0.8]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.8
 [0.0.7]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.7
 [0.0.6]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.6

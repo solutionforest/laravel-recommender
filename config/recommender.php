@@ -85,6 +85,7 @@ return [
         'diversity' => [],           // ['shop' => 2, 'writer' => 1] max per page
 
         // Interaction weighting (used by update-scores)
+        // Any event strings your InteractionSource yields (not only view/like) — e.g. add 'share' => 6.0.
         'events' => ['view' => 1.0, 'like' => 4.0],
         'positive_events' => ['like'],
         'exposure_events' => ['view'],

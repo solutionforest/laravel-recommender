@@ -3,15 +3,25 @@
 Weights are **relative**. Bigger number = that signal counts more.  
 Exploration **interleaves** slots (`exploration_ratio`) — that is not the same as raising a source weight.
 
-Quick “views / likes / sponsors” overview also on the [README](../README.md#how-to-adjust-the-ratio).
+Quick “events / sponsors” overview also on the [README](../README.md#how-to-adjust-the-ratio).
 
-## Event weights (views vs likes → trending)
+## Event weights (any interaction type → trending)
+
+**Not limited to likes/views.** Any string you yield from `InteractionSource` can be a weighted event (`share`, `bookmark`, `comment`, …).
 
 ```php
-'events' => ['view' => 1.0, 'like' => 4.0],
+'events' => [
+    'view'  => 1.0,
+    'like'  => 4.0,
+    'share' => 6.0,  // optional third+ types
+],
+'positive_events' => ['like', 'share'],
+'exposure_events' => ['view'],
 ```
 
-Used by `update-scores` when folding events into `hot`. Raise `like` if likes should dominate trending; raise `view` if browse volume should matter more. Re-run `recommender:update-scores` after big changes.
+Used by `update-scores` when folding events into `hot`. Only keys in `events` with weight `> 0` count. Raise stronger actions if they should dominate trending; raise `view` if browse volume should matter more. Re-run `recommender:update-scores` after big changes.
+
+For neighbours (`build-neighbours`), put the items you care about in `userHistories()` / `recentItems()` — usually strong actions, not every view.
 
 ## Sponsors (certain posts / shops more often)
 

@@ -45,7 +45,7 @@ Failures log as warnings; request falls back to trending.
 
 ## What is stored where
 
-Package **never copies** likes/views. Three derived tables + cache:
+Package **never copies** your interaction rows (likes / views / shares / …). Three derived tables + cache:
 
 | Store | Holds | Grows with | Bounded by |
 |---|---|---|---|

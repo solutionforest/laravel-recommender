@@ -14,11 +14,13 @@
 
 **A simple recommendation engine for Laravel.** Self-hosted “for you” feeds — collaborative filtering, time-decayed trending, and explainable blends. Requires **PHP 8.3+** and **Laravel 11–13**.
 
-If your product already stores likes, views, or similar interactions, this package turns them into a personalised ranked feed — without Amazon Personalize, a Python microservice, or shipping user events to a third party.
+If your product already stores user↔item interactions in **your** tables, this package turns them into a personalised ranked feed — without Amazon Personalize, a Python microservice, or shipping events to a third party.
+
+**Not only likes and views.** Any event name works (`share`, `bookmark`, `comment`, `sponsor`, …). Defaults use `view` / `like` as examples; add a third (or tenth) type in config + your `InteractionSource`.
 
 | You have… | This package gives you… |
 |---|---|
-| Likes / views in **your** tables | A recommendation engine: “liked together” + trending |
+| Interactions in **your** tables (like / view / share / …) | A recommendation engine: “acted together” + trending |
 | A Laravel API or Livewire UI | `Recommender::page()` → cards / Laravel paginator JSON |
 | Cache store + a queue worker | Fast cached lists, seen-set paging, explainable rankings |
 
@@ -42,13 +44,13 @@ Built for real product feeds (blog posts, inspiration / reviews, shops).
 No neural net. A small, transparent recommendation engine: assemble a ranked list from a few clear signals, then serve it from cache.
 
 ```text
-your likes/views  →  background jobs  →  personal ranked list  →  next page of cards
-                         (learn)              (in Redis)            (no repeats)
+your interactions  →  background jobs  →  personal ranked list  →  next page of cards
+   (any events)            (learn)              (in cache)            (no repeats)
 ```
 
 1. **Learn in the background** (not on every scroll)
-   - Every ~10 minutes: fold new likes/views into a **trending “hot”** score (recent events count more).
-   - Nightly: build **neighbours** — “people who liked *this* also liked *that*” (item–item collaborative filtering).
+   - Every ~10 minutes: fold new interactions into a **trending “hot”** score (recent events count more; each event type has its own weight).
+   - Nightly: build **neighbours** — “people who engaged with *this* also engaged with *that*” (item–item collaborative filtering).
 2. **Build a personal list** when the user’s feed is missing or stale  
    Mix weighted **sources** (co-liked items, trending, plus any rules you add — e.g. same pet type, related shops), run your **filter** (published / not blocked), optional **boosters** (quality), sprinkle a little **exploration** (fresh items), then **diversity** caps (e.g. max 1 author per page).
 3. **Serve pages from that list**  
@@ -65,25 +67,31 @@ Formulas behind “hot”, neighbours, and quality: [How we score (maths)](docs/
 
 All knobs live in `config/recommender.php` under your feed (e.g. `feeds.posts`). **Bigger number = that signal counts more.** Weights are relative to each other.
 
-### 1. Views count more / likes count more (trending “hot”)
+### 1. Event types & weights (trending “hot”)
+
+Event names are **arbitrary strings**. Scaffold defaults are `view` / `like`, but you can add more:
 
 ```php
 'events' => [
-    'view' => 1.0,   // raise → more views push trending harder
-    'like' => 4.0,   // raise → more likes push trending harder
+    'view'     => 1.0,   // weak / browse
+    'like'     => 4.0,   // stronger
+    'share'    => 6.0,   // third type — any name you yield from InteractionSource
+    // 'bookmark' => 5.0,
 ],
 ```
 
-Default is “a like is worth ~4 views”. Want likes to dominate? e.g. `'like' => 8.0`. Want views to matter more? raise `'view'` or lower `'like'`.
+Only events listed here with weight `> 0` count toward trending. Default story is “a like ≈ 4 views”; raise `like` / add `share` if stronger actions should dominate.
 
 These feed `recommender:update-scores` → the `hot` score. After changing them, re-run scores (and forget trending cache) so old `hot` values catch up.
 
-Quality (Wilson) uses separate lists:
+Quality (Wilson) uses separate lists (also any of your event names):
 
 ```php
-'positive_events' => ['like'],   // “good” actions
-'exposure_events' => ['view'],   // “seen” actions
+'positive_events' => ['like', 'share'],  // “good” actions
+'exposure_events' => ['view'],           // “seen” / denominator
 ```
+
+In `InteractionSource`, yield `new Interaction($userId, $itemId, 'share', $at)` (same pattern for every type).
 
 ### 2. Personal “liked together” vs trending vs your own rules
 
@@ -154,7 +162,7 @@ Then `recommender:explain posts {userId}` to verify. More recipes: [Tuning](docs
 ## Install
 
 ```bash
-composer require solutionforest/laravel-recommender:^0.0.8
+composer require solutionforest/laravel-recommender:^0.0.9
 php artisan migrate
 php artisan recommender:make-feed posts
 ```
@@ -163,7 +171,7 @@ php artisan recommender:make-feed posts
 
 Full walkthrough: **[Scaffold tutorial](docs/tutorial.md)**. Or copy [`examples/blog`](examples/blog) by hand.
 
-On [Packagist](https://packagist.org/packages/solutionforest/laravel-recommender). Current: **`^0.0.8`** (PHP 8.3+ / Laravel 11–13).
+On [Packagist](https://packagist.org/packages/solutionforest/laravel-recommender). Current: **`^0.0.9`** (PHP 8.3+ / Laravel 11–13).
 
 Changelog: [CHANGELOG.md](CHANGELOG.md) · Releases: [GitHub Releases](https://github.com/solutionforest/laravel-recommender/releases)
 
