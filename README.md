@@ -186,10 +186,10 @@ More recent seeds weigh more. That is Amazon-style **item–item** (not user–u
 Decayed popularity at wall-clock time $T$:
 
 $$
-\mathrm{pop}(T)=\sum_k w_k\, e^{-\lambda (T-t_k)},\quad \lambda=\frac{\ln 2}{\text{half\_life\_days}}
+\mathrm{pop}(T)=\sum_k w_k\, e^{-\lambda (T-t_k)},\quad \lambda=\frac{\ln 2}{H}
 $$
 
-Ranking by $\mathrm{pop}(T)$ is identical to ranking by
+where $H$ is `half_life_days`. Ranking by $\mathrm{pop}(T)$ is identical to ranking by
 
 $$
 \mathrm{hot}=\log\sum_k w_k\, e^{\lambda t_k}
@@ -198,7 +198,7 @@ $$
 because $e^{-\lambda T}$ is common to every item at query time. So we **store `hot` once** and, for each new event, update:
 
 $$
-\mathrm{hot} \leftarrow \mathrm{logAddExp}\big(\mathrm{hot},\; \log w + \lambda\cdot \mathrm{days}(t)\big)
+\mathrm{hot} \leftarrow \mathrm{logAddExp}(\mathrm{hot},\ \log w + \lambda\cdot \mathrm{days}(t))
 $$
 
 (`Math::hotTerm` + `Math::logAddExp`). Every ~10 minutes `update-scores` reads only events since the watermark; `ORDER BY hot DESC LIMIT n` stays correct as time passes. No nightly full re-aggregation for trending.
