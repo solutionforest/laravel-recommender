@@ -7,6 +7,10 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.1] — 2026-11-12
+
+Examples now use the 0.1.0 config-only API. No package code changes.
+
 ### Changed
 - Every example (`blog`, `products`, `events`, `events-advanced`, `reviews`) is now a config-only feed: `model` + `interactions` in the config, `scopeRecommendable()` / `toRecommendationCard()` / `Recommendable` on the model, one-line `recommendations()` controllers. Their `InteractionSource`, `ItemFilter`, `CardTransformer` and `DiversityGroups` classes are removed; `events-advanced` keeps a custom `CardTransformer` to show when a class is still the right tool
 - Example diversity keys are model attributes (`author_id`, `seller_id`, `host_id`, `district_id`, `type_id`, `shop_id`, `user_id`)
@@ -168,6 +172,7 @@ First minor release: a feed is now **configuration only** — tell the package w
 [0.0.2]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.2
 [0.0.1]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.1
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/solutionforest/laravel-recommender/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.15...v0.1.0
 [0.0.15]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.14...v0.0.15
