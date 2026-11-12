@@ -65,11 +65,13 @@ That is the whole integration. Everything else is config + schedule.
 ```bash
 composer require solutionforest/laravel-recommender:^0.0.3
 php artisan migrate
-php artisan vendor:publish --tag=recommender-config   # optional
+php artisan vendor:publish --tag=recommender-config
 ```
 
 You should now have three tables: `rec_item_scores`, `rec_item_neighbours`, `rec_state`.  
 Those are the package’s notebooks. Your likes table stays yours.
+
+**Publish is required:** edit `config/recommender.php` and add a feed (defaults ship with empty `feeds`). Wire `interactions` / `filter` / `cards` (copy [`examples/blog`](../examples/blog)).
 
 ### Step 1 — Copy the blog example
 

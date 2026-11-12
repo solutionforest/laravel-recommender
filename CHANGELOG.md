@@ -14,9 +14,6 @@ This project uses [Semantic Versioning](https://semver.org/).
 - README: PHP 8.3+ and Laravel 11–13 badges under the logo
 - Tests: event weights flip trending order; SponsoredShop source+booster; UnlockedBuildLock when cache has no LockProvider
 
-### Note
-- Prefer Composer constraint `^0.0.3`. An older `v0.1.0` git tag is obsolete — do not require it.
-
 ## [0.0.2] — 2026-11-12
 
 ### Changed

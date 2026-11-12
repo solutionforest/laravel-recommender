@@ -7,7 +7,7 @@ Go-live, storage, locks, FAQ, roadmap.
 | Step | Action | Why |
 |---|---|---|
 | 1 | `php artisan migrate` | `rec_*` tables |
-| 2 | Publish config (optional) | `vendor:publish --tag=recommender-config` |
+| 2 | Publish config | `vendor:publish --tag=recommender-config` — then define a feed + wire classes |
 | 3 | Index your interaction / item tables | Sources are your SQL |
 | 4 | `recommender:update-scores {feed}` | Fill `hot` / quality |
 | 5 | `recommender:build-neighbours {feed}` | Fill graph |

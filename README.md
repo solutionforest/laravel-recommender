@@ -154,10 +154,12 @@ Then `recommender:explain posts {userId}` to verify. More recipes: [Tuning](docs
 ```bash
 composer require solutionforest/laravel-recommender:^0.0.3
 php artisan migrate
-php artisan vendor:publish --tag=recommender-config   # optional
+php artisan vendor:publish --tag=recommender-config
 ```
 
-On [Packagist](https://packagist.org/packages/solutionforest/laravel-recommender). Prefer **`^0.0.3`** (PHP 8.3+ / Laravel 11–13). Ignore the obsolete `v0.1.0` tag.
+Publish is required so you can define at least one feed in `config/recommender.php` (package defaults ship with `'feeds' => []`). Then wire your `interactions` / `filter` / `cards` classes — copy [`examples/blog`](examples/blog) to start.
+
+On [Packagist](https://packagist.org/packages/solutionforest/laravel-recommender). Current: **`^0.0.3`** (PHP 8.3+ / Laravel 11–13).
 
 Changelog: [CHANGELOG.md](CHANGELOG.md) · Releases: [GitHub Releases](https://github.com/solutionforest/laravel-recommender/releases)
 
