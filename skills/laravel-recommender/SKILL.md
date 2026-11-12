@@ -24,7 +24,7 @@ Human docs (prefer linking over pasting):
 | `…/docs/tuning.md` | Weight recipes |
 | `…/docs/operations.md` | Go-live / FAQ |
 | `…/AGENTS.md` | Short agent rules |
-| `…/examples/` | `blog` · `products` · `events` · `events-advanced` · `reviews` — each uses `Models/` · `Sources/` · `Boosters/` · `Filters/` · `Cards/` · `Groups/` · `Interactions/` · `Http/` |
+| `…/examples/` | `simple` · `blog` · `products` · `events` · `events-advanced` · `reviews` — all config-only (`model` + `interactions`); `Models/` hold `scopeRecommendable()` / `toRecommendationCard()`, plus optional `Sources/` · `Boosters/` · `Cards/` · `Http/` |
 
 ---
 
@@ -143,7 +143,7 @@ Sponsored pattern: **Source** (inject) + **Booster** (push) + diversity cap. See
 
 - Prefer `recommender:make-feed` over inventing classes.
 - Never invent a Python/Personalize service for this package’s job.
-- Do not put viewer-specific fields (e.g. `fav_by_user`) in `CardTransformer` — hydrate in the app layer if needed.
+- Do not put viewer-specific fields (e.g. `fav_by_user`) in `toRecommendationCard()` / `CardTransformer` — cards are shared; hydrate in the app layer if needed.
 - Bulk writes only inside package code; in apps, use package commands/jobs.
 - Empty feed / only trending → jobs not run or backfill too short.
 - No CoInteraction in `explain` → neighbours empty → run `build-neighbours`.

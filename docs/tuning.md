@@ -7,7 +7,7 @@ Start with the generated defaults and change one setting at a time. [Getting sta
 
 ## Event weights (any interaction type → trending)
 
-**Not limited to likes/views.** Any string you yield from `InteractionSource` can be a weighted event (`share`, `bookmark`, `comment`, …).
+**Not limited to likes/views.** Any event name in your `interactions` table map (or yielded by an `InteractionSource`) can be a weighted event (`share`, `bookmark`, `comment`, …).
 
 ```php
 'events' => [
@@ -108,7 +108,7 @@ Recommender::forgetTrending('reviews');
 | Source SQL | Indexed `whereIn` + PHP cap, or bounded `UNION ALL` of per-id `LIMIT`s |
 | First paint for new users | Trending can help; filtering, missing cards or sparse data can still yield an empty page |
 | Scroll is long, not infinite | App-level catalog tail after `hasMore` — see `InfiniteScrollFeed` |
-| Media | Map `.mp4` → poster in `CardTransformer` |
+| Media | Map `.mp4` → poster in `toRecommendationCard()` |
 | Sponsored shops | Source + Booster + diversity caps |
 
 Wishlist ideas (`recommender:bootstrap`, named presets, richer explain): see [operations](operations.md#roadmap--wishlist).

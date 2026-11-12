@@ -7,6 +7,12 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- Every example (`blog`, `products`, `events`, `events-advanced`, `reviews`) is now a config-only feed: `model` + `interactions` in the config, `scopeRecommendable()` / `toRecommendationCard()` / `Recommendable` on the model, one-line `recommendations()` controllers. Their `InteractionSource`, `ItemFilter`, `CardTransformer` and `DiversityGroups` classes are removed; `events-advanced` keeps a custom `CardTransformer` to show when a class is still the right tool
+- Example diversity keys are model attributes (`author_id`, `seller_id`, `host_id`, `district_id`, `type_id`, `shop_id`, `user_id`)
+- `events-advanced`: `Event::scopeRecommendable()` takes the ranking `Context` (was `$now, $userId`)
+- PHPStan (level 8) now analyses every example; each example test also runs `recommender:doctor`
+
 ## [0.1.0] — 2026-11-12
 
 First minor release: a feed is now **configuration only** — tell the package what you recommend (a model) and where the interactions are (tables) — plus a dashboard to watch it. Upgrading from 0.0.x: see [UPGRADE.md](UPGRADE.md).

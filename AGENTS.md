@@ -15,7 +15,7 @@ Human docs live under [`docs/`](docs/). Prefer linking there over pasting walls 
 | [docs/dashboard.md](docs/dashboard.md) | `/recommender` dashboard, `viewRecommender` gate, `recommender:doctor` |
 | [docs/maths.md](docs/maths.md) | How we score (formulas) |
 | [skills/laravel-recommender/SKILL.md](skills/laravel-recommender/SKILL.md) | Cursor skill for **consuming apps** |
-| [examples/](examples/) | Samples (`Models/` · `Sources/` · `Boosters/` · …): `blog`, `products`, `events`, `events-advanced`, `reviews` |
+| [examples/](examples/) | Config-only samples (`model` + `interactions`; custom `Sources/` · `Boosters/` where needed): `simple`, `blog`, `products`, `events`, `events-advanced`, `reviews` |
 
 ---
 
@@ -49,7 +49,7 @@ Historical imports: set `scores_backfill_days` before the first score run. For a
 
 ## Mental model (package)
 
-- Never copies raw events; reads app tables via `InteractionSource`.
+- Never copies raw events; reads app tables via the `interactions` table map (or an `InteractionSource` class).
 - Own tables: `rec_item_scores`, `rec_item_neighbours`, `rec_state` only.
 - Hot path: cache list + seen-set + cards.
 - Maths: item–item cosine CF, half-life `hot` via log-sum-exp, Wilson, blend + exploration.

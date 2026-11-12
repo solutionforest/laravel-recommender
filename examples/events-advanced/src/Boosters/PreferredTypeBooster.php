@@ -17,7 +17,7 @@ class PreferredTypeBooster implements Booster
             return [];
         }
 
-        $favoriteTypes = JoinPreferences::types($context->userId)->keys()->all();
+        $favoriteTypes = array_values(JoinPreferences::types($context->userId)->keys()->all());
 
         if ($favoriteTypes === []) {
             return [];

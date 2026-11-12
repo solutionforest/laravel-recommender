@@ -117,3 +117,7 @@ it('surfaces sponsored author posts via source and booster', function () {
         ->expectsOutputToContain('SponsoredShopSource')
         ->assertSuccessful();
 });
+
+it('passes recommender:doctor with the config-only feed', function () {
+    $this->artisan('recommender:doctor', ['feed' => 'posts'])->assertSuccessful();
+});

@@ -2,23 +2,17 @@
 
 namespace SolutionForest\Recommender\Examples\EventsAdvanced\Http;
 
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use SolutionForest\Recommender\Facades\Recommender;
+use SolutionForest\Recommender\Support\FeedPage;
 
-/** GET /events/recommended?page=N — recommended events listing. */
+/**
+ * GET /events/recommended?page=N — returning the page renders Laravel's paginator JSON
+ * (plus `origin` / `has_more`). `?page=` is read automatically.
+ */
 class RecommendedEventsController
 {
-    public function __invoke(Request $request): JsonResponse
+    public function __invoke(Request $request): FeedPage
     {
-        $page = max(1, (int) $request->query('page', 1));
-        $user = $request->user();
-
-        $result = Recommender::page('events', $user?->getAuthIdentifier(), $page, attributes: ['user' => $user]);
-
-        return response()->json($result->toPaginatorArray([
-            'path' => $request->url(),
-            'query' => $request->query(),
-        ]));
+        return recommendations('events', $request->user());
     }
 }

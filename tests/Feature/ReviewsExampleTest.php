@@ -88,3 +88,7 @@ it('serves guests without pet match', function () {
     $response->assertOk()->assertJsonPath('origin', 'trending');
     expect(collect($response->json('data'))->pluck('id'))->not->toContain(300);
 });
+
+it('passes recommender:doctor with the config-only feed', function () {
+    $this->artisan('recommender:doctor', ['feed' => 'reviews'])->assertSuccessful();
+});

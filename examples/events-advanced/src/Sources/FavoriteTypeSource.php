@@ -24,7 +24,7 @@ class FavoriteTypeSource implements CandidateSource
         }
 
         $events = Event::query()
-            ->recommendable($context->now(), $context->userId)
+            ->recommendable($context)
             ->whereIn('type_id', $favoriteTypes->keys())
             ->orderBy('starts_at')
             ->limit($limit)

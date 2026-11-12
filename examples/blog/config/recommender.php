@@ -2,14 +2,11 @@
 
 use SolutionForest\Recommender\Boosters\QualityBooster;
 use SolutionForest\Recommender\Examples\Blog\Sources\FreshPostSource;
-use SolutionForest\Recommender\Examples\Blog\Groups\PostAuthorGroups;
-use SolutionForest\Recommender\Examples\Blog\Cards\PostCardTransformer;
-use SolutionForest\Recommender\Examples\Blog\Interactions\PostInteractionSource;
 use SolutionForest\Recommender\Examples\Blog\Boosters\SponsoredShopBooster;
 use SolutionForest\Recommender\Examples\Blog\Sources\SponsoredShopSource;
-use SolutionForest\Recommender\Examples\Blog\Filters\VisiblePostFilter;
 use SolutionForest\Recommender\Sources\CoInteractionSource;
 use SolutionForest\Recommender\Sources\TrendingSource;
+use SolutionForest\Recommender\Examples\Blog\Models\Post;
 
 /*
  * Step 4 — wire the feed. Copy to config/recommender.php in your app.
@@ -25,6 +22,13 @@ return [
 
     'feeds' => [
         'posts' => [
+            // What to recommend, and where interactions live — no classes needed.
+            'model' => Post::class,
+            'interactions' => [
+                'post_likes' => 'like',
+                'post_views' => 'view',
+            ],
+
             'page_size' => 10,
             'feed_size' => 200,
             'trending_size' => 200,
@@ -46,7 +50,7 @@ return [
             ],
             'exploration_sources' => [TrendingSource::class],
             'exploration_ratio' => 0.05,
-            'diversity' => ['author' => 1],            // sponsor cannot fill whole page
+            'diversity' => ['author_id' => 1],            // sponsor cannot fill whole page
             'trending_sources' => [
                 TrendingSource::class => 1.0,
                 FreshPostSource::class => 0.15,        // guests / empty scores only
@@ -55,11 +59,6 @@ return [
             'events' => ['view' => 1.0, 'like' => 4.0],
             'positive_events' => ['like'],
             'exposure_events' => ['view'],
-
-            'interactions' => PostInteractionSource::class,
-            'filter' => VisiblePostFilter::class,
-            'cards' => PostCardTransformer::class,
-            'groups' => PostAuthorGroups::class,
         ],
     ],
 ];
