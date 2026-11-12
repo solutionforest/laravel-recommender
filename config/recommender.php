@@ -102,6 +102,9 @@ return [
 
         // Rendered card cache
         'card_ttl' => 3600,
+        // Cache cards separately per attribute, e.g. ['locale'] or ['locale', 'tenant']
+        // ('locale' defaults to app()->getLocale()). Empty = one card for everyone.
+        'cards_vary_by' => [],
 
         // Catalog tail (feeds with a 'model'): when ranked and trending items
         // run out, keep serving the newest items the recommendable scope allows.

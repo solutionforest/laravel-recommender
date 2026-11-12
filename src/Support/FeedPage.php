@@ -33,7 +33,32 @@ final class FeedPage implements JsonSerializable, Responsable
         public readonly bool $hasMore,
         public readonly int $remaining,
         public readonly string $origin,
+        public readonly ?string $feed = null,
+        public readonly ?string $model = null,
     ) {
+    }
+
+    /**
+     * The items as Eloquent models, in ranked order — for apps that render
+     * models themselves (API resources, Blade components) instead of cards.
+     * One query. Needs a feed with a `model`.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, \Illuminate\Database\Eloquent\Model>
+     */
+    public function models(): \Illuminate\Database\Eloquent\Collection
+    {
+        if ($this->model === null || ! is_a($this->model, \Illuminate\Database\Eloquent\Model::class, true)) {
+            throw new \LogicException('FeedPage::models() needs a feed with a model; use $page->ids with a custom cards class.');
+        }
+        if ($this->ids === []) {
+            return new \Illuminate\Database\Eloquent\Collection();
+        }
+
+        $position = array_flip(array_map('strval', $this->ids));
+
+        return $this->model::query()->findMany($this->ids)
+            ->sortBy(fn (\Illuminate\Database\Eloquent\Model $m) => $position[(string) $m->getKey()] ?? PHP_INT_MAX)
+            ->values();
     }
 
     /**
@@ -84,7 +109,7 @@ final class FeedPage implements JsonSerializable, Responsable
      */
     public function nextCursor(): ?string
     {
-        return $this->hasMore ? Cursor::encode($this->page + 1) : null;
+        return $this->hasMore ? Cursor::encode($this->page + 1, $this->feed) : null;
     }
 
     /**

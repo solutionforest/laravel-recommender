@@ -147,7 +147,7 @@ class Recommender
     {
         [$userId, $attributes] = $this->viewer($user, $attributes);
         $feed = $this->feed($feedName);
-        $page = max(1, $page ?? Cursor::currentPage() ?? Paginator::resolveCurrentPage());
+        $page = max(1, $page ?? Cursor::currentPage($feedName) ?? Paginator::resolveCurrentPage());
         $perPage = max(1, $perPage ?? $feed->int('page_size', 12));
 
         if ($userId === null || ! $this->enabled()) {
@@ -211,7 +211,7 @@ class Recommender
             );
         }
 
-        [$cards, $servedIds, $consumed] = $this->render($feed, $unseen, $perPage);
+        [$cards, $servedIds, $consumed] = $this->render($feed, $unseen, $perPage, $attributes);
         $this->cache->markSeen($feed, $userId, $consumed);
         $this->recordImpressions($feed, $servedIds);
         $this->hintIfEmpty($feed, $page, $servedIds);
@@ -229,6 +229,8 @@ class Recommender
             hasMore: $remaining > 0,
             remaining: $remaining,
             origin: $origin,
+            feed: $feed->name,
+            model: is_string($feed->get('model')) ? $feed->get('model') : null,
         );
     }
 
@@ -498,7 +500,7 @@ class Recommender
             $window = array_merge($window, $more);
         }
 
-        [$cards, $servedIds, $consumed] = $this->render($feed, $window, $perPage);
+        [$cards, $servedIds, $consumed] = $this->render($feed, $window, $perPage, $attributes);
         $this->recordImpressions($feed, $servedIds);
         $this->hintIfEmpty($feed, $page, $servedIds);
         $remaining = max(0, count($window) - count($consumed));
@@ -511,6 +513,8 @@ class Recommender
             hasMore: $remaining > 0,
             remaining: $remaining,
             origin: $origin,
+            feed: $feed->name,
+            model: is_string($feed->get('model')) ? $feed->get('model') : null,
         );
     }
 
@@ -518,12 +522,17 @@ class Recommender
      * Take up to $perPage renderable cards from the front of $ids.
      *
      * @param  list<int|string>  $ids
+     * @param  array<string, mixed>  $attributes
      * @return array{0: array<int|string, array<string, mixed>>, 1: list<int|string>, 2: list<int|string>}
      *         cards, ids of the cards, ids consumed from the list (incl. ones that failed to render)
      */
-    private function render(FeedDefinition $feed, array $ids, int $perPage): array
+    private function render(FeedDefinition $feed, array $ids, int $perPage, array $attributes = []): array
     {
         $transformer = $this->bindings->cards($feed);
+        [$variant, $attributes] = $this->cardVariant($feed, $attributes);
+        if ($transformer instanceof Eloquent\ModelCards) {
+            $transformer = $transformer->withAttributes($attributes);
+        }
 
         $cards = [];
         $consumed = [];
@@ -534,7 +543,7 @@ class Recommender
             $need = $perPage - count($cards);
             $batch = array_slice($ids, $offset, $need + ($round === 0 ? 0 : $need));
             $offset += count($batch);
-            $rendered = $this->cache->cards($feed, $batch, fn (array $missing) => $transformer->cards($missing));
+            $rendered = $this->cache->cards($feed, $batch, fn (array $missing) => $transformer->cards($missing), $variant);
             foreach ($batch as $id) {
                 $consumed[] = $id;
                 if (isset($rendered[$id]) && count($cards) < $perPage) {
@@ -544,6 +553,31 @@ class Recommender
         }
 
         return [$cards, array_map(fn ($id) => Ids::normalize($id), array_keys($cards)), $consumed];
+    }
+
+    /**
+     * Cache variant for cards that differ per attribute (`cards_vary_by`,
+     * e.g. ['locale']). `locale` falls back to the app locale.
+     *
+     * @param  array<string, mixed>  $attributes
+     * @return array{0: ?string, 1: array<string, mixed>}  variant (null = shared cards), attributes
+     */
+    private function cardVariant(FeedDefinition $feed, array $attributes): array
+    {
+        $keys = $feed->list('cards_vary_by');
+        if ($keys === []) {
+            return [null, $attributes];
+        }
+        if (in_array('locale', $keys, true) && ! isset($attributes['locale'])) {
+            $attributes['locale'] = app()->getLocale();
+        }
+        $parts = [];
+        foreach ($keys as $key) {
+            $value = $attributes[$key] ?? '';
+            $parts[] = $key.'='.(is_scalar($value) ? (string) $value : md5((string) json_encode($value)));
+        }
+
+        return [implode('|', $parts), $attributes];
     }
 
     /**

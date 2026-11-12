@@ -19,11 +19,23 @@ final class ModelCards implements CardTransformer
 {
     /**
      * @param  class-string<Model>  $model
+     * @param  array<string, mixed>  $attributes
      */
     public function __construct(
         private readonly string $model,
         private readonly FeedDefinition $feed,
+        private readonly array $attributes = [],
     ) {
+    }
+
+    /**
+     * Same cards, rendered with request attributes (used with `cards_vary_by`).
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    public function withAttributes(array $attributes): self
+    {
+        return new self($this->model, $this->feed, $attributes);
     }
 
     public function cards(array $ids): array
@@ -31,10 +43,11 @@ final class ModelCards implements CardTransformer
         $instance = new $this->model;
         $out = [];
 
-        foreach (RecommendableQuery::for($instance, new Context($this->feed, null))->whereKey($ids)->get() as $item) {
+        $context = new Context($this->feed, null, [], $this->attributes);
+        foreach (RecommendableQuery::for($instance, $context)->whereKey($ids)->get() as $item) {
             /** @var Model $item */
             $out[$item->getKey()] = method_exists($item, 'toRecommendationCard')
-                ? $item->toRecommendationCard()
+                ? $item->toRecommendationCard($context) // the context may be ignored
                 : $item->toArray();
         }
 
