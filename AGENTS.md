@@ -50,7 +50,7 @@ Historical imports: set `scores_backfill_days` before the first score run. For a
 ## Mental model (package)
 
 - Never copies raw events; reads app tables via the `interactions` table map (or an `InteractionSource` class).
-- Own tables: `rec_item_scores`, `rec_item_neighbours`, `rec_state` only.
+- Own tables: `rec_item_scores`, `rec_item_daily`, `rec_item_neighbours`, `rec_state` only.
 - Hot path: cache list + seen-set + cards.
 - Maths: item–item cosine CF, half-life `hot` via log-sum-exp, Wilson, blend + exploration.
 - Prefer personalisation over latest-first.

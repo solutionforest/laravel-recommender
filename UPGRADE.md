@@ -1,5 +1,11 @@
 # Upgrade guide
 
+## From 0.3.x to 0.4.0
+
+1. Run `php artisan migrate` — adds `impressions` / `last_shown_at` to `rec_item_scores` and the `rec_item_daily` table.
+2. Optional: `'impressions' => true` on a feed to count served items (quality then uses positive ÷ impressions).
+3. Daily counters start filling from the next `update-scores` run. To backfill them, run `php artisan recommender:rebuild-scores {feed} --days=30`.
+
 ## From 0.2.x to 0.3.0
 
 - Feeds with a `model` now continue past ranked and trending items with the newest items your `recommendable` scope allows, so `has_more` stays `true` longer. To keep the old cut-off set `'tail' => false` on the feed (or in `defaults`).

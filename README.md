@@ -26,7 +26,7 @@ Imagine a reader likes post A. If other readers interacted with both A and B, po
 2. **Build a list:** sources suggest candidates; the package filters out disallowed items, combines their scores, and can apply optional boosts, exploration and diversity rules.
 3. **Serve the feed:** the ranked list and cards are cached. Guests use a shared trending list; users with little history may see mostly trending items. If there are no eligible items, the feed can be empty.
 
-Your app records the interactions and controls visibility and card fields. Cards are shared across viewers, so add viewer-specific fields separately. The package stores derived scores and neighbours in three `rec_*` tables. Personal paging uses a bounded seen set, so repeats can occur after expiry or resets. See [how it works](docs/how-it-works.md) for the full flow and [operations](docs/operations.md) for cache and production details.
+Your app records the interactions and controls visibility and card fields. Cards are shared across viewers, so add viewer-specific fields separately. The package stores derived scores, daily counters and neighbours in four `rec_*` tables. When ranked and trending items run out, feeds with a model continue with the newest items, so scrolling does not hit a wall. See [how it works](docs/how-it-works.md) for the full flow and [operations](docs/operations.md) for cache and production details.
 
 ## Your first feed
 

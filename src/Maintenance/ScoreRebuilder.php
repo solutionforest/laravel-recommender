@@ -15,7 +15,8 @@ use SolutionForest\Recommender\Support\FeedDefinition;
  * watermark are removed and the window is replayed. While the marker exists
  * the regular update-scores refuses to touch the feed, so an interrupted
  * rebuild can only be finished by running the rebuild again (which starts
- * over cleanly). Other feeds are never touched.
+ * over cleanly). Other feeds are never touched. Impressions are kept
+ * (they are not in the app's tables, so they cannot be replayed).
  */
 final class ScoreRebuilder
 {
@@ -61,7 +62,7 @@ final class ScoreRebuilder
         $now ??= CarbonImmutable::now();
         $this->state->put(self::markerKey($feed->name), (string) $now->getTimestamp());
 
-        $deleted = $this->scores->deleteFeed($feed->name, $feed->int('delete_chunk', 5000));
+        $deleted = $this->scores->resetFeed($feed->name, $feed->int('delete_chunk', 5000));
         $this->state->put("scores:{$feed->name}:watermark", null);
 
         $window = FeedDefinition::make($feed->name, $feed->toArray(), ['scores_backfill_days' => max(1, $days)]);

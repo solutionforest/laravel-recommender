@@ -7,6 +7,19 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-11-12
+
+Better signals: count what users were actually shown, and see whether an item is getting better or worse. **Run `php artisan migrate`.**
+
+### Added
+- **Impressions** (opt-in `'impressions' => true`): every item served in a page is counted (lifetime + per day) with atomic bulk increments; `stats()` and `QualityBooster` then rate items by positive ÷ impressions
+- **Quality over time**: `rec_item_daily` keeps per-day positive / exposure / impressions; `Recommender::stats($feed, $items, days: 7)` and `recommendationStats($feed, 7)`; the dashboard's trending table shows 7-day quality with ▲ / ▼ against 30 days
+- Migration `add_impressions_and_daily_scores` (`impressions`, `last_shown_at` columns and the `rec_item_daily` table)
+
+### Changed
+- `rebuild-scores` resets event-derived scores instead of deleting rows, so impressions survive a rebuild
+- `prune` also removes daily rows past retention and keeps items that are still being shown
+
 ## [0.3.0] — 2026-11-12
 
 Never run out of items: feeds with a `model` keep scrolling into the catalog, and clients can follow a cursor.
@@ -200,7 +213,8 @@ First minor release: a feed is now **configuration only** — tell the package w
 [0.0.2]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.2
 [0.0.1]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.1
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/solutionforest/laravel-recommender/compare/v0.1.0...v0.1.1

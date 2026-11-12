@@ -57,7 +57,7 @@ it('changes nothing on a dry run or when not confirmed', function () {
         ->expectsOutputToContain('Dry run')
         ->assertSuccessful();
     $this->artisan('recommender:rebuild-scores', ['feed' => 'reviews', '--days' => 90])
-        ->expectsConfirmation('Delete [reviews] scores and replay 90 days?', 'no')
+        ->expectsConfirmation('Reset [reviews] scores and replay 90 days?', 'no')
         ->assertFailed();
 
     expect(DB::table('rec_item_scores')->orderBy('id')->get()->toArray())->toEqual($before);

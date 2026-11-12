@@ -114,7 +114,7 @@
         th { padding: 10px 18px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); background: var(--panel-2); border-bottom: 1px solid var(--line-2); }
         td { padding: 10px 18px; border-bottom: 1px solid var(--line-2); font-variant-numeric: tabular-nums; }
         tr:last-child td { border-bottom: 0; }
-        .num { text-align: right; }
+        .num { text-align: right; white-space: nowrap; }
         .rank { color: var(--muted); width: 36px; }
         .item { font-weight: 600; }
         .bar { position: relative; height: 8px; min-width: 80px; border-radius: 999px; background: var(--line-2); overflow: hidden; }
@@ -265,7 +265,7 @@
                         <div class="empty">Nothing scored yet.</div>
                     @else
                         <table>
-                            <thead><tr><th>#</th><th>Item</th><th style="width:40%">Hot</th><th class="num">Positive</th><th class="num">Exposure</th><th class="num">Rate</th><th class="num" title="Confidence-adjusted rate (Wilson lower bound)">Quality</th></tr></thead>
+                            <thead><tr><th>#</th><th>Item</th><th style="width:40%">Hot</th><th class="num">Positive</th><th class="num">Exposure</th><th class="num">Rate</th><th class="num" title="Confidence-adjusted rate (Wilson lower bound), all time">Quality</th><th class="num" title="Quality over the last 7 days vs the last 30">7d</th></tr></thead>
                             <tbody>
                             @foreach ($current['trending'] as $i => $row)
                                 <tr>
@@ -274,8 +274,16 @@
                                     <td><div class="bar" title="{{ $row['hot'] }}"><i style="width: {{ round($row['hot'] * 100) }}%"></i></div></td>
                                     <td class="num">{{ number_format($row['positive']) }}</td>
                                     <td class="num">{{ number_format($row['exposure']) }}</td>
-                                    <td class="num"><span class="rate">{{ $row['exposure'] > 0 ? round($row['positive'] / $row['exposure'] * 100) : 0 }}%</span></td>
+                                    <td class="num"><span class="rate">{{ $row['rate'] === null ? '—' : round($row['rate'] * 100).'%' }}</span></td>
                                     <td class="num">{{ round($row['quality'] * 100) }}</td>
+                                    <td class="num">
+                                        @if ($row['quality_7d'] === null)
+                                            <span class="why">—</span>
+                                        @else
+                                            {{ round($row['quality_7d'] * 100) }}
+                                            <span class="{{ ['up' => 'ok', 'down' => 'fail', 'flat' => 'why'][$row['trend'] ?? 'flat'] }}" title="vs last 30 days">{{ ['up' => '▲', 'down' => '▼', 'flat' => '•'][$row['trend'] ?? 'flat'] }}</span>
+                                        @endif
+                                    </td>
                                 </tr>
                             @endforeach
                             </tbody>

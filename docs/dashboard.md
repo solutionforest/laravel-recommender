@@ -16,7 +16,7 @@ https://your-app.test/recommender
 | Title & feed tabs | The feed's status (**Healthy / Warnings / Failing**) and, with several feeds, one tab per feed with its status dot and scored-item count. |
 | Pipeline | The four steps a feed goes through — **Interactions → Scores → Similar items → Serving** — so you see at a glance *where* it is broken. |
 | Cards | Checks passing, score lag against the 1-hour limit, scored items, and similar-items coverage (share of items that have neighbours). |
-| Trending now | Top 10 items by time-decayed popularity, with positive (e.g. likes) and exposure (e.g. views) counts, their rate, and **quality** (the rate adjusted for how much evidence there is, 0–100). |
+| Trending now | Top 10 items by time-decayed popularity, with positive (e.g. likes) and exposure (e.g. views) counts, their rate, **quality** (the rate adjusted for how much evidence there is, 0–100) and **7d** — quality this week with ▲ / ▼ against the last 30 days. |
 | Checks | Problems first, each with its fix; passing checks fold away. |
 | Explain a user | Enter a user id to see why each item is ranked, as a stacked bar of every source's share of the score. |
 

@@ -21,8 +21,10 @@ final class QualityBooster implements Booster
     public function boost(Context $context, array $ids): array
     {
         $out = [];
+        // With impressions on, "how often was it liked when shown" is the better denominator.
+        $basis = $context->feed->get('impressions') ? 'impressions' : 'exposure';
         foreach ($this->scores->counts($context->feed->name, $ids) as $id => $row) {
-            $out[$id] = Math::wilson($row['positive'], $row['exposure']);
+            $out[$id] = Math::wilson($row['positive'], $row[$basis]);
         }
 
         // Relative to the best candidate: absolute like-rates are small, the
