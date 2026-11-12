@@ -1,234 +1,88 @@
-<p align="center">
-  <img src="art/logo.svg" alt="Laravel Recommender" width="128" height="128">
-</p>
-
+<p align="center"><img src="art/logo.svg" alt="Laravel Recommender" width="120"></p>
+<h1 align="center">Laravel Recommender</h1>
+<p align="center"><strong>Build a “for you” feed from the interactions your Laravel app already records.</strong></p>
 <p align="center">
   <img src="https://img.shields.io/badge/PHP-8.3%2B-777BB4?logo=php&logoColor=white" alt="PHP 8.3+">
   <img src="https://img.shields.io/badge/Laravel-11%E2%80%9313-FF2D20?logo=laravel&logoColor=white" alt="Laravel 11–13">
-  <a href="https://phpstan.org/"><img src="https://img.shields.io/badge/PHPStan-level%208-brightgreen.svg?logo=php&logoColor=white" alt="PHPStan level 8"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
-  <a href="https://github.com/solutionforest/laravel-recommender/actions/workflows/tests.yml"><img src="https://github.com/solutionforest/laravel-recommender/actions/workflows/tests.yml/badge.svg" alt="tests"></a>
-  <a href="https://github.com/solutionforest/laravel-recommender/releases"><img src="https://img.shields.io/github/v/release/solutionforest/laravel-recommender?label=release" alt="release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
+  <a href="https://github.com/solutionforest/laravel-recommender/actions/workflows/tests.yml"><img src="https://github.com/solutionforest/laravel-recommender/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
 </p>
 
-# Laravel Recommender
-
-**A simple recommendation engine for Laravel.** Self-hosted “for you” feeds — collaborative filtering, time-decayed trending, and explainable blends. Requires **PHP 8.3+** and **Laravel 11–13**.
-
-If your product already stores user↔item interactions in **your** tables, this package turns them into a personalised ranked feed — without Amazon Personalize, a Python microservice, or shipping events to a third party.
-
-**Not only likes and views.** Any event name works (`share`, `bookmark`, `comment`, `sponsor`, …). Defaults use `view` / `like` as examples; add a third (or tenth) type in config + your `InteractionSource`.
-
-| You have… | This package gives you… |
-|---|---|
-| Interactions in **your** tables (like / view / share / …) | A recommendation engine: “acted together” + trending |
-| A Laravel API or Livewire UI | `Recommender::page()` → cards / Laravel paginator JSON |
-| Cache store + a queue worker | Fast cached lists, seen-set paging, explainable rankings |
-
-Built for real product feeds (blog posts, inspiration / reviews, shops).
-
----
-
-## Why use it?
-
-- **Simple recommendation engine** — item–item CF + trending + your own rules; no ML ops stack.
-- **Stays in your stack** — reads existing tables; only adds 3 small `rec_*` tables + cache keys.
-- **Cheap on the request path** — scroll serves from cache; no `ORDER BY RAND()`, no external API call.
-- **Explainable** — `recommender:explain` shows which sources scored each card.
-- **Tunable** — weights, exploration, diversity caps — not a black-box model.
-- **Runnable samples** — [`examples/`](examples/) (`blog`, `products`, `events` with view/like/join, `events-advanced` with district + type affinity, `reviews` + pet-type source), covered by tests.
-
----
-
-## How we recommend
-
-No neural net. A small, transparent recommendation engine: assemble a ranked list from a few clear signals, then serve it from cache.
+Your users view, like, or purchase things. This package reads those events from **your tables**, finds items people interacted with together, and combines that signal with trending items and your own rules. It runs in your Laravel application; you do not need a separate recommendation service or a background in mathematics.
 
 ```text
-your interactions  →  background jobs  →  personal ranked list  →  next page of cards
-   (any events)            (learn)              (in cache)            (no repeats)
+Your interactions → scheduled score updates → ranked items → JSON or Blade
 ```
 
-1. **Learn in the background** (not on every scroll)
-   - Every ~10 minutes: fold new interactions into a **trending “hot”** score (recent events count more; each event type has its own weight).
-   - Nightly: build **neighbours** — “people who engaged with *this* also engaged with *that*” (item–item collaborative filtering).
-2. **Build a personal list** when the user’s feed is missing or stale  
-   Mix weighted **sources** (co-liked items, trending, plus any rules you add — e.g. same pet type, related shops), run your **filter** (published / not blocked), optional **boosters** (quality), sprinkle a little **exploration** (fresh items), then **diversity** caps (e.g. max 1 author per page).
-3. **Serve pages from that list**  
-   `Recommender::page()` returns the next unseen cards. Guests / brand-new users get a shared **trending** list until they have history.
-4. **You can see why**  
-   `php artisan recommender:explain {feed} {userId}` prints each card’s source scores.
+**You provide:** item and interaction tables, visibility rules, and the fields to display. **The package provides:** ranking, cached lists, a shared trending feed, and tools to inspect results. It does not record interactions for you. New or sparse data may produce trending results or an empty feed.
 
-Diagrams and request flow: [How it works](docs/how-it-works.md).  
-Formulas behind “hot”, neighbours, and quality: [How we score (maths)](docs/maths.md).
+## Your first feed
 
----
-
-## How to adjust the ratio
-
-All knobs live in `config/recommender.php` under your feed (e.g. `feeds.posts`). **Bigger number = that signal counts more.** Weights are relative to each other.
-
-### 1. Event types & weights (trending “hot”)
-
-Event names are **arbitrary strings**. Scaffold defaults are `view` / `like`, but you can add more:
-
-```php
-'events' => [
-    'view'     => 1.0,   // weak / browse
-    'like'     => 4.0,   // stronger
-    'share'    => 6.0,   // third type — any name you yield from InteractionSource
-    // 'bookmark' => 5.0,
-],
-```
-
-Only events listed here with weight `> 0` count toward trending. Default story is “a like ≈ 4 views”; raise `like` / add `share` if stronger actions should dominate.
-
-These feed `recommender:update-scores` → the `hot` score. After changing them, re-run scores (and forget trending cache) so old `hot` values catch up.
-
-Quality (Wilson) uses separate lists (also any of your event names):
-
-```php
-'positive_events' => ['like', 'share'],  // “good” actions
-'exposure_events' => ['view'],           // “seen” / denominator
-```
-
-In `InteractionSource`, yield `new Interaction($userId, $itemId, 'share', $at)` (same pattern for every type).
-
-### 2. Personal “liked together” vs trending vs your own rules
-
-```php
-'sources' => [
-    CoInteractionSource::class => 0.6,  // people who liked X also liked Y
-    TrendingSource::class => 0.2,       // hot items
-    // YourSource::class => 0.3,        // e.g. same pet / related shop
-],
-'boosters' => [
-    QualityBooster::class => 0.2,       // like-rate quality bump
-],
-```
-
-Raise a source weight → that source’s cards rank higher in the blend.  
-`exploration_ratio` (e.g. `0.15`) is different: it **reserves slots** for fresh/explore items, not the same as a source weight.
-
-### 3. Sponsor wants certain posts / shops to show more
-
-Two pieces (see [`examples/blog`](examples/blog)):
-
-1. Put the author/shop ids in config  
-2. Give them a **source** (inject into the pool) **and** a **booster** (push score up)
-
-```php
-'sponsored_author_ids' => [42, 99],   // or sponsored_shop_ids for shops
-
-'sources' => [
-    // …
-    SponsoredShopSource::class => 0.20,   // raise → more sponsored candidates enter
-],
-'boosters' => [
-    // …
-    SponsoredShopBooster::class => 0.25,  // raise → those items rank higher
-],
-'diversity' => ['author' => 1],           // still cap so one sponsor cannot fill the whole page
-```
-
-Booster alone only helps items **already** in the pool — Source + Booster is the usual paid pattern.
-
-### After you change weights
-
-```php
-Recommender::forgetUser('posts', $userId);
-Recommender::forgetTrending('posts');
-```
-
-Then `recommender:explain posts {userId}` to verify. More recipes: [Tuning](docs/tuning.md).
-
----
-
-## Start here
-
-👉 **[docs/tutorial.md](docs/tutorial.md)** — step-by-step scaffold checklist (`make-feed` → edit → cook → schedule). Easiest path for a first install.
-
-| Doc | When |
-|---|---|
-| [Scaffold tutorial](docs/tutorial.md) | First install — numbered checklist |
-| [Getting started](docs/getting-started.md) | Same story, slower / more analogy |
-| [How it works](docs/how-it-works.md) | Pipeline & request flow |
-| [How we score (maths)](docs/maths.md) | Formulas for CF, trending, Wilson quality |
-| [Tuning](docs/tuning.md) | Weights & recipes |
-| [Reference](docs/reference.md) | API, jobs, config · **What is `Context`?** |
-| [Operations](docs/operations.md) | Go-live, FAQ, scale |
-
----
-
-## Install
+Requires PHP 8.3+ and Laravel 11, 12, or 13. In an existing Laravel app with a `Post` model and interaction tables:
 
 ```bash
-composer require solutionforest/laravel-recommender:^0.0.15
+composer require solutionforest/laravel-recommender
 php artisan migrate
-php artisan recommender:make-feed
+php artisan recommender:make-feed posts
 ```
 
-`recommender:make-feed` is an **interactive [Laravel Prompts](https://laravel.com/docs/prompts) wizard** (presets: blog / products / events / reviews / custom, optional third event). Pass `-n` + flags for CI. It publishes `config/recommender.php` if needed, scaffolds the three classes under `app/Recommendation/...`, and registers the feed.
-
-Full walkthrough: **[Scaffold tutorial](docs/tutorial.md)**. Or copy an example from [`examples/`](examples/) (`blog` · `products` · `events` · `events-advanced` · `reviews`).
-
-On [Packagist](https://packagist.org/packages/solutionforest/laravel-recommender). Current: **`^0.0.15`** (PHP 8.3+ / Laravel 11–13).
-
-Changelog: [CHANGELOG.md](CHANGELOG.md) · Releases: [GitHub Releases](https://github.com/solutionforest/laravel-recommender/releases)
-
----
-
-## 60-second shape
-
-```php
-// 1–3. Wire InteractionSource + ItemFilter + CardTransformer (copy examples/blog)
-// 4. config/recommender.php → feeds.posts → those classes + weights
-// 5. Serve:
-$result = Recommender::page('posts', $user?->id, (int) $request->query('page', 1));
-
-return response()->json($result->toPaginatorArray(['path' => $request->url()]));
-```
+The wizard creates three classes and registers a feed. **Edit the generated classes to match your schema**, then build scores and neighbours:
 
 ```bash
 php artisan recommender:update-scores posts
 php artisan recommender:build-neighbours posts
-php artisan recommender:explain posts {userId}
-php artisan recommender:status
+php artisan recommender:status posts
 ```
 
-Schedule: scores ~every 10 min · neighbours nightly · prune daily.  
-Details: [getting started → schedule](docs/getting-started.md#step-4--schedule-the-kitchen).
+Expose the feed from a route:
 
-**Cache / locks** (configurable via `RECOMMENDER_CACHE_STORE` or `CACHE_STORE`):
+```php
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use SolutionForest\Recommender\Facades\Recommender;
 
-| Choice | When |
+Route::get('/posts/recommended', function (Request $request) {
+    $feed = Recommender::page('posts', $request->user()?->id, (int) $request->query('page', 1));
+
+    return response()->json($feed->toPaginatorArray(['path' => $request->url()]));
+});
+```
+
+**[Follow the first-feed tutorial →](docs/tutorial.md)** for the required table shape, checks, scheduler and troubleshooting. Run the maintenance commands after your app has recorded interactions; the first score run excludes the most recent minute.
+
+## Choose your next step
+
+| I want to… | Read |
 |---|---|
-| **redis** | Production default — fastest hot path + atomic locks |
-| **database** | OK on Laravel 11–13 if you ran `php artisan cache:table` (includes `cache_locks`) |
-| **array** / **file** | Local / CI; fine for one process |
+| Understand the terms before starting | [Getting started](docs/getting-started.md) |
+| Follow a complete working setup | [First-feed tutorial](docs/tutorial.md) |
+| Understand ranking and cache behavior | [How it works](docs/how-it-works.md) |
+| Change what influences the feed | [Tuning](docs/tuning.md) |
+| Look up methods, contracts and configuration | [Reference](docs/reference.md) |
+| Run, monitor or rebuild in production | [Operations](docs/operations.md) |
+| Explore the formulas | [Maths](docs/maths.md) (optional) |
+| Adapt an integration | [Examples](examples/) — blog, products, events and reviews |
+| Review proposed usability improvements | [Improvement proposals](docs/improvements.md) |
 
-`php artisan recommender:status` shows whether locks are available. Details: [reference → Cache](docs/reference.md#cache-store--locks).
+## How it fits together
 
----
+- **Scores** measure recent activity; the scheduled `update-scores` command reads your events.
+- **Neighbours** connect items that users interacted with together; `build-neighbours` rebuilds them.
+- **Sources** supply possible items. A weighted blend combines their scores; optional boosters, exploration and diversity adjust the list.
+- **Filters and cards** are yours: decide what may appear and what each item looks like. Cards are cached across viewers, so add viewer-specific fields separately.
 
-## For AI agents / Cursor
+The package stores derived data in three `rec_*` tables and caches lists, seen IDs and cards. Personal paging uses a bounded seen set rather than stable page offsets; guest pages use offsets. Cache expiry, resets and exhausted lists can cause repeats. Read [operations](docs/operations.md) before production.
 
-This package ships agent guidance so coding agents can wire feeds correctly in your app:
-
-| File | Purpose |
-|---|---|
-| [`AGENTS.md`](AGENTS.md) | Short rules (package + consuming apps) |
-| [`skills/laravel-recommender/SKILL.md`](skills/laravel-recommender/SKILL.md) | Cursor **Skill** — install into `.cursor/skills/` of the app |
+## Inspect and tune
 
 ```bash
-mkdir -p .cursor/skills
-cp -R vendor/solutionforest/laravel-recommender/skills/laravel-recommender .cursor/skills/
+php artisan recommender:explain posts 123
 ```
 
-Then ask the agent to add a for-you / inspiration feed — it should use `recommender:make-feed`, not invent Personalize or `ORDER BY RAND()`.
+Replace `123` with a real user ID. This shows source and booster scores for a fresh build before exploration and diversity; it is a diagnostic, not a guarantee of the exact cached page. If the user has little history or few shared interactions, trending may be the only useful signal. See [tuning](docs/tuning.md) before changing weights.
 
----
+## For coding agents
 
-## License
+Package guidance is available in [AGENTS.md](AGENTS.md) and the [Laravel Recommender skill](skills/laravel-recommender/SKILL.md). Copy the skill into a consuming application's `.cursor/skills/` if desired.
 
-[MIT](LICENSE) © Solution Forest Limited
+[Changelog](CHANGELOG.md) · [Releases](https://github.com/solutionforest/laravel-recommender/releases) · [MIT license](LICENSE)

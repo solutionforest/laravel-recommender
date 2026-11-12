@@ -33,7 +33,7 @@ Human docs (prefer linking over pasting):
 1. **Install**
 
 ```bash
-composer require solutionforest/laravel-recommender:^0.0.13
+composer require solutionforest/laravel-recommender
 php artisan migrate
 ```
 
@@ -72,7 +72,7 @@ php artisan recommender:explain {feed} {userId}
 php artisan recommender:status
 ```
 
-Historical dumps: widen `scores_backfill_days` **or** clear `rec_item_scores` + `rec_state` watermark for that feed, then rebuild.
+Historical imports: set `scores_backfill_days` before the first run. For a later rebuild, follow the feed-scoped procedure in `docs/operations.md`; do not replay over existing scores.
 
 5. **Serve**
 

@@ -15,14 +15,11 @@ Go-live, storage, locks, FAQ, roadmap.
 | 7 | Schedule three jobs | See [reference](reference.md#background-jobs) |
 | 8 | Cache with locks (`redis` or `database`+`cache_locks`) + `queue:work --queue=recommender` | Build locks + warm builds |
 
-### Historical imports
+### Historical imports and score rebuilds
 
-Default `scores_backfill_days` is **30**. For years of imports:
+The first score run reads `scores_backfill_days` (default 30); later runs start at the stored watermark. Increasing the setting after a run does not revisit older events. Likewise, changing event weights or half-life does not recalculate past scores.
 
-1. Truncate `rec_item_scores` for that feed and delete `rec_state` key `scores:{feed}:watermark`, **or**
-2. Temporarily set large `scores_backfill_days` / `scores_slice_minutes`, run `update-scores`, then restore.
-
-Then rebuild neighbours with enough `history_days`.
+For a deliberate full rebuild of one feed, first back up the database, stop overlapping score updates for that feed, and set `scores_backfill_days` wide enough for the intended history. On the configured recommender database connection, delete only that feed's rows from `rec_item_scores` and the `rec_state` key `scores:{feed}:watermark` together in a transaction. Do not truncate the shared table or clear only the watermark: replaying onto existing scores double-counts events. Run `recommender:update-scores {feed}`, check its output and `status`, then restore the setting if desired. Rebuild neighbours separately with an appropriate `history_days`. Invalidate cached trending and affected user lists (or wait for their TTLs), and resume the schedule. Plan for load and a temporary loss of scores during the rebuild.
 
 ### Livewire / HTTP `Artisan::call`
 
@@ -38,10 +35,10 @@ Commands register outside CLI so Ops panels work. Prefer queued jobs in producti
 | Debug ranking | `recommender:explain posts 123` |
 | Health | `recommender:status` / `recommender:status posts` |
 | Rebuild similarities | `recommender:build-neighbours posts` |
-| Recompute trending from scratch | Truncate scores + clear watermark → `update-scores` |
+| Recompute scores | Follow the feed-scoped [rebuild procedure](#historical-imports-and-score-rebuilds) |
 | Neighbour memory guard | Retries with more shards; raise budget or lower `history_per_user` |
 
-Failures log as warnings; request falls back to trending.
+Source and build failures are logged and can fall back to trending. Other failures (for example a missing feed or card transformer) may still surface; check application logs.
 
 ## What is stored where
 
@@ -73,7 +70,7 @@ Crash mid-slice: watermark / version activation → resume cleanly, no double-co
 
 | Path | Behaviour |
 |---|---|
-| HTTP `page()` | O(page) |
+| HTTP `page()` | Cache reads plus card queries; a cache miss can trigger a full feed build |
 | `update-scores` | one time slice |
 | `build-neighbours` | shards; abort/retry under memory budget |
 | `prune` | `delete_chunk` id lists |
@@ -84,7 +81,7 @@ Tight host: lower `history_*`, raise shards, shorten `scores_slice_minutes`.
 
 | Part | Grows with | At 100× |
 |---|---|---|
-| Request | nothing | same cache + optional PK card fetch |
+| Request | cache state and page size | cache reads, card fetches, and occasional feed builds |
 | Feed build | active users | more builds, same size each |
 | `update-scores` | events / 10 min | bigger slices |
 | `build-neighbours` | users × capped history | more shards |
@@ -135,7 +132,7 @@ Freshness too high, or peer source matches multi-segment writers. See [tuning](t
 Neighbours never built / history short / `neighbours_min_co_count` too high.
 
 **Imported old events, still empty?**  
-`scores_backfill_days` default 30 — widen or reset watermark.
+The initial window defaults to 30 days. Widen it before the first run, or follow the feed-scoped rebuild procedure above.
 
 **Infinite feed?**  
 No — long pool then `hasMore` false / seen recycle. Catalog tail is app-side (`InfiniteScrollFeed`).

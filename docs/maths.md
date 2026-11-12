@@ -2,7 +2,7 @@
 
 This page is the **formulas** behind recommendation — not a separate product feature.
 
-Plain-language pipeline first: [README → How we recommend](../README.md#how-we-recommend) and [How it works](how-it-works.md).
+Plain-language pipeline first: [README → How it fits together](../README.md#how-it-fits-together) and [How it works](how-it-works.md).
 
 Not a black-box neural ranker. Classic, explainable ideas you can show with `recommender:explain`.
 
@@ -58,7 +58,7 @@ Then scale so the best candidate in the batch is `1.0`.
 ## 4. Blend, explore, diversify
 
 - **Blend:** scores ÷ source max → `Σ weight · score`.
-- **Explore:** ~`exploration_ratio` slots from `exploration_sources`.
+- **Explore:** interleave according to `exploration_ratio` when `exploration_sources` are configured (none are configured by default).
 - **Diversify:** greedy cap per group; overflow to later pages.
 
 ## 5. Helpers for your custom sources (`Math`)

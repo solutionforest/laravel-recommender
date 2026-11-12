@@ -20,7 +20,7 @@ Human docs live under [`docs/`](docs/). Prefer linking there over pasting walls 
 
 ## When working in a **consuming Laravel app**
 
-1. `composer require solutionforest/laravel-recommender:^0.0.13` → `php artisan migrate`
+1. `composer require solutionforest/laravel-recommender` → `php artisan migrate`
 2. `php artisan recommender:make-feed` (interactive wizard) or `… posts -n` — then tweak scaffolded classes if needed
 3. `recommender:update-scores` → `build-neighbours` → `explain {feed} {userId}`
 4. Serve with `Recommender::page()` → `toPaginator()` / `toPaginatorArray()`
@@ -42,7 +42,7 @@ Do **not** invent an external ML service for this package’s job. Prefer packag
 - `sources` → blend pool · `boosters` → re-rank in-pool · `exploration_ratio` → reserved explore slots  
 - After changes: `Recommender::forgetUser` / `forgetTrending`
 
-Historical imports: widen `scores_backfill_days` or clear watermark + scores, then rebuild neighbours.
+Historical imports: set `scores_backfill_days` before the first score run. For an existing feed, follow the feed-scoped rebuild procedure in `docs/operations.md`.
 
 ---
 
