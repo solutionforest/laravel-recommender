@@ -403,6 +403,7 @@ composer analyse
 | `tests/Feature/DatabaseInteractionsTest.php` | table-driven interactions: UUIDs, per-table columns, user chunk paging |
 | `tests/Feature/DashboardTest.php` | dashboard gate, health/checks/trending/explain, `recommender:doctor` |
 | `tests/Feature/StressTest.php` | **volume**: 100k events / 2k users / 1k items — exact counts, bounded memory & queries, constant serving cost · **frequency**: per-minute score runs with bursts and boundary events (no loss, no double count), rapid-fire paging (no repeats, throttled rebuilds), edits between requests |
+| `tests/Feature/HeavyStressTest.php` | **heavy, opt-in** (`RECOMMENDER_HEAVY=1 vendor/bin/pest --group=heavy`, ~13 min on SQLite): 1M views / likes / shares from 500k users inside 10 minutes, then live bursts while scores update, the neighbour graph rebuilds and members load feeds. Fails on any exception, any warning-or-worse log line, a wrong count, a repeated item or runaway queries / memory |
 
 Stress tests run in the normal suite (~10 s on SQLite). Run them alone or bigger with `RECOMMENDER_STRESS_SCALE=5 vendor/bin/pest --group=stress`.
 
