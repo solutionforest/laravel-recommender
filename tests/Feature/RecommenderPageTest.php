@@ -89,6 +89,14 @@ it('tops up with trending when the personal list runs out', function () {
     expect(Recommender::page('reviews', 7, 1)->ids)->toBe([11, 90, 91]);
 });
 
+it('re-filters trending top-ups for the signed-in user', function () {
+    StaticSource::$scores = [11 => 1.0];
+    ArrayFilter::$hidden = [90];
+    seedTrending([90, 91, 92, 93]);
+
+    expect(Recommender::page('reviews', 7, 1)->ids)->toBe([11, 91, 92]);
+});
+
 it('falls back to trending when every source fails', function () {
     StaticSource::$throw = true;
     seedTrending([90, 91, 92, 93]);

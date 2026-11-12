@@ -123,13 +123,16 @@ class Recommender
 
         if (count($unseen) < $perPage + 1) {
             // Personal list (nearly) exhausted: continue with trending.
-            $have = array_flip($unseen);
-            foreach ($this->trending($feedName, $attributes) as $id) {
-                if (! isset($seenSet[$id]) && ! isset($have[$id])) {
-                    $unseen[] = $id;
-                    $have[$id] = true;
-                }
-            }
+            // Shared trending is built without a userId, so re-apply the
+            // feed filter (e.g. hide the viewer's own posts) before merging.
+            $unseen = $this->appendAllowed(
+                $feed,
+                $userId,
+                $unseen,
+                $this->trending($feedName, $attributes),
+                $seenSet,
+                $attributes,
+            );
             if ($ids === []) {
                 $origin = 'trending';
             }
@@ -137,16 +140,15 @@ class Recommender
 
         if ($page === 1 && count($unseen) < $perPage) {
             // Never show an empty first screen: allow previously seen items.
-            $have = array_flip($unseen);
-            foreach (array_merge($ids, $this->trending($feedName, $attributes)) as $id) {
-                if (count($unseen) >= $perPage) {
-                    break;
-                }
-                if (! isset($have[$id])) {
-                    $unseen[] = $id;
-                    $have[$id] = true;
-                }
-            }
+            $unseen = $this->appendAllowed(
+                $feed,
+                $userId,
+                $unseen,
+                array_merge($ids, $this->trending($feedName, $attributes)),
+                [],
+                $attributes,
+                $perPage,
+            );
         }
 
         [$cards, $servedIds, $consumed] = $this->render($feed, $unseen, $perPage);
@@ -460,6 +462,52 @@ class Recommender
             'blended' => $blended,
             'exploration' => array_keys($exploration),
         ];
+    }
+
+    /**
+     * Append candidate ids that pass the feed filter and are not already queued.
+     *
+     * @param  list<int|string>  $unseen
+     * @param  list<int|string>  $candidates
+     * @param  array<int|string, mixed>  $exclude
+     * @param  array<string, mixed>  $attributes
+     * @return list<int|string>
+     */
+    private function appendAllowed(
+        FeedDefinition $feed,
+        int|string $userId,
+        array $unseen,
+        array $candidates,
+        array $exclude,
+        array $attributes,
+        ?int $limit = null,
+    ): array {
+        $have = array_flip($unseen);
+        $pending = [];
+        foreach ($candidates as $id) {
+            if (isset($exclude[$id]) || isset($have[$id])) {
+                continue;
+            }
+            $pending[] = $id;
+            $have[$id] = true;
+        }
+        if ($pending === []) {
+            return $unseen;
+        }
+
+        $context = new Context($feed, $userId, [], $attributes, CarbonImmutable::now());
+        $allowed = array_flip($this->allowed($context, $pending));
+
+        foreach ($pending as $id) {
+            if ($limit !== null && count($unseen) >= $limit) {
+                break;
+            }
+            if (isset($allowed[$id])) {
+                $unseen[] = $id;
+            }
+        }
+
+        return $unseen;
     }
 
     /**
