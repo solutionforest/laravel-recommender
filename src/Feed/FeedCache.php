@@ -196,23 +196,20 @@ final class FeedCache
         $this->store()->forget($this->key($feed, 'trending'));
     }
 
+    /** Whether the configured cache store can provide atomic locks. */
+    public function supportsLocks(): bool
+    {
+        return $this->lockProvider() !== null;
+    }
+
     public function lock(FeedDefinition $feed, int|string $userId): Lock
     {
-        $store = $this->store();
         $seconds = $feed->int('build_lock_seconds', 10);
         $name = $this->key($feed, "lock:{$userId}");
+        $provider = $this->lockProvider();
 
-        // Laravel 11+ Repository is not a LockProvider; locks live on the inner store
-        // (Redis / database / array). Older wrappers may still implement LockProvider.
-        if ($store instanceof LockProvider) {
-            return $store->lock($name, $seconds);
-        }
-
-        if ($store instanceof CacheRepository) {
-            $inner = $store->getStore();
-            if ($inner instanceof LockProvider) {
-                return $inner->lock($name, $seconds);
-            }
+        if ($provider !== null) {
+            return $provider->lock($name, $seconds);
         }
 
         // Tradeoff: stores with no LockProvider still serve feeds; concurrent rebuilds
@@ -223,6 +220,26 @@ final class FeedCache
         ]);
 
         return new UnlockedBuildLock;
+    }
+
+    private function lockProvider(): ?LockProvider
+    {
+        $store = $this->store();
+
+        // Laravel 11+ Repository is not a LockProvider; locks live on the inner store
+        // (Redis / database / array). Older wrappers may still implement LockProvider.
+        if ($store instanceof LockProvider) {
+            return $store;
+        }
+
+        if ($store instanceof CacheRepository) {
+            $inner = $store->getStore();
+            if ($inner instanceof LockProvider) {
+                return $inner;
+            }
+        }
+
+        return null;
     }
 
     public function key(FeedDefinition $feed, string $suffix): string

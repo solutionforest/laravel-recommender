@@ -15,6 +15,10 @@ it('runs the maintenance commands', function () {
     $this->artisan('recommender:update-scores')->assertSuccessful();
     $this->artisan('recommender:build-neighbours', ['feed' => 'reviews'])->assertSuccessful();
     $this->artisan('recommender:explain', ['feed' => 'reviews', 'user' => 1])->assertSuccessful();
+    $this->artisan('recommender:status', ['feed' => 'reviews'])
+        ->expectsOutputToContain('Feed [reviews]')
+        ->expectsOutputToContain('scores watermark')
+        ->assertSuccessful();
 
     expect(DB::table('rec_item_scores')->count())->toBe(2)
         ->and(DB::table('rec_item_neighbours')->count())->toBe(2);

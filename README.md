@@ -441,7 +441,7 @@ Useful package upgrades suggested by that experience (not all shipped yet):
 3. **Backfill helpers** — e.g. `update-scores --from=2022-01-01` / `--slice=1d` without hand-editing watermark keys.
 4. **Explain shows weighted contributions** (not only raw per-source scores) and flags empty sources.
 5. **Optional built-in `FreshnessBooster`** (age from an item table callback) so apps do not reimplement decay.
-6. **Health metrics** — neighbour coverage %, score watermark lag, cold-build p95.
+6. **Richer health** — cold-build p95 / neighbour coverage % beyond `recommender:status`.
 
 ---
 
@@ -584,7 +584,8 @@ gantt
 | `recommender:update-scores` | events since the watermark | `rec_item_scores` | Works in **time slices** (`scores_slice_minutes`). Each slice's bulk upserts and its watermark commit in **one transaction**. Memory is bounded by the items touched in one slice. After a crash it resumes after the last committed slice, and **no event is ever counted twice**. |
 | `recommender:build-neighbours` | `history_days` of history, at most `history_per_user` items per user | `rec_item_neighbours` | Pairs are counted in **shards**: only 1/S of the items are in memory at once. Over `neighbours_memory_limit_mb`, the build restarts with 2×S shards, and the shard count that worked is remembered. Rows are bulk inserted under a new version that is **activated atomically**. Old versions are deleted in chunks. |
 | `recommender:prune` | `rec_item_scores` | deletes | Removes rows with no event for `scores_retention_days`, in primary-key chunks (`delete_chunk`). |
-| `recommender:explain {feed} {user?}` | – | – | Debugging |
+| `recommender:explain {feed} {user?}` | – | – | Debugging: per-source score breakdown |
+| `recommender:status {feed?}` | package tables + `rec_state` | – | Ops health: watermark lag, score/neighbour row counts, cache lock support |
 
 The warm-up job `Jobs\BuildFeed` runs on the `recommender` queue and is `ShouldBeUnique` per feed and user. Give it its own worker so recommendation work never delays other jobs:
 
@@ -735,6 +736,7 @@ Sources run your SQL, so make sure they read the newest N rows through an index 
 | Flush everything cached | Delete keys `rec:*` (or your prefix) |
 | Reset one user | `Recommender::forgetUser('posts', $id)` |
 | Debug a ranking | `php artisan recommender:explain posts 123` |
+| Check watermarks / table health | `php artisan recommender:status` / `recommender:status posts` |
 | Rebuild similarities now | `php artisan recommender:build-neighbours posts` |
 | Recompute trending from scratch | Truncate `rec_item_scores`, delete `rec_state` key `scores:{feed}:watermark`, run `update-scores` |
 | Neighbour job hits the memory guard | It retries with more shards on its own. If it reaches `neighbours_max_shards`, raise the budget or lower `history_per_user`. The previous version stays active. |
