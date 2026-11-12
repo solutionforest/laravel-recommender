@@ -24,7 +24,7 @@ Human docs (prefer linking over pasting):
 | `…/docs/tuning.md` | Weight recipes |
 | `…/docs/operations.md` | Go-live / FAQ |
 | `…/AGENTS.md` | Short agent rules |
-| `…/examples/blog` | Reference implementation |
+| `…/examples/` | `blog` · `products` (view/like/purchase) · `reviews` (+ PetTypeMatchSource) |
 
 ---
 
@@ -33,7 +33,7 @@ Human docs (prefer linking over pasting):
 1. **Install**
 
 ```bash
-composer require solutionforest/laravel-recommender:^0.0.9
+composer require solutionforest/laravel-recommender:^0.0.10
 php artisan migrate
 ```
 

@@ -7,6 +7,13 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.0.10] — 2026-11-12
+
+### Added
+- `examples/products` — catalog feed with **three events** (`view` / `like` / `purchase`) + Pest test
+- `examples/reviews` — shop reviews + `PetTypeMatchSource` custom rule + Pest test
+- `examples/README.md` — index of all samples
+
 ## [0.0.9] — 2026-11-12
 
 ### Changed
@@ -70,7 +77,8 @@ This project uses [Semantic Versioning](https://semver.org/).
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.9...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.10...HEAD
+[0.0.10]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.10
 [0.0.9]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.9
 [0.0.8]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.8
 [0.0.7]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.7

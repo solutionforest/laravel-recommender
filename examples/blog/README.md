@@ -2,6 +2,8 @@
 
 Minimal integration: likes + views → recommended posts. Covered by [`BlogExampleTest`](../../tests/Feature/BlogExampleTest.php).
 
+Also see: [`../products`](../products/) (three events) · [`../reviews`](../reviews/) (custom sources) · [index](../README.md).
+
 **First time with the package?** Start at [docs/getting-started.md](../../docs/getting-started.md), then come back here to copy files.
 
 ```mermaid

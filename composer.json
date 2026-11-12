@@ -42,7 +42,9 @@
     "autoload-dev": {
         "psr-4": {
             "SolutionForest\\Recommender\\Tests\\": "tests/",
-            "SolutionForest\\Recommender\\Examples\\Blog\\": "examples/blog/src/"
+            "SolutionForest\\Recommender\\Examples\\Blog\\": "examples/blog/src/",
+            "SolutionForest\\Recommender\\Examples\\Products\\": "examples/products/src/",
+            "SolutionForest\\Recommender\\Examples\\Reviews\\": "examples/reviews/src/"
         }
     },
     "extra": {

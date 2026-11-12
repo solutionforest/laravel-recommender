@@ -14,13 +14,13 @@ Human docs live under [`docs/`](docs/). Prefer linking there over pasting walls 
 | [docs/operations.md](docs/operations.md) | Go-live / FAQ / scale |
 | [docs/maths.md](docs/maths.md) | How we score (formulas) |
 | [skills/laravel-recommender/SKILL.md](skills/laravel-recommender/SKILL.md) | Cursor skill for **consuming apps** |
-| [examples/blog](examples/blog) | Reference feed |
+| [examples/](examples/) | Samples: `blog`, `products` (3 events), `reviews` (+ pet match) |
 
 ---
 
 ## When working in a **consuming Laravel app**
 
-1. `composer require solutionforest/laravel-recommender:^0.0.9` → `php artisan migrate`
+1. `composer require solutionforest/laravel-recommender:^0.0.10` → `php artisan migrate`
 2. `php artisan recommender:make-feed {name}` — then edit the three scaffolded classes to match real tables
 3. `recommender:update-scores` → `build-neighbours` → `explain {feed} {userId}`
 4. Serve with `Recommender::page()` → `toPaginator()` / `toPaginatorArray()`
