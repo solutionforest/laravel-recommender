@@ -1,5 +1,9 @@
 # Upgrade guide
 
+## From 0.4.x to 0.5.0
+
+Nothing to change. Optional: replace hand-tuned `sources` / `boosters` / `events` with `'preset' => 'catalog' | 'social' | 'events'` and keep only the keys you really changed. `make-feed` now writes a `preset` line for the blog / products / events / reviews wizard presets.
+
 ## From 0.3.x to 0.4.0
 
 1. Run `php artisan migrate` — adds `impressions` / `last_shown_at` to `rec_item_scores` and the `rec_item_daily` table.

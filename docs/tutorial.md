@@ -17,6 +17,12 @@ One table per interaction type, each with a user id, an item id, a timestamp and
 
 ```bash
 composer require solutionforest/laravel-recommender
+php artisan recommender:bootstrap posts      # everything below in one go: migrate, register, build, check
+```
+
+Or step by step:
+
+```bash
 php artisan vendor:publish --tag=recommender-config
 php artisan migrate
 ```
@@ -30,6 +36,7 @@ Add the feed to `config/recommender.php`:
 ```php
 'feeds' => [
     'posts' => [
+        'preset' => 'social',   // optional: catalog | social | events
         'model' => App\Models\Post::class,
         'interactions' => [
             'post_likes' => 'like',
@@ -38,6 +45,8 @@ Add the feed to `config/recommender.php`:
     ],
 ],
 ```
+
+A **preset** sets sources, boosters, event weights, decay and exploration for a kind of product; anything you add to the feed overrides it. See [presets](reference.md#presets).
 
 The item column defaults to `{model}_id` (`post_id`); set `item_column`, `user_column` or `timestamp_column` if yours differ, or override per table: `'bookmarks' => ['event' => 'like', 'item' => 'bookmarkable_id']`.
 

@@ -34,9 +34,12 @@ Requires PHP 8.3+ and Laravel 11, 12, or 13. In an existing Laravel app with a `
 
 ```bash
 composer require solutionforest/laravel-recommender
-php artisan migrate
-php artisan recommender:make-feed posts
+php artisan recommender:bootstrap posts
 ```
+
+`bootstrap` migrates, runs the `make-feed` wizard, builds the first scores and similar items, checks everything with `doctor` and prints the route to add:
+
+![recommender:bootstrap](art/screenshots/terminal-bootstrap.png)
 
 The wizard asks for your model and interaction tables, registers a config-only feed and prints two optional model methods to paste. (Prefer classes for custom queries? Add `--classes`.) If each interaction table has `user_id`, `post_id` and `created_at`, this is the whole feed it writes:
 
@@ -44,6 +47,7 @@ The wizard asks for your model and interaction tables, registers a config-only f
 // config/recommender.php
 'feeds' => [
     'posts' => [
+        'preset' => 'social',   // catalog | social | events — sensible weights in one line
         'model' => App\Models\Post::class,
         'interactions' => ['post_likes' => 'like', 'post_views' => 'view'],
     ],

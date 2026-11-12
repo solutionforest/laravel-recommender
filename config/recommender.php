@@ -156,11 +156,65 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Presets
+    |--------------------------------------------------------------------------
+    | Sensible weights for a kind of product, picked with 'preset' => '…' on a
+    | feed. Order: package defaults < 'defaults' < preset < the feed's own keys,
+    | so anything you set on the feed still wins. Add your own here.
+    */
+    'presets' => [
+        // Shops / catalogs: purchases matter most, slower decay, little exploration.
+        'catalog' => [
+            'sources' => [
+                \SolutionForest\Recommender\Sources\CoInteractionSource::class => 0.55,
+                \SolutionForest\Recommender\Sources\TrendingSource::class => 0.35,
+            ],
+            'boosters' => [\SolutionForest\Recommender\Boosters\QualityBooster::class => 0.20],
+            'exploration_sources' => [\SolutionForest\Recommender\Sources\TrendingSource::class],
+            'exploration_ratio' => 0.05,
+            'events' => ['view' => 1.0, 'like' => 4.0, 'cart' => 6.0, 'purchase' => 10.0],
+            'positive_events' => ['like', 'cart', 'purchase'],
+            'exposure_events' => ['view'],
+            'half_life_days' => 14,
+        ],
+        // Posts / UGC / reviews: fast decay, more discovery, comments and shares count.
+        'social' => [
+            'sources' => [
+                \SolutionForest\Recommender\Sources\CoInteractionSource::class => 0.50,
+                \SolutionForest\Recommender\Sources\TrendingSource::class => 0.30,
+            ],
+            'boosters' => [\SolutionForest\Recommender\Boosters\QualityBooster::class => 0.15],
+            'exploration_sources' => [\SolutionForest\Recommender\Sources\TrendingSource::class],
+            'exploration_ratio' => 0.10,
+            'events' => ['view' => 1.0, 'like' => 4.0, 'comment' => 6.0, 'share' => 8.0],
+            'positive_events' => ['like', 'comment', 'share'],
+            'exposure_events' => ['view'],
+            'half_life_days' => 3,
+        ],
+        // Time-bound items (events, deals): joins matter most, quick decay.
+        'events' => [
+            'sources' => [
+                \SolutionForest\Recommender\Sources\CoInteractionSource::class => 0.50,
+                \SolutionForest\Recommender\Sources\TrendingSource::class => 0.35,
+            ],
+            'boosters' => [\SolutionForest\Recommender\Boosters\QualityBooster::class => 0.15],
+            'exploration_sources' => [\SolutionForest\Recommender\Sources\TrendingSource::class],
+            'exploration_ratio' => 0.08,
+            'events' => ['view' => 1.0, 'like' => 4.0, 'join' => 10.0],
+            'positive_events' => ['like', 'join'],
+            'exposure_events' => ['view'],
+            'half_life_days' => 5,
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Feeds
     |--------------------------------------------------------------------------
     | Simplest feed — no classes needed:
     |
     | 'posts' => [
+    |     'preset' => 'social',            // optional: catalog | social | events
     |     'model' => \App\Models\Post::class,
     |     'interactions' => ['post_likes' => 'like', 'post_views' => 'view'],
     | ],

@@ -21,7 +21,7 @@ Human docs live under [`docs/`](docs/). Prefer linking there over pasting walls 
 
 ## When working in a **consuming Laravel app**
 
-1. `composer require solutionforest/laravel-recommender` → `php artisan migrate`
+1. `composer require solutionforest/laravel-recommender` → `php artisan recommender:bootstrap {feed}` (migrate + register + build + doctor), or `php artisan migrate` and continue below
 2. Simplest: config-only feed — `'model' => Post::class, 'interactions' => ['post_likes' => 'like', …]` (see `examples/simple`). `php artisan recommender:make-feed posts` writes it for you; `--classes` scaffolds InteractionSource / ItemFilter / CardTransformer for custom queries
 3. `recommender:doctor` → `update-scores` → `build-neighbours` → `explain {feed} {userId}`; watch `/recommender`; `Recommender::stats($feed, $item)` for per-item quality
 4. Serve with `recommendations('posts', $request->user())` (or `Recommender::page()`) — return it directly for paginator JSON
@@ -40,7 +40,9 @@ Do **not** invent an external ML service for this package’s job. Prefer packag
 
 - `events` map is **any** event names (`view` / `like` / `share` / …) → trending hot; `positive_events` / `exposure_events` for quality  
 
+- `preset` → `catalog` / `social` / `events` sets sources, boosters, events, decay, exploration (feed keys override)
 - `sources` → blend pool · `boosters` → re-rank in-pool · `exploration_ratio` → reserved explore slots  
+- `tail` (default on) → newest items after ranked + trending · `impressions` (opt-in) → quality = positive ÷ shown  
 - After changes: `Recommender::forgetUser` / `forgetTrending`
 
 Historical imports: set `scores_backfill_days` before the first score run. For an existing feed, run `recommender:rebuild-scores {feed} --days=…` (dry run first).

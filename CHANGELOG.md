@@ -7,6 +7,21 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-11-12
+
+Even less setup: one command from `composer require` to a working feed, and sensible weights in one line.
+
+### Added
+- `php artisan recommender:bootstrap {feed}` — migrate → `make-feed` → first `update-scores` / `build-neighbours` → `doctor` → prints the route, dashboard and schedule lines; non-zero exit when a check fails
+- **Named presets**: `'preset' => 'catalog' | 'social' | 'events'` sets sources, boosters, event weights, half-life and exploration; order defaults < `defaults` < preset < feed; add your own under `presets`; unknown names fail with the available list
+- `make-feed` writes the matching preset (blog / reviews → social, products → catalog, events → events)
+
+### Changed
+- Dashboard uses the project logo and its green palette (light and dark)
+
+### Fixed
+- `make-feed` no longer mistakes a trailing `// ['shop' => …]` comment in the config for an existing feed
+
 ## [0.4.0] — 2026-11-12
 
 Better signals: count what users were actually shown, and see whether an item is getting better or worse. **Run `php artisan migrate`.**
@@ -213,7 +228,8 @@ First minor release: a feed is now **configuration only** — tell the package w
 [0.0.2]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.2
 [0.0.1]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.1
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.1.1...v0.2.0

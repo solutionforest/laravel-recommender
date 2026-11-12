@@ -138,3 +138,20 @@ it('registers a config-only feed by default as valid config', function () {
         ->and($feed)->not->toHaveKey('cards')
         ->and($feed['positive_events'])->toBe(['like', 'purchase']);
 });
+
+it('writes a named preset for known kinds and explicit weights for custom feeds', function () {
+    $files = app(\Illuminate\Filesystem\Filesystem::class);
+    $files->delete(config_path('recommender.php'));
+
+    $this->artisan('recommender:make-feed', ['name' => 'posts', '--preset' => 'blog', '--no-interaction' => true])->assertSuccessful();
+    $this->artisan('recommender:make-feed', ['name' => 'things', '--preset' => 'custom', '--model' => 'App\\Models\\Thing', '--no-interaction' => true])->assertSuccessful();
+
+    $feeds = (require config_path('recommender.php'))['feeds'];
+    expect($feeds['posts']['preset'])->toBe('social')
+        ->and($feeds['posts'])->not->toHaveKey('sources')
+        ->and($feeds['things'])->not->toHaveKey('preset')
+        ->and(array_keys($feeds['things']['sources']))->toBe([
+            \SolutionForest\Recommender\Sources\CoInteractionSource::class,
+            \SolutionForest\Recommender\Sources\TrendingSource::class,
+        ]);
+});

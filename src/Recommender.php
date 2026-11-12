@@ -52,12 +52,35 @@ class Recommender
             throw new InvalidArgumentException("Recommender feed [{$name}] is not configured.");
         }
 
-        // Package defaults < app 'defaults' < feed config. Merged here (not only
-        // via mergeConfigFrom, which is shallow) so a published config file
-        // that lists only a few defaults still gets every key.
+        // Package defaults < app 'defaults' < preset < feed config. Merged here
+        // (not only via mergeConfigFrom, which is shallow) so a published config
+        // file that lists only a few defaults still gets every key.
         $defaults = array_replace(self::packageDefaults(), (array) config('recommender.defaults', []));
+        $feed = (array) $feeds[$name];
 
-        return $this->definitions[$name] = FeedDefinition::make($name, $defaults, (array) $feeds[$name]);
+        if (isset($feed['preset']) && $feed['preset'] !== '') {
+            $presets = $this->presets();
+            $preset = is_string($feed['preset']) ? $feed['preset'] : '';
+            if (! isset($presets[$preset])) {
+                throw new InvalidArgumentException("Recommender feed [{$name}] uses unknown preset [{$preset}]. Available: ".implode(', ', array_keys($presets)).'.');
+            }
+            $defaults = array_replace($defaults, (array) $presets[$preset]);
+        }
+
+        return $this->definitions[$name] = FeedDefinition::make($name, $defaults, $feed);
+    }
+
+    /**
+     * Package presets, overridden / extended by the app's `presets`.
+     *
+     * @return array<string, mixed>
+     */
+    public function presets(): array
+    {
+        static $package = null;
+        $package ??= (array) ((require __DIR__.'/../config/recommender.php')['presets'] ?? []);
+
+        return array_replace($package, (array) config('recommender.presets', []));
     }
 
     /**
