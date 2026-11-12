@@ -23,7 +23,7 @@ final class FeedPage implements JsonSerializable, Responsable
     /**
      * @param  list<array<string, mixed>>  $items  cards in display order
      * @param  list<int|string>  $ids  ids of $items in display order
-     * @param  string  $origin  'personal' | 'trending'
+     * @param  string  $origin  'personal' | 'trending' | 'tail'
      */
     public function __construct(
         public readonly array $items,
@@ -75,6 +75,39 @@ final class FeedPage implements JsonSerializable, Responsable
         return $this->toPaginator($options)->toArray() + [
             'origin' => $this->origin,
             'has_more' => $this->hasMore,
+            'next_cursor' => $this->nextCursor(),
+        ];
+    }
+
+    /**
+     * Token for the next page (`?cursor=…`), or null at the end.
+     */
+    public function nextCursor(): ?string
+    {
+        return $this->hasMore ? Cursor::encode($this->page + 1) : null;
+    }
+
+    /**
+     * Cursor-paginator JSON shape (like Laravel's `cursorPaginate()`), for
+     * infinite-scroll clients that follow `next_cursor`.
+     *
+     * @return array<string, mixed>
+     */
+    public function toCursorArray(?string $path = null): array
+    {
+        $path ??= Paginator::resolveCurrentPath();
+        $next = $this->nextCursor();
+
+        return [
+            'data' => $this->items,
+            'path' => $path,
+            'per_page' => $this->perPage,
+            'next_cursor' => $next,
+            'next_page_url' => $next === null ? null : $path.'?cursor='.$next,
+            'prev_cursor' => null,
+            'prev_page_url' => null,
+            'origin' => $this->origin,
+            'has_more' => $this->hasMore,
         ];
     }
 
@@ -83,7 +116,7 @@ final class FeedPage implements JsonSerializable, Responsable
      */
     public function jsonSerialize(): array
     {
-        return $this->toPaginatorArray();
+        return Cursor::requested() ? $this->toCursorArray() : $this->toPaginatorArray();
     }
 
     /**
@@ -91,6 +124,10 @@ final class FeedPage implements JsonSerializable, Responsable
      */
     public function toResponse($request): JsonResponse
     {
+        if (is_string($request->query('cursor'))) {
+            return new JsonResponse($this->toCursorArray($request->url()));
+        }
+
         return new JsonResponse($this->toPaginatorArray([
             'path' => $request->url(),
             'query' => $request->query(),

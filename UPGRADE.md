@@ -1,5 +1,11 @@
 # Upgrade guide
 
+## From 0.2.x to 0.3.0
+
+- Feeds with a `model` now continue past ranked and trending items with the newest items your `recommendable` scope allows, so `has_more` stays `true` longer. To keep the old cut-off set `'tail' => false` on the feed (or in `defaults`).
+- Paginator JSON gains a `next_cursor` key; responses to `?cursor=` requests use the cursor-paginator shape.
+- If you copied the blog example's `InfiniteScrollFeed`, you can delete it.
+
 ## From 0.1.x to 0.2.0
 
 Nothing to change in your app.

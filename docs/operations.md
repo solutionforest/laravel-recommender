@@ -165,18 +165,16 @@ Neighbours never built / history short / `neighbours_min_co_count` too high.
 The initial window defaults to 30 days. Widen it before the first run, or run `recommender:rebuild-scores {feed} --days=…`.
 
 **Infinite feed?**  
-No — long pool then `hasMore` false / seen recycle. Catalog tail is app-side (`InfiniteScrollFeed`).
+Yes for feeds with a `model`: ranked items, then trending, then the newest items the `recommendable` scope allows (`'tail' => true`, the default), until the catalog is exhausted. Clients can follow `next_cursor`. Personal paging skips the seen-set, so raise `seen_max` if users scroll through more than ~200 items in `seen_ttl`.
 
 ## Roadmap / wishlist
 
-Done in 0.1 / 0.2: config-only feeds, dashboard + `doctor`, guided `rebuild-scores`, explain with final / cached positions, card invalidation on model save, ids with commas, a config-only `make-feed`, per-item `stats()` (quality / popularity).
+Done in 0.1–0.3: catalog tail and cursor pagination (0.3); config-only feeds, dashboard + `doctor`, guided `rebuild-scores`, explain with final / cached positions, card invalidation on model save, ids with commas, a config-only `make-feed`, per-item `stats()` (quality / popularity).
 
 Next, in order:
 
 | Item | Plan |
 |---|---|
-| Catalog tail | Optional `tail` on a feed with a `model`: when the personal list and trending run out, continue with the newest recommendable items (cursor on `created_at`, skipping the seen-set), replacing the app-side `InfiniteScrollFeed`. |
-| Cursor pagination | `FeedPage::nextCursor()` / `toCursorPaginator()`: an opaque cursor (`origin` + offset for trending, `seen` position for personal lists) so infinite-scroll clients stop depending on page numbers. |
 | Impressions | Record "shown but not clicked": `page()` already marks served ids as seen; add an opt-in `impression` event written in bulk from the seen-set so `exposure_events` can use real exposures instead of views. |
 | `recommender:bootstrap` | One command for a new app: publish config → `make-feed` → migrate → first `update-scores` / `build-neighbours` → `doctor`. |
 | Named presets | `'preset' => 'catalog' / 'social' / 'events'` on a feed to set sensible weights, events and exploration in one key. |
@@ -185,5 +183,4 @@ Next, in order:
 ## Limitations
 
 - No impressions yet
-- No cursor API yet
 - Item-to-item collaborative filtering out of the box (add other models as sources)

@@ -88,6 +88,11 @@ return [
         // Rendered card cache
         'card_ttl' => 3600,
 
+        // Catalog tail (feeds with a 'model'): when ranked and trending items
+        // run out, keep serving the newest items the recommendable scope allows.
+        'tail' => true,
+        'tail_order' => null,        // column, default: created_at (or the key)
+
         // Protection against duplicate concurrent builds for the same user
         'build_lock_seconds' => 10,
         'build_lock_wait' => 2,

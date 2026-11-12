@@ -128,6 +128,19 @@ Recommender::trending('posts');
 Recommender::explain('posts', $userId);    // see "Explain" below
 ```
 
+### Infinite scroll: catalog tail and cursors
+
+For a feed with a `model`, a page continues seamlessly: **ranked items → trending → the newest items the `recommendable` scope allows**, never repeating what the user has seen, until the catalog is exhausted (`has_more: false`). Pages made only of catalog items have `origin: 'tail'`. Turn it off with `'tail' => false`; order it by another column with `'tail_order' => 'published_at'`.
+
+Every response has a `next_cursor`. Infinite-scroll clients can follow it instead of counting pages:
+
+```text
+GET /posts/recommended               → { data, current_page, …, next_cursor: "eyJwIjoyfQ" }
+GET /posts/recommended?cursor=eyJwIjoyfQ → { data, path, per_page, next_cursor, next_page_url, prev_cursor, origin, has_more }
+```
+
+With `?cursor=` the response uses Laravel's cursor-paginator shape. `FeedPage::nextCursor()` / `toCursorArray()` give the same in PHP. Page numbers keep working.
+
 ### How good is an item?
 
 ```php
@@ -230,6 +243,7 @@ Per feed (defaults, overridable in `feeds.*`):
 | `trending_sources` | `[TrendingSource => 1]` | guest / fallback |
 | `trending_size` / `trending_ttl` | 200 / 600 | shared list |
 | `card_ttl` | 3600 | card cache |
+| `tail` / `tail_order` | `true` / created_at | catalog tail after ranked + trending items (feeds with a `model`) |
 | `build_lock_seconds` / `build_lock_wait` | 10 / 2 | per-user build lock |
 | `sources` | `CoInteractionSource` 0.6, `TrendingSource` 0.4 | `class => weight` |
 | `boosters` | – | `class => weight` |
