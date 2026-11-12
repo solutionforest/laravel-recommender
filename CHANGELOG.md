@@ -7,6 +7,10 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.5.1] — 2026-11-12
+
+Docs only.
+
 ### Removed
 - `docs/improvements.md` (the improvement proposals page): all items shipped in 0.2–0.5, so it is removed along with its README link. Open ideas stay in [operations → roadmap](docs/operations.md#roadmap--open-ideas)
 
@@ -231,7 +235,8 @@ First minor release: a feed is now **configuration only** — tell the package w
 [0.0.2]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.2
 [0.0.1]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.1
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/solutionforest/laravel-recommender/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.2.0...v0.3.0
