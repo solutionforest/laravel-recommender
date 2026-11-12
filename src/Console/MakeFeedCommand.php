@@ -128,7 +128,7 @@ class MakeFeedCommand extends Command
 
         if (! $this->option('classes')) {
             $this->ensureConfigPublished();
-            $this->registerFeed($feed, $this->configOnlyBindings($modelFqcn, $tables, $itemColumn), $eventsConfig, $positive);
+            $this->registerFeed($feed, $this->configOnlyBindings($modelFqcn, $tables, $itemColumn), $eventsConfig, $positive, self::namedPreset($preset));
             $this->printModelSnippet($feed, $modelFqcn, $ownerColumn, $publishedColumn, $titleColumn);
 
             return self::SUCCESS;
@@ -177,7 +177,7 @@ class MakeFeedCommand extends Command
         $cards = "{$namespace}\\{$studlySingular}CardTransformer";
 
         $this->ensureConfigPublished();
-        $this->registerFeed($feed, "            'interactions' => \\{$interaction}::class,\n            'filter' => \\{$filter}::class,\n            'cards' => \\{$cards}::class,", $eventsConfig, $positive);
+        $this->registerFeed($feed, "            'interactions' => \\{$interaction}::class,\n            'filter' => \\{$filter}::class,\n            'cards' => \\{$cards}::class,", $eventsConfig, $positive, self::namedPreset($preset));
 
         if ($interactive) {
             outro("Feed [{$feed}] ready — see docs/tutorial.md for cook + schedule steps.");
@@ -464,12 +464,17 @@ class MakeFeedCommand extends Command
         string $bindings,
         array $events,
         array $positive,
+        ?string $namedPreset = null,
     ): void {
         $path = config_path('recommender.php');
         $contents = $this->files->get($path);
 
-        // Ignore commented-out examples (lines starting with |, * or //).
-        if (preg_match("/^(?!\\s*(?:\\||\\*|\/\/)).*['\"]".preg_quote($feed, '/')."['\"]\\s*=>/m", $contents) === 1) {
+        // Only look inside the 'feeds' array, and skip commented-out examples
+        // (lines starting with |, * or //) and trailing // comments.
+        $feedsAt = strpos($contents, "'feeds'");
+        $feedsPart = $feedsAt === false ? $contents : substr($contents, $feedsAt);
+        $feedsPart = (string) preg_replace('#//[^\n]*#', '', $feedsPart);
+        if (preg_match("/^(?!\\s*(?:\\||\\*)).*['\"]".preg_quote($feed, '/')."['\"]\\s*=>/m", $feedsPart) === 1) {
             warning("Config already has feed [{$feed}] — left unchanged. Wire classes manually if needed.");
 
             return;
@@ -478,16 +483,25 @@ class MakeFeedCommand extends Command
         $eventsExport = var_export($events, true);
         $positiveExport = var_export($positive, true);
 
+        // A named preset brings sources, boosters and exploration; without one
+        // write them out so the feed is easy to tune.
+        $ranking = $namedPreset !== null
+            ? "            'preset' => '{$namedPreset}',   // catalog | social | events — weights, decay, exploration"
+            : <<<'RANKING'
+            'sources' => [
+                \SolutionForest\Recommender\Sources\CoInteractionSource::class => 0.6,
+                \SolutionForest\Recommender\Sources\TrendingSource::class => 0.2,
+            ],
+            'boosters' => [
+                \SolutionForest\Recommender\Boosters\QualityBooster::class => 0.2,
+            ],
+RANKING;
+        $ranking = rtrim($ranking);
+
         $block = <<<PHP
 
         '{$feed}' => [
-            'sources' => [
-                \\SolutionForest\\Recommender\\Sources\\CoInteractionSource::class => 0.6,
-                \\SolutionForest\\Recommender\\Sources\\TrendingSource::class => 0.2,
-            ],
-            'boosters' => [
-                \\SolutionForest\\Recommender\\Boosters\\QualityBooster::class => 0.2,
-            ],
+{$ranking}
             'events' => {$eventsExport},
             'positive_events' => {$positiveExport},
             'exposure_events' => ['view'],
@@ -521,6 +535,17 @@ PHP;
 
         $this->files->put($path, $updated);
         $this->components->info("Registered feed [{$feed}] in config/recommender.php");
+    }
+
+    /** Named feed preset for a wizard preset (null = write weights out). */
+    private static function namedPreset(string $preset): ?string
+    {
+        return match ($preset) {
+            'products' => 'catalog',
+            'events' => 'events',
+            'blog', 'reviews' => 'social',
+            default => null,
+        };
     }
 
     /**

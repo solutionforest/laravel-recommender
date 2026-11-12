@@ -20,12 +20,12 @@
     <style>
         :root {
             --bg: #f7f7f8; --panel: #ffffff; --panel-2: #fafafa; --ink: #18181b; --ink-2: #3f3f46; --muted: #71717a; --line: #e4e4e7; --line-2: #f0f0f2;
-            --accent: #6d5dfc; --accent-soft: #efedff; --ok: #12a150; --ok-soft: #e7f7ee; --warn: #c27803; --warn-soft: #fdf3e1; --fail: #e0384b; --fail-soft: #fdecee;
+            --accent: #2D6A4F; --accent-soft: #E3F2E8; --ok: #12a150; --ok-soft: #e7f7ee; --warn: #c27803; --warn-soft: #fdf3e1; --fail: #e0384b; --fail-soft: #fdecee;
             --shadow: 0 1px 2px rgba(16, 24, 40, .04), 0 1px 3px rgba(16, 24, 40, .06);
-            --s0: #6d5dfc; --s1: #14b8a6; --s2: #f59e0b; --s3: #ec4899; --s4: #3b82f6; --s5: #84cc16;
+            --s0: #2D6A4F; --s1: #74C69D; --s2: #f59e0b; --s3: #ec4899; --s4: #3b82f6; --s5: #84cc16;
         }
-        @media (prefers-color-scheme: dark) { :root:not([data-theme=light]) { --bg: #0b0b0e; --panel: #141418; --panel-2: #18181d; --ink: #f4f4f5; --ink-2: #d4d4d8; --muted: #8b8b94; --line: #26262c; --line-2: #1f1f24; --accent: #8b7dff; --accent-soft: #221f3d; --ok: #34d17a; --ok-soft: #10261a; --warn: #f5b43c; --warn-soft: #2b2110; --fail: #ff5c6e; --fail-soft: #2d1418; --shadow: none; } }
-        :root[data-theme=dark] { --bg: #0b0b0e; --panel: #141418; --panel-2: #18181d; --ink: #f4f4f5; --ink-2: #d4d4d8; --muted: #8b8b94; --line: #26262c; --line-2: #1f1f24; --accent: #8b7dff; --accent-soft: #221f3d; --ok: #34d17a; --ok-soft: #10261a; --warn: #f5b43c; --warn-soft: #2b2110; --fail: #ff5c6e; --fail-soft: #2d1418; --shadow: none; }
+        @media (prefers-color-scheme: dark) { :root:not([data-theme=light]) { --bg: #0b0b0e; --panel: #141418; --panel-2: #18181d; --ink: #f4f4f5; --ink-2: #d4d4d8; --muted: #8b8b94; --line: #26262c; --line-2: #1f1f24; --accent: #74C69D; --accent-soft: #16291F; --ok: #34d17a; --ok-soft: #10261a; --warn: #f5b43c; --warn-soft: #2b2110; --fail: #ff5c6e; --fail-soft: #2d1418; --shadow: none; } }
+        :root[data-theme=dark] { --bg: #0b0b0e; --panel: #141418; --panel-2: #18181d; --ink: #f4f4f5; --ink-2: #d4d4d8; --muted: #8b8b94; --line: #26262c; --line-2: #1f1f24; --accent: #74C69D; --accent-soft: #16291F; --ok: #34d17a; --ok-soft: #10261a; --warn: #f5b43c; --warn-soft: #2b2110; --fail: #ff5c6e; --fail-soft: #2d1418; --shadow: none; }
 
         * { box-sizing: border-box; }
         html, body { margin: 0; height: 100%; }
@@ -41,8 +41,7 @@
         .top { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter: saturate(180%) blur(10px); border-bottom: 1px solid var(--line); }
         .top-row { display: flex; align-items: center; gap: 16px; height: 60px; }
         .brand { display: flex; align-items: center; gap: 10px; font-weight: 650; letter-spacing: -.01em; }
-        .brand-mark { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; color: #fff; background: linear-gradient(135deg, var(--accent), #22c1a8); }
-        .brand-mark svg { width: 16px; height: 16px; }
+        .brand svg.logo { width: 30px; height: 30px; }
         .chips { display: flex; gap: 8px; flex-wrap: wrap; }
         .chip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border: 1px solid var(--line); border-radius: 999px; font-size: 12px; color: var(--muted); background: var(--panel); }
         .chip b { color: var(--ink); font-weight: 600; }
@@ -118,7 +117,7 @@
         .rank { color: var(--muted); width: 36px; }
         .item { font-weight: 600; }
         .bar { position: relative; height: 8px; min-width: 80px; border-radius: 999px; background: var(--line-2); overflow: hidden; }
-        .bar i { position: absolute; inset: 0 auto 0 0; border-radius: 999px; background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #22c1a8)); }
+        .bar i { position: absolute; inset: 0 auto 0 0; border-radius: 999px; background: linear-gradient(90deg, var(--accent), #95D5B2); }
         .rate { display: inline-block; min-width: 46px; padding: 1px 8px; border-radius: 999px; font-size: 12px; text-align: center; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
 
         /* Checks */
@@ -138,7 +137,7 @@
         .search label { flex: 1; display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); color: var(--muted); }
         .search label:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
         .search input { flex: 1; border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; }
-        .btn.primary { height: 36px; border: 0; background: var(--accent); color: #fff; font-weight: 600; box-shadow: none; }
+        .btn.primary { height: 36px; border: 0; background: var(--accent); color: var(--panel); font-weight: 600; box-shadow: none; }
         .stack { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: var(--line-2); min-width: 160px; }
         .stack i { display: block; height: 100%; }
         .stack i + i { border-left: 2px solid var(--panel); }
@@ -157,7 +156,7 @@
     <header class="top">
         <div class="wrap top-row">
             <div class="brand">
-                <span class="brand-mark"><svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 1.5l2.2 5.1 5.3.5-4 3.6 1.2 5.3L10 13.2 5.3 16l1.2-5.3-4-3.6 5.3-.5L10 1.5z"/></svg></span>
+                <svg class="logo" viewBox="0 0 128 128" role="img" aria-label="Laravel Recommender"><rect width="128" height="128" rx="28" fill="#1B4332"/><rect x="28" y="38" width="52" height="64" rx="10" fill="#D8F3DC" opacity="0.55" transform="rotate(-12 54 70)"/><rect x="38" y="34" width="52" height="64" rx="10" fill="#95D5B2" opacity="0.85" transform="rotate(-4 64 66)"/><rect x="48" y="30" width="52" height="64" rx="10" fill="#F8FAF9"/><circle cx="64" cy="48" r="6" fill="#1B4332"/><path d="M58 62h24M58 72h18M58 82h12" stroke="#1B4332" stroke-width="4" stroke-linecap="round"/><path d="M92 28l6 10 11 2-8 8 2 11-11-5-11 5 2-11-8-8 11-2z" fill="#B7E4C7"/></svg>
                 Recommender
             </div>
             <div class="chips">

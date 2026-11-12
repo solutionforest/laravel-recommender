@@ -128,6 +128,18 @@ Recommender::trending('posts');
 Recommender::explain('posts', $userId);    // see "Explain" below
 ```
 
+### Presets
+
+`'preset' => 'catalog' | 'social' | 'events'` on a feed sets sensible ranking in one line. Order: package defaults < your `defaults` < preset < the feed's own keys, so the feed always wins.
+
+| Preset | For | Sources (Co / Trending) | Events (weight) | Positive | Half-life | Exploration |
+|---|---|---|---|---|---|---|
+| `catalog` | shops, catalogs | 0.55 / 0.35 + Quality 0.20 | view 1, like 4, cart 6, purchase 10 | like, cart, purchase | 14 days | 5% |
+| `social` | posts, UGC, reviews | 0.50 / 0.30 + Quality 0.15 | view 1, like 4, comment 6, share 8 | like, comment, share | 3 days | 10% |
+| `events` | events, deals, anything time-bound | 0.50 / 0.35 + Quality 0.15 | view 1, like 4, join 10 | like, join | 5 days | 8% |
+
+Add your own under `presets` in `config/recommender.php` (e.g. `'jobs' => ['events' => ['view' => 1, 'apply' => 10], 'half_life_days' => 30]`). An unknown preset name fails with the list of available ones. `make-feed` writes the matching preset (blog / reviews → `social`, products → `catalog`, events → `events`).
+
 ### Infinite scroll: catalog tail and cursors
 
 For a feed with a `model`, a page continues seamlessly: **ranked items → trending → the newest items the `recommendable` scope allows**, never repeating what the user has seen, until the catalog is exhausted (`has_more: false`). Pages made only of catalog items have `origin: 'tail'`. Turn it off with `'tail' => false`; order it by another column with `'tail_order' => 'published_at'`.
@@ -226,6 +238,7 @@ Run Laravel's scheduler and use a shared lock-capable cache for `onOneServer()` 
 | `build-neighbours` | capped history | `rec_item_neighbours` | shards; versioned activate |
 | `prune` | scores | deletes | PK chunks |
 | `explain` | sources and boosters | – | fresh build: score breakdown, final position, cached position |
+| `bootstrap {feed}` | – | config, `rec_*` | migrate → `make-feed` → first scores / neighbours → `doctor`; prints the route |
 | `rebuild-scores {feed}` | events in `--days` window | `rec_item_scores` (one feed) | replays slices; `--dry-run`, confirmation, interruption-safe |
 | `doctor` | config, schema, state | – | checks with fixes; non-zero exit on failure |
 | `status` | tables + state | – | watermark lag, counts, lock support |

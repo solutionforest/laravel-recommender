@@ -39,7 +39,7 @@ php artisan migrate
 
 Creates `rec_item_scores`, `rec_item_daily`, `rec_item_neighbours`, `rec_state`.
 
-2. **Register a feed** — config only; prefer this
+2. **Register a feed** — config only; prefer this. Fastest: `php artisan recommender:bootstrap posts` (migrate + wizard + first build + doctor).
 
 ```bash
 php artisan recommender:make-feed                       # interactive wizard (presets + optional 3rd event)
@@ -48,7 +48,7 @@ php artisan recommender:make-feed products --preset=products -n
 php artisan recommender:make-feed reviews --model=App\\Models\\Comment --likes=user_fav_comments --views=user_clicks --item-column=comment_id -n
 ```
 
-It writes `feeds.{name}` with `model` + `interactions` (`[table => event]`; `item_column` only if not `{model}_id`) and prints two optional model methods:
+It writes `feeds.{name}` with `preset` (catalog / social / events — feed keys override it), `model` + `interactions` (`[table => event]`; `item_column` only if not `{model}_id`) and prints two optional model methods:
 `scopeRecommendable(Builder $q, Context $context)` (who may see an item) and `toRecommendationCard()` (JSON, no viewer-specific fields), plus `use Recommendable;` for card invalidation. Ids may be int / UUID / ULID. See `examples/simple`.
 
    Custom queries (single events table, joins): `make-feed posts --classes` scaffolds `InteractionSource` / `ItemFilter` / `CardTransformer` under `app/Recommendation/{Feed}/`.

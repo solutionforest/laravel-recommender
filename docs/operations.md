@@ -7,7 +7,7 @@ Go-live, storage, locks, FAQ, roadmap.
 | Step | Action | Why |
 |---|---|---|
 | 1 | `php artisan migrate` | `rec_*` tables |
-| 2 | Register a feed | `php artisan recommender:make-feed posts` (config-only: model + interaction tables) |
+| 2 | Register a feed | `php artisan recommender:bootstrap posts` (or `make-feed` + the steps below) |
 | 3 | Index your interaction / item tables | Sources are your SQL |
 | 4 | `recommender:update-scores {feed}` | Fill `hot` / quality |
 | 5 | `recommender:build-neighbours {feed}` | Fill graph |
@@ -170,15 +170,14 @@ Yes for feeds with a `model`: ranked items, then trending, then the newest items
 
 ## Roadmap / wishlist
 
-Done in 0.1–0.4: impressions and quality over time (0.4); catalog tail and cursor pagination (0.3); config-only feeds, dashboard + `doctor`, guided `rebuild-scores`, explain with final / cached positions, card invalidation on model save, ids with commas, a config-only `make-feed`, per-item `stats()` (quality / popularity).
+Done in 0.1–0.5: `recommender:bootstrap` and named presets (0.5); impressions and quality over time (0.4); catalog tail and cursor pagination (0.3); config-only feeds, dashboard + `doctor`, guided `rebuild-scores`, explain with final / cached positions, card invalidation on model save, ids with commas, a config-only `make-feed`, per-item `stats()` (quality / popularity).
 
-Next, in order:
+Under consideration (open an issue if you need one):
 
-| Item | Plan |
+| Item | Today |
 |---|---|
-| `recommender:bootstrap` | One command for a new app: publish config → `make-feed` → migrate → first `update-scores` / `build-neighbours` → `doctor`. |
-| Named presets | `'preset' => 'catalog' / 'social' / 'events'` on a feed to set sensible weights, events and exploration in one key. |
-| User–user / embedding sources | Out of the box later; today add them as a `CandidateSource` with a weight. |
+| User–user / embedding (vector) sources | Add them as a `CandidateSource` with a weight. |
+| More presets (jobs, news, video) | Define your own under `presets`. |
 
 ## Limitations
 
