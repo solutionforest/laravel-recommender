@@ -2,13 +2,17 @@
   <img src="art/logo.svg" alt="Laravel Recommender" width="128" height="128">
 </p>
 
+<p align="center">
+  <img src="https://img.shields.io/badge/PHP-8.3%2B-777BB4?logo=php&logoColor=white" alt="PHP 8.3+">
+  <img src="https://img.shields.io/badge/Laravel-11%E2%80%9313-FF2D20?logo=laravel&logoColor=white" alt="Laravel 11–13">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+  <a href="https://github.com/solutionforest/laravel-recommender/actions/workflows/tests.yml"><img src="https://github.com/solutionforest/laravel-recommender/actions/workflows/tests.yml/badge.svg" alt="tests"></a>
+  <a href="https://github.com/solutionforest/laravel-recommender/releases"><img src="https://img.shields.io/github/v/release/solutionforest/laravel-recommender?label=release" alt="release"></a>
+</p>
+
 # Laravel Recommender
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![tests](https://github.com/solutionforest/laravel-recommender/actions/workflows/tests.yml/badge.svg)](https://github.com/solutionforest/laravel-recommender/actions/workflows/tests.yml)
-[![Latest tag](https://img.shields.io/github/v/tag/solutionforest/laravel-recommender?label=version)](https://github.com/solutionforest/laravel-recommender/tags)
-
-**Self-hosted “for you” feeds for Laravel apps.**
+**Self-hosted “for you” feeds for Laravel apps.** Requires **PHP 8.3+** and **Laravel 11–13**.
 
 If your product already stores likes, views, or similar interactions, this package turns them into a personalised ranked feed — without Amazon Personalize, a Python microservice, or shipping user events to a third party.
 
@@ -18,7 +22,7 @@ If your product already stores likes, views, or similar interactions, this packa
 | A Laravel API or Livewire UI | `Recommender::page()` → cards / Laravel paginator JSON |
 | Redis (prod) + a queue worker | Fast cached lists, seen-set paging, explainable rankings |
 
-Built for real product feeds (blog posts, inspiration / reviews, shops). **PHP 8.3+** · Laravel **11–13**.
+Built for real product feeds (blog posts, inspiration / reviews, shops).
 
 ---
 
