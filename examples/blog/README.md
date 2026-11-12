@@ -28,6 +28,8 @@ flowchart LR
 | `src/FreshnessBooster.php` | optional | Prefer newer candidates — **omit by default**; large weight collapses cohorts |
 | `src/PostAuthorGroups.php` | optional | "At most 1 post per author per page" |
 | `src/InfiniteScrollFeed.php` | app UX | Ranked batches → chronological **catalog tail** until empty |
+| `src/SponsoredShopSource.php` | campaign | Inject posts from `sponsored_author_ids` / shop ids |
+| `src/SponsoredShopBooster.php` | campaign | Boost those candidates in the blend (use with diversity caps) |
 
 ## Try it
 
@@ -76,7 +78,17 @@ Empty CoInteraction in `explain` ⇒ neighbours never built or history too short
 
 Avoid `WHERE user_id IN (SELECT … tens of thousands)`. Prefer joins / bounded `LIMIT`s. Don’t load multi-thousand-id JSON blobs just to `array_slice(0, 20)`.
 
-### 6. Maths you can show stakeholders
+### 6. Sponsored shops / campaign placement
+
+Fill `sponsored_author_ids` (this blog example) or `sponsored_shop_ids` (reviews / BU feeds):
+
+1. **`SponsoredShopSource`** — inject recent items from those ids into the candidate pool  
+2. **`SponsoredShopBooster`** — raise their blend score  
+3. Keep **`diversity`** (e.g. max 1–2 per author/shop per page) so one sponsor cannot own the screen  
+
+Booster alone only helps items already in the pool; Source + Booster is the usual paid pattern.
+
+### 7. Maths you can show stakeholders
 
 Item–item CF, Wilson quality, half-life `hot` + log-sum-exp — [Ideas & maths](../../README.md#ideas--maths).
 

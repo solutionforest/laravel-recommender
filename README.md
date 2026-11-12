@@ -444,7 +444,8 @@ Validated against a pet-a-hood-style reviews feed (prod-sized SQLite lab: ~50k r
 | **Scroll is long, not infinite** | Unique depth ≈ `feed_size` + `trending_size`, then recycle via `seen_max`. App-level **catalog tail** after `hasMore` is false: see [`examples/blog/src/InfiniteScrollFeed.php`](examples/blog/src/InfiniteScrollFeed.php). |
 | **Media URLs** | If `cover_url` can be `.mp4`, map to a poster/thumb in `CardTransformer` — do not put video URLs in `<img>`. |
 | **Ops from HTTP** | Commands must be callable outside CLI (already supported) for Livewire labs; debounce live user-id inputs so every keystroke does not rebuild. |
-| **Freshness vs segments** | High Fresh\* weights erase pet/cohort differences — keep as spice; copy `FreshnessBooster` from the blog example at low weight. |
+| **Freshness vs segments** | High Fresh\* weights erase pet/cohort differences — keep as spice; omit or tiny weight. |
+| **Sponsored shops** | `SponsoredShopSource` + `SponsoredShopBooster` + diversity caps — see [`examples/blog`](examples/blog). |
 
 ### Better first-time / config support (wishlist)
 
