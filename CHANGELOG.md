@@ -227,7 +227,6 @@ First minor release: a feed is now **configuration only** — tell the package w
 [0.1.1]: https://github.com/solutionforest/laravel-recommender/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.15...v0.1.0
 [0.0.15]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.14...v0.0.15
-[0.0.15]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.15
 [0.0.14]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.14
 [0.0.13]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.13
 [0.0.12]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.12
