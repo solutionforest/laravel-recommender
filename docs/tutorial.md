@@ -131,9 +131,9 @@ Route::get('/posts/recommended', fn (Request $request) => Post::recommendedFor($
 // or, without the trait: recommendations('posts', $request->user())
 ```
 
-Visit `/posts/recommended`. The JSON is Laravel's paginator shape (`data`, `current_page`, `links`, …) plus `origin` (`personal` or `trending`) and `has_more`; `?page=` is read automatically. `Recommender::page('posts', $request->user())` does the same and returns a `FeedPage` you can also turn into `toPaginator()` for Blade. The exact cards depend on your transformer and data. A guest gets trending. An authenticated user's list can contain trending candidates even when its origin is `personal`.
+Visit `/posts/recommended`. The JSON is Laravel's simple-paginator shape for a signed-in user (`data`, `current_page`, `next_page_url`, …; guests get the full paginator with `total` and `links`) plus `origin` (`personal` or `trending`), `has_more` and `next_cursor`; `?page=` is read automatically. `Recommender::page('posts', $request->user())` does the same and returns a `FeedPage` you can also turn into `toPaginator()` for Blade. The exact cards depend on your transformer and data. A guest gets trending. An authenticated user's list can contain trending candidates even when its origin is `personal`.
 
-Personal paging consumes a shared per-user seen set; page numbers are metadata rather than stable offsets. Repeat requests, concurrent clients and resets can affect results. Guests use offset paging over the shared trending list. See [reference](reference.md#serving-a-feed).
+A signed-in feed is sequential: each request serves the next unseen batch, so a refresh advances it and page numbers are not stable offsets — follow `next_cursor` to continue. Repeat requests, concurrent clients and resets can affect results. Guests use offset paging over the shared trending list. See [reference](reference.md#serving-a-feed).
 
 ## 5. Keep it updated
 

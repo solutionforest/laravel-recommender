@@ -7,6 +7,19 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-11-12
+
+Context isolation and honest paging.
+
+### Added
+- `list_vary_by` (e.g. `['tenant']`): the ranked list, the shared trending list, the build lock and the background job are kept per attribute value, so a user switching between tenants (or guests of different tenants) never gets another tenant's items. `seen_vary_by` splits the seen-set; by default only `tenant` does, so `device` / `locale` keep "no repeats across devices". Feeds without `list_vary_by` use exactly the same cache keys as before
+- `warm($feed, $user, attributes: [...])`, `forgetUser($feed, $user, $attributes)`, `forgetTrending($feed, $attributes)` and `explain($feed, $user, $limit, $attributes)` take the attributes of the variant they act on
+- `FeedPage::toSimplePaginator()` and `FeedPage::$sequential`
+
+### Changed
+- **Signed-in feeds return Laravel's simple-paginator JSON** (`data`, `current_page`, `per_page`, `next_page_url`, `next_cursor`, `origin`, `has_more`) instead of the length-aware one: they are sequential (each request serves the next unseen batch), so the invented `total`, `last_page` and numbered `links` are gone. Guests keep the full paginator. `?page=` and `?cursor=` still work; `toPaginator()` still returns a `LengthAwarePaginator`. See [UPGRADE.md](UPGRADE.md)
+- Docs say plainly that a refresh or retry advances a signed-in feed and that `next_cursor` is the way to continue
+
 ## [0.6.3] — 2026-11-12
 
 Fixes from review.
@@ -265,7 +278,8 @@ First minor release: a feed is now **configuration only** — tell the package w
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.6.3...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.6.3...v0.7.0
 [0.6.3]: https://github.com/solutionforest/laravel-recommender/compare/v0.6.2...v0.6.3
 [0.6.2]: https://github.com/solutionforest/laravel-recommender/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/solutionforest/laravel-recommender/compare/v0.6.0...v0.6.1

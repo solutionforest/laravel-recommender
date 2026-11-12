@@ -12,7 +12,8 @@ use SolutionForest\Recommender\Recommender;
 /**
  * Pre-builds a user's list in the background (e.g. on login / app open) so
  * the first request is a cache hit. Unique per feed+user: a burst of logins
- * for the same user queues only one build.
+ * for the same user queues only one build. Pass `attributes` (the ones in
+ * `list_vary_by`) to warm a tenant- or device-specific list.
  */
 class BuildFeed implements ShouldQueue, ShouldBeUnique
 {
@@ -22,9 +23,13 @@ class BuildFeed implements ShouldQueue, ShouldBeUnique
 
     public int $uniqueFor = 60;
 
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
     public function __construct(
         public readonly string $feed,
         public readonly int|string $userId,
+        public readonly array $attributes = [],
     ) {
         $this->onQueue(config('recommender.queue', 'recommender'));
         if ($connection = config('recommender.queue_connection')) {
@@ -34,11 +39,14 @@ class BuildFeed implements ShouldQueue, ShouldBeUnique
 
     public function uniqueId(): string
     {
-        return "{$this->feed}:{$this->userId}";
+        // One build per user and `list_vary_by` variant (e.g. per tenant).
+        $variant = app(Recommender::class)->listVariant($this->feed, $this->attributes);
+
+        return "{$this->feed}:{$this->userId}".($variant === null ? '' : ":{$variant}");
     }
 
     public function handle(Recommender $recommender): void
     {
-        $recommender->build($this->feed, $this->userId);
+        $recommender->build($this->feed, $this->userId, null, $this->attributes);
     }
 }

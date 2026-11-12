@@ -191,7 +191,24 @@ it('exposes a Laravel LengthAwarePaginator', function () {
         ->and($paginator->items())->toHaveCount(3)
         ->and($paginator->total())->toBe($page->total())
         ->and($page->toPaginatorArray(['path' => 'http://example.test/feed']))
-        ->toHaveKeys(['data', 'current_page', 'last_page', 'origin', 'has_more']);
+        ->toHaveKeys(['data', 'current_page', 'next_page_url', 'origin', 'has_more', 'next_cursor'])
+        ->not->toHaveKeys(['total', 'last_page', 'links']);
+});
+
+it('gives guests the full length-aware paginator JSON', function () {
+    seedTrending([11, 21, 31, 41, 51]);
+    $json = Recommender::page('reviews', null, 1)->toPaginatorArray(['path' => 'http://example.test/feed']);
+
+    expect($json)->toHaveKeys(['data', 'total', 'last_page', 'links']);
+});
+
+it('treats a signed-in feed as sequential: a refresh advances it', function () {
+    $first = Recommender::page('reviews', 7, 1);
+    $again = Recommender::page('reviews', 7, 1);
+
+    expect($first->ids)->toBe([11, 21, 31])
+        ->and($again->ids)->toBe([41, 51, 61])
+        ->and($again->sequential)->toBeTrue();
 });
 
 it('rejects unknown feeds', function () {

@@ -109,7 +109,7 @@ Recommender::forgetTrending('posts');
 
 Implement `CandidateSource` / `Booster` / `DiversityGroups` (worked examples: `docs/advanced.md`) when the product needs rules the package does not know (same pet type, related shops, sponsored ids). Keep queries indexed + `LIMIT`.
 
-**`Context`** (`Support\Context`) is the first argument to those methods — not the HTTP request. `$context->userId` comes from `Recommender::page($feed, $userId, …)` (`null` = guest). Optional model: `page(…, attributes: ['user' => $user])` → `$context->attribute('user')`. Docs: `docs/reference.md` → What is Context?
+**`Context`** (`Support\Context`) is the first argument to those methods — not the HTTP request. `$context->userId` comes from `Recommender::page($feed, $userId, …)` (`null` = guest). Optional model: `page(…, attributes: ['user' => $user])` → `$context->attribute('user')`. Docs: `docs/reference.md` → What is Context? If an attribute changes which items appear (tenant, region), add it to the feed's `list_vary_by`, otherwise one user's cached list leaks across values; a signed-in feed is sequential (follow `next_cursor`, no `total`).
 
 Scoring helpers (`SolutionForest\Recommender\Scoring\Math`) — prefer these over hand-rolled `1/(1+$i)`:
 

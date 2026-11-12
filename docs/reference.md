@@ -99,7 +99,7 @@ $result = Recommender::page('posts', $user, perPage: 10);
 $result->items;     // cards
 $result->ids;
 $result->hasMore;
-$result->total();   // for LengthAwarePaginator
+$result->total();   // for toPaginator() (a count of what was served so far, not a catalog total)
 $result->origin;    // 'personal' | 'trending'
 
 $paginator = $result->toPaginator(['path' => request()->url()]);
@@ -113,9 +113,10 @@ Cards and ranked lists are cached. Invalidate an edited card with `forgetCard`; 
 Rules:
 
 - Page 1 reuses a fresh list (`feed_ttl`); rebuilds when stale or nearly fully seen.
-- Later personal pages skip IDs in the seen-set; page numbers are metadata, not stable offsets. Concurrent requests or another device for the same user share this state.
+- A signed-in feed is **sequential**: each request serves the next unseen batch, so `?page=7` is not "page 7" and a refresh or retry advances the feed. Follow `next_cursor` to continue. Concurrent requests and other devices of the same user share this state.
 - A short personal list is topped up from shared trending when possible. An empty candidate pool, filtering or missing cards can still yield an empty page.
 - Guests (`null`) get trending, offset-paginated.
+- JSON: signed-in users get Laravel's **simple paginator** shape (`data`, `current_page`, `per_page`, `next_page_url`, plus `origin`, `has_more`, `next_cursor`; no `total`, `last_page` or numbered `links`). Guests keep the length-aware shape. `toPaginator()` still returns a `LengthAwarePaginator` for Blade; `toSimplePaginator()` is the matching simple one.
 
 Other entry points:
 
@@ -158,7 +159,7 @@ For a feed with a `model`, a page continues seamlessly: **ranked items → trend
 Every response has a `next_cursor`. Infinite-scroll clients can follow it instead of counting pages:
 
 ```text
-GET /posts/recommended               → { data, current_page, …, next_cursor: "eyJwIjoyfQ" }
+GET /posts/recommended               → { data, current_page, per_page, next_page_url, …, next_cursor: "eyJwIjoyfQ" }
 GET /posts/recommended?cursor=eyJwIjoyfQ → { data, path, per_page, next_cursor, next_page_url, prev_cursor, origin, has_more }
 ```
 
@@ -289,6 +290,8 @@ Per feed (defaults, overridable in `feeds.*`):
 | `trending_size` / `trending_ttl` | 200 / 600 | shared list |
 | `card_ttl` | 3600 | card cache |
 | `cards_vary_by` | `[]` | cache cards per attribute, e.g. `['locale']` (`locale` defaults to the app locale) |
+| `list_vary_by` | `[]` | keep the ranked list, trending list and background build per attribute value, e.g. `['tenant']` (see [advanced](advanced.md#passing-extra-context)) |
+| `seen_vary_by` | `tenant` if in `list_vary_by`, else none | split the seen-set per attribute; `device` / `locale` stay shared so there are no repeats across devices |
 | `tail` / `tail_order` | `true` / created_at | catalog tail after ranked + trending items (feeds with a `model`) |
 | `impressions` | `false` | count served items; quality uses positive ÷ impressions |
 | `build_lock_seconds` / `build_lock_wait` | 10 / 2 | per-user build lock |
