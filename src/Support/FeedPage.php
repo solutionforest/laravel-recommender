@@ -12,8 +12,10 @@ use JsonSerializable;
  * One page of a feed, ready to be returned by a controller.
  *
  * Use {@see toPaginator()} when you want Laravel's usual LengthAwarePaginator
- * (JSON shape, links, Blade `{{ $paginator->links() }}`). Note: page numbers are
- * metadata — uniqueness comes from the seen-set, not SQL OFFSET.
+ * (links, Blade `{{ $paginator->links() }}`). For a signed-in user the feed is
+ * sequential: every request serves the next unseen batch (a refresh advances
+ * it), so the JSON is the simple-paginator shape and `next_cursor` is the
+ * preferred way to continue. Uniqueness comes from the seen-set, not SQL OFFSET.
  *
  * Return it straight from a route or controller to get the paginator JSON
  * (plus `origin` / `has_more`), like returning `Model::paginate()`.
@@ -24,6 +26,7 @@ final class FeedPage implements JsonSerializable, Responsable
      * @param  list<array<string, mixed>>  $items  cards in display order
      * @param  list<int|string>  $ids  ids of $items in display order
      * @param  string  $origin  'personal' | 'trending' | 'tail'
+     * @param  bool  $sequential  signed-in feeds: each request serves the next unseen batch, so there is no real total / last page
      */
     public function __construct(
         public readonly array $items,
@@ -35,6 +38,7 @@ final class FeedPage implements JsonSerializable, Responsable
         public readonly string $origin,
         public readonly ?string $feed = null,
         public readonly ?string $model = null,
+        public readonly bool $sequential = false,
     ) {
     }
 
@@ -90,14 +94,39 @@ final class FeedPage implements JsonSerializable, Responsable
     }
 
     /**
-     * Paginator JSON shape plus recommender fields (`origin`, `has_more`).
+     * Laravel's simple paginator (`simplePaginate()` JSON: no total, no
+     * numbered links) — the honest shape for a sequential signed-in feed.
+     *
+     * @param  array<string, mixed>  $options
+     * @return Paginator<int, array<string, mixed>>
+     */
+    public function toSimplePaginator(array $options = []): Paginator
+    {
+        return (new Paginator(
+            $this->items,
+            $this->perPage,
+            $this->page,
+            $options + ['path' => Paginator::resolveCurrentPath(), 'query' => Paginator::resolveQueryString()],
+        ))->hasMorePagesWhen($this->hasMore);
+    }
+
+    /**
+     * Paginator JSON plus recommender fields (`origin`, `has_more`,
+     * `next_cursor`). Signed-in feeds are sequential, so they get the simple
+     * paginator shape (`data`, `per_page`, `next_page_url`, no `total` /
+     * `last_page` / numbered `links`); guests page by offset and keep the full
+     * length-aware shape.
      *
      * @param  array<string, mixed>  $options
      * @return array<string, mixed>
      */
     public function toPaginatorArray(array $options = []): array
     {
-        return $this->toPaginator($options)->toArray() + [
+        $base = $this->sequential
+            ? array_replace($this->toSimplePaginator($options)->toArray(), ['prev_page_url' => null])
+            : $this->toPaginator($options)->toArray();
+
+        return $base + [
             'origin' => $this->origin,
             'has_more' => $this->hasMore,
             'next_cursor' => $this->nextCursor(),

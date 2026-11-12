@@ -43,6 +43,8 @@ Do **not** invent an external ML service for this package’s job. Prefer packag
 
 - `preset` → `catalog` / `social` / `events` sets sources, boosters, events, decay, exploration (feed keys override)
 - `sources` → blend pool · `boosters` → re-rank in-pool · `exploration_ratio` → reserved explore slots  
+- `list_vary_by` (e.g. `['tenant']`) → required when an attribute passed via `attributes:` changes which items appear: lists, trending and `warm()` are kept per value (the `recommendable` scope must still enforce tenancy)
+- Signed-in feeds are sequential (a refresh advances the feed; JSON is the simple paginator, no `total`) → follow `next_cursor`
 - `tail` (default on) → newest items after ranked + trending · `impressions` (opt-in) → quality = positive ÷ shown  
 - After changes: `Recommender::forgetUser` / `forgetTrending`
 

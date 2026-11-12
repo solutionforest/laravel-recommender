@@ -106,6 +106,14 @@ return [
         // ('locale' defaults to app()->getLocale()). Empty = one card for everyone.
         'cards_vary_by' => [],
 
+        // Multi-tenant / per-context feeds: attributes that change WHICH items
+        // appear (passed as `attributes:`). The ranked list, the shared trending
+        // list and the background build are then kept per value, so a user in
+        // tenant A never gets tenant B's items. Empty = one list per user.
+        // `tenant` also splits the seen-set; `device` / `locale` do not, so a
+        // user sees no repeats across devices (override with 'seen_vary_by').
+        'list_vary_by' => [],
+
         // Catalog tail (feeds with a 'model'): when ranked and trending items
         // run out, keep serving the newest items the recommendable scope allows.
         'tail' => true,

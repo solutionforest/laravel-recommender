@@ -108,7 +108,18 @@ Post::recommendedFor($request->user(), attributes: ['tenant' => $tenant->id, 'lo
 $query->where('tenant_id', $context->attribute('tenant'));
 ```
 
-Background builds (`warm()`) have no attributes, only the user id — read anything you need from the user model there.
+**Attributes that change which items appear** (a tenant, a region): lists are cached per user, so you must say so, or a list built for tenant A is served under tenant B:
+
+```php
+'posts' => [..., 'list_vary_by' => ['tenant']],
+```
+
+The ranked list, the shared trending list (guests and the fallback), `warm()` and `explain()` then keep one copy per value. The seen-set is split per `tenant` too (tenants have different items); `device` and `locale` keep one shared seen-set, so a user still sees no repeats across devices (override with `seen_vary_by`). Rules:
+
+- List every attribute that changes the candidates; leaving one out is unsafe. Attributes that only change how a card looks belong in `cards_vary_by`.
+- A cache key is not authorization: your `recommendable` scope must still filter by tenant.
+- Every value multiplies the cached lists per user, so vary by few, low-cardinality attributes.
+- Pass the same attributes to `warm($feed, $user, attributes: [...])`, `forgetUser($feed, $user, [...])` and `explain($feed, $user, attributes: [...])`.
 
 **Cards that depend on an attribute** (translated titles, per-tenant prices): cards are cached and shared, so tell the cache which attributes they vary by:
 

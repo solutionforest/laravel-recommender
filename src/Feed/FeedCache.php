@@ -20,6 +20,9 @@ use SolutionForest\Recommender\Support\Ids;
  *   {prefix}:{feed}:card:{id}    rendered card                 (card_ttl)
  *   {prefix}:{feed}:trending     shared fallback list          (trending_ttl)
  *   {prefix}:{feed}:lock:{user}  build lock                    (build_lock_seconds)
+ *
+ * With `list_vary_by` / `seen_vary_by` the list, seen, trending and lock keys
+ * get a `:v{hash}` suffix, one per attribute value (e.g. per tenant).
  */
 final class FeedCache
 {
@@ -30,9 +33,9 @@ final class FeedCache
     /**
      * @return array{ids: list<int|string>, built_at: int}|null
      */
-    public function list(FeedDefinition $feed, int|string $userId): ?array
+    public function list(FeedDefinition $feed, int|string $userId, ?string $variant = null): ?array
     {
-        $value = $this->store()->get($this->key($feed, "list:{$userId}"));
+        $value = $this->store()->get($this->key($feed, "list:{$userId}".self::suffix($variant)));
 
         // Stored packed as "built_at|id,id,..." (about 7 bytes per id).
         if (is_string($value) && str_contains($value, '|')) {
@@ -47,28 +50,28 @@ final class FeedCache
     /**
      * @param  list<int|string>  $ids
      */
-    public function putList(FeedDefinition $feed, int|string $userId, array $ids): void
+    public function putList(FeedDefinition $feed, int|string $userId, array $ids, ?string $variant = null): void
     {
         // Keep the list around twice as long as it is "fresh" so a failed
         // rebuild can still serve the previous one.
         $this->store()->put(
-            $this->key($feed, "list:{$userId}"),
+            $this->key($feed, "list:{$userId}".self::suffix($variant)),
             time().'|'.self::pack($ids),
             $feed->int('feed_ttl', 1800) * 2,
         );
     }
 
-    public function forgetList(FeedDefinition $feed, int|string $userId): void
+    public function forgetList(FeedDefinition $feed, int|string $userId, ?string $variant = null): void
     {
-        $this->store()->forget($this->key($feed, "list:{$userId}"));
+        $this->store()->forget($this->key($feed, "list:{$userId}".self::suffix($variant)));
     }
 
     /**
      * @return list<int|string>
      */
-    public function seen(FeedDefinition $feed, int|string $userId): array
+    public function seen(FeedDefinition $feed, int|string $userId, ?string $variant = null): array
     {
-        $value = $this->store()->get($this->key($feed, "seen:{$userId}"));
+        $value = $this->store()->get($this->key($feed, "seen:{$userId}".self::suffix($variant)));
 
         if (is_string($value)) {
             return self::unpack($value);
@@ -80,18 +83,18 @@ final class FeedCache
     /**
      * @param  list<int|string>  $ids
      */
-    public function markSeen(FeedDefinition $feed, int|string $userId, array $ids): void
+    public function markSeen(FeedDefinition $feed, int|string $userId, array $ids, ?string $variant = null): void
     {
         if ($ids === []) {
             return;
         }
-        $seen = $this->seen($feed, $userId);
+        $seen = $this->seen($feed, $userId, $variant);
         $seen = array_values(array_unique(array_merge($seen, $ids), SORT_REGULAR));
         $max = $feed->int('seen_max', 200);
         if (count($seen) > $max) {
             $seen = array_slice($seen, -$max);
         }
-        $this->store()->put($this->key($feed, "seen:{$userId}"), self::pack($seen), $feed->int('seen_ttl', 259200));
+        $this->store()->put($this->key($feed, "seen:{$userId}".self::suffix($variant)), self::pack($seen), $feed->int('seen_ttl', 259200));
     }
 
     /**
@@ -128,9 +131,9 @@ final class FeedCache
         return Ids::normalizeAll($ids);
     }
 
-    public function forgetSeen(FeedDefinition $feed, int|string $userId): void
+    public function forgetSeen(FeedDefinition $feed, int|string $userId, ?string $variant = null): void
     {
-        $this->store()->forget($this->key($feed, "seen:{$userId}"));
+        $this->store()->forget($this->key($feed, "seen:{$userId}".self::suffix($variant)));
     }
 
     /**
@@ -211,9 +214,9 @@ final class FeedCache
      * @param  callable(): (list<int|string>|null)  $build
      * @return list<int|string>
      */
-    public function trending(FeedDefinition $feed, callable $build): array
+    public function trending(FeedDefinition $feed, callable $build, ?string $variant = null): array
     {
-        $key = $this->key($feed, 'trending');
+        $key = $this->key($feed, 'trending'.self::suffix($variant));
         $cached = $this->store()->get($key);
         if (is_array($cached)) {
             return array_values($cached);
@@ -236,9 +239,9 @@ final class FeedCache
      *
      * @return list<int|string>|null
      */
-    public function peekTrending(FeedDefinition $feed): ?array
+    public function peekTrending(FeedDefinition $feed, ?string $variant = null): ?array
     {
-        $value = $this->store()->get($this->key($feed, 'trending'));
+        $value = $this->store()->get($this->key($feed, 'trending'.self::suffix($variant)));
 
         return is_array($value) ? array_values($value) : null;
     }
@@ -251,9 +254,9 @@ final class FeedCache
         return $this->store()->add($this->key($feed, $name), 1, $ttl);
     }
 
-    public function forgetTrending(FeedDefinition $feed): void
+    public function forgetTrending(FeedDefinition $feed, ?string $variant = null): void
     {
-        $this->store()->forget($this->key($feed, 'trending'));
+        $this->store()->forget($this->key($feed, 'trending'.self::suffix($variant)));
     }
 
     /** Whether the configured cache store can provide atomic locks. */
@@ -262,10 +265,10 @@ final class FeedCache
         return $this->lockProvider() !== null;
     }
 
-    public function lock(FeedDefinition $feed, int|string $userId): Lock
+    public function lock(FeedDefinition $feed, int|string $userId, ?string $variant = null): Lock
     {
         $seconds = $feed->int('build_lock_seconds', 10);
-        $name = $this->key($feed, "lock:{$userId}");
+        $name = $this->key($feed, "lock:{$userId}".self::suffix($variant));
         $provider = $this->lockProvider();
 
         if ($provider !== null) {
@@ -300,6 +303,33 @@ final class FeedCache
         }
 
         return null;
+    }
+
+    /**
+     * Short, stable id for the attribute values a feed varies its lists by
+     * (`list_vary_by` / `seen_vary_by`); null when nothing is varied, which
+     * keeps every key identical to a feed without the option.
+     *
+     * @param  list<string>  $names
+     * @param  array<string, mixed>  $attributes
+     */
+    public static function variant(array $names, array $attributes): ?string
+    {
+        if ($names === []) {
+            return null;
+        }
+        $values = [];
+        foreach ($names as $name) {
+            $value = $attributes[$name] ?? null;
+            $values[$name] = is_scalar($value) || $value === null ? $value : (string) json_encode($value);
+        }
+
+        return substr(sha1((string) json_encode($values)), 0, 10);
+    }
+
+    private static function suffix(?string $variant): string
+    {
+        return $variant === null ? '' : ":v{$variant}";
     }
 
     public function key(FeedDefinition $feed, string $suffix): string

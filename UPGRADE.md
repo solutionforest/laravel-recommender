@@ -1,5 +1,11 @@
 # Upgrade guide
 
+## From 0.6.x to 0.7.0
+
+- **Signed-in JSON changed.** `recommendations()` / returning a `FeedPage` now gives Laravel's simple-paginator shape for a signed-in user: no `total`, `last_page` or numbered `links`. Use `next_page_url` / `next_cursor` (and `has_more`) to load more. Guests are unchanged. If a frontend still needs `total` / `last_page`, return `$page->toPaginator()->toArray()` yourself.
+- **Multi-tenant apps:** if you pass an attribute such as `tenant` that changes which items appear, add it to the feed's `list_vary_by` (`'list_vary_by' => ['tenant']`). Without it a list cached under one value is served under another. Existing cached lists stay valid for feeds that do not set it.
+- Nothing else to change.
+
 ## From 0.6.2 to 0.6.3
 
 Nothing to change. Links in paginator JSON now keep your other query parameters. If you relied on the code default `seen_max` of 500 (only when `seen_max` was missing from your config), set it explicitly; the documented default was always 200.

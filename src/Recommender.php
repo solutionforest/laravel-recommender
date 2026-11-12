@@ -154,11 +154,13 @@ class Recommender
             return $this->trendingPage($feed, $page, $perPage, $attributes);
         }
 
-        $seen = $this->cache->seen($feed, $userId);
+        $lv = $this->listVariant($feed, $attributes);
+        $sv = $this->seenVariant($feed, $attributes);
+        $seen = $this->cache->seen($feed, $userId, $sv);
         $seenSet = array_flip($seen);
         $origin = 'personal';
 
-        $list = $this->cache->list($feed, $userId);
+        $list = $this->cache->list($feed, $userId, $lv);
         $ids = $list['ids'] ?? [];
         $unseen = array_values(array_filter($ids, fn ($id) => ! isset($seenSet[$id])));
 
@@ -212,7 +214,7 @@ class Recommender
         }
 
         [$cards, $servedIds, $consumed] = $this->render($feed, $unseen, $perPage, $attributes);
-        $this->cache->markSeen($feed, $userId, $consumed);
+        $this->cache->markSeen($feed, $userId, $consumed, $sv);
         $this->recordImpressions($feed, $servedIds);
         $this->hintIfEmpty($feed, $page, $servedIds);
 
@@ -231,6 +233,7 @@ class Recommender
             origin: $origin,
             feed: $feed->name,
             model: is_string($feed->get('model')) ? $feed->get('model') : null,
+            sequential: true,
         );
     }
 
@@ -246,11 +249,11 @@ class Recommender
         [$userId, $attributes] = $this->viewer($user, $attributes);
         $userId ??= throw new InvalidArgumentException('Cannot build a feed for a user without an id.');
         $feed = $this->feed($feedName);
-        $seen ??= $this->cache->seen($feed, $userId);
+        $seen ??= $this->cache->seen($feed, $userId, $this->seenVariant($feed, $attributes));
         $context = new Context($feed, $userId, $seen, $attributes, CarbonImmutable::now());
 
         $ids = $this->rank($context, $feed->int('feed_size', 200));
-        $this->cache->putList($feed, $userId, $ids);
+        $this->cache->putList($feed, $userId, $ids, $this->listVariant($feed, $attributes));
 
         return $ids;
     }
@@ -276,16 +279,52 @@ class Recommender
 
                 return null; // not cached: retried on the next request
             }
-        });
+        }, $this->listVariant($feed, $attributes));
     }
 
     /**
-     * Queue a background rebuild (e.g. on login / app open).
+     * Queue a background rebuild (e.g. on login / app open). Pass the
+     * attributes listed in `list_vary_by` to warm that variant of the list.
+     *
+     * @param  array<string, mixed>  $attributes
      */
-    public function warm(string $feedName, Authenticatable|int|string $user): void
+    public function warm(string $feedName, Authenticatable|int|string $user, array $attributes = []): void
     {
         $this->feed($feedName);
-        BuildFeed::dispatch($feedName, $this->viewer($user)[0] ?? throw new InvalidArgumentException('Cannot warm a feed for a user without an id.'));
+        BuildFeed::dispatch(
+            $feedName,
+            $this->viewer($user)[0] ?? throw new InvalidArgumentException('Cannot warm a feed for a user without an id.'),
+            $attributes,
+        );
+    }
+
+    /**
+     * The cache variant of a list for these attributes (`list_vary_by`), or
+     * null when the feed does not vary its lists.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    public function listVariant(FeedDefinition|string $feed, array $attributes): ?string
+    {
+        $feed = $feed instanceof FeedDefinition ? $feed : $this->feed($feed);
+
+        return FeedCache::variant($feed->list('list_vary_by'), $attributes);
+    }
+
+    /**
+     * The seen-set variant. Defaults to `tenant` when it is in `list_vary_by`
+     * (tenants have disjoint items); `device` / `locale` stay shared so a user
+     * sees no repeats across devices. Override with `seen_vary_by`.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    private function seenVariant(FeedDefinition $feed, array $attributes): ?string
+    {
+        $names = $feed->get('seen_vary_by') !== null
+            ? $feed->list('seen_vary_by')
+            : array_values(array_intersect($feed->list('list_vary_by'), ['tenant']));
+
+        return FeedCache::variant($names, $attributes);
     }
 
     /** Drop a cached card, e.g. after the item was edited or hidden. */
@@ -356,18 +395,27 @@ class Recommender
         }
     }
 
-    /** Forget a user's list and seen-set (e.g. "reset my recommendations"). */
-    public function forgetUser(string $feedName, Authenticatable|int|string $user): void
+    /**
+     * Forget a user's list and seen-set (e.g. "reset my recommendations").
+     * With `list_vary_by`, pass the attributes of the variant to reset.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    public function forgetUser(string $feedName, Authenticatable|int|string $user, array $attributes = []): void
     {
         $userId = $this->viewer($user)[0] ?? throw new InvalidArgumentException('Cannot forget a user without an id.');
         $feed = $this->feed($feedName);
-        $this->cache->forgetList($feed, $userId);
-        $this->cache->forgetSeen($feed, $userId);
+        $this->cache->forgetList($feed, $userId, $this->listVariant($feed, $attributes));
+        $this->cache->forgetSeen($feed, $userId, $this->seenVariant($feed, $attributes));
     }
 
-    public function forgetTrending(string $feedName): void
+    /**
+     * @param  array<string, mixed>  $attributes  the `list_vary_by` variant to drop
+     */
+    public function forgetTrending(string $feedName, array $attributes = []): void
     {
-        $this->cache->forgetTrending($this->feed($feedName));
+        $feed = $this->feed($feedName);
+        $this->cache->forgetTrending($feed, $this->listVariant($feed, $attributes));
     }
 
     /**
@@ -384,19 +432,21 @@ class Recommender
      * items that reach the final top `$limit` are appended with
      * `exploration: true` and a zero score.
      *
+     * @param  array<string, mixed>  $attributes  as passed to `page()`, so tenant-aware feeds explain what that tenant sees
      * @return list<array{id: int|string, score: float, sources: array<string, float>, contributions: array<string, float>, final: ?int, cached: ?int, exploration: bool}>
      */
-    public function explain(string $feedName, Authenticatable|int|string|null $user, int $limit = 20): array
+    public function explain(string $feedName, Authenticatable|int|string|null $user, int $limit = 20, array $attributes = []): array
     {
-        $userId = $this->viewer($user)[0];
+        [$userId, $attributes] = $this->viewer($user, $attributes);
         $feed = $this->feed($feedName);
-        $context = new Context($feed, $userId, [], [], CarbonImmutable::now());
+        $lv = $this->listVariant($feed, $attributes);
+        $context = new Context($feed, $userId, [], $attributes, CarbonImmutable::now());
         $parts = $this->collect($context, $feed->int('source_limit', 200), $userId === null);
 
         $final = array_flip(array_map('strval', $this->order($context, $parts, $feed->int('feed_size', 200), $userId === null)));
         $cachedList = $userId === null
-            ? $this->cache->peekTrending($feed)
-            : ($this->cache->list($feed, $userId)['ids'] ?? null);
+            ? $this->cache->peekTrending($feed, $lv)
+            : ($this->cache->list($feed, $userId, $lv)['ids'] ?? null);
         $cached = $cachedList === null ? [] : array_flip(array_map('strval', $cachedList));
 
         $max = [];
@@ -464,7 +514,7 @@ class Recommender
      */
     private function buildWithLock(FeedDefinition $feed, int|string $userId, array $seen, array $attributes): ?array
     {
-        $lock = $this->cache->lock($feed, $userId);
+        $lock = $this->cache->lock($feed, $userId, $this->listVariant($feed, $attributes));
 
         try {
             return $lock->block($feed->int('build_lock_wait', 2), function () use ($feed, $userId, $seen, $attributes) {
@@ -472,7 +522,7 @@ class Recommender
             });
         } catch (LockTimeoutException) {
             // Someone else is building: use whatever is there now.
-            return $this->cache->list($feed, $userId)['ids'] ?? null;
+            return $this->cache->list($feed, $userId, $this->listVariant($feed, $attributes))['ids'] ?? null;
         } catch (Throwable $e) {
             $this->report($feed, 'build', $e);
 
