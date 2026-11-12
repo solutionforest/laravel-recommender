@@ -7,6 +7,19 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-11-12
+
+Simpler still: the model serves its feed, the jobs schedule themselves, and the published config is short.
+
+### Added
+- `Model::recommendedFor($user, ?$feed)` on the `Recommendable` trait — `Route::get('/posts/for-you', fn (Request $r) => Post::recommendedFor($r->user()))`; `Recommender::feedFor($model)` finds the model's feed
+- **Self-scheduling**: `update-scores` (every 10 min), `build-neighbours` (nightly) and `prune` (daily) are registered with Laravel's scheduler (`withoutOverlapping()->onOneServer()`); `schedule.*` config, `RECOMMENDER_SCHEDULE=false` to opt out
+- An empty first page logs one notice per feed per hour pointing at `recommender:doctor`
+
+### Changed
+- `vendor:publish --tag=recommender-config`, `make-feed` and `bootstrap` publish a **short** config (`enabled`, `cache_store`, `feeds`); defaults stay in the package. `--tag=recommender-config-full` publishes everything
+- README first feed is three steps (bootstrap, model, route); maintenance commands live in operations
+
 ## [0.5.1] — 2026-11-12
 
 Docs only.
@@ -218,7 +231,8 @@ First minor release: a feed is now **configuration only** — tell the package w
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/solutionforest/laravel-recommender/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.3.0...v0.4.0

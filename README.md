@@ -30,52 +30,57 @@ Your app records the interactions and controls visibility and card fields. Cards
 
 ## Your first feed
 
-Requires PHP 8.3+ and Laravel 11, 12, or 13. In an existing Laravel app with a `Post` model and interaction tables:
+Requires PHP 8.3+ and Laravel 11, 12, or 13. In an app with a `Post` model and interaction tables (`post_likes`, `post_views` with `user_id`, `post_id`, `created_at`):
+
+**1. Install and set up**
 
 ```bash
 composer require solutionforest/laravel-recommender
 php artisan recommender:bootstrap posts
 ```
 
-`bootstrap` migrates, runs the `make-feed` wizard, builds the first scores and similar items, checks everything with `doctor` and prints the route to add:
+`bootstrap` migrates, asks for your tables, writes the feed, builds the first scores and checks everything:
 
 ![recommender:bootstrap](art/screenshots/terminal-bootstrap.png)
 
-The wizard asks for your model and interaction tables, registers a config-only feed and prints two optional model methods to paste. (Prefer classes for custom queries? Add `--classes`.) If each interaction table has `user_id`, `post_id` and `created_at`, this is the whole feed it writes:
+**2. Tell the model what may be shown**
 
 ```php
-// config/recommender.php
-'feeds' => [
-    'posts' => [
-        'preset' => 'social',   // catalog | social | events — sensible weights in one line
-        'model' => App\Models\Post::class,
-        'interactions' => ['post_likes' => 'like', 'post_views' => 'view'],
-    ],
+use SolutionForest\Recommender\Eloquent\Recommendable;
+
+class Post extends Model
+{
+    use Recommendable;
+
+    public function scopeRecommendable($query, $context)    // optional: what may be shown
+    {
+        $query->where('published', true);
+    }
+
+    public function toRecommendationCard(): array           // optional: the JSON per item
+    {
+        return ['id' => $this->id, 'title' => $this->title];
+    }
+}
+```
+
+**3. Add a route**
+
+```php
+Route::get('/posts/for-you', fn (Request $request) => Post::recommendedFor($request->user()));
+```
+
+That's it. The response is Laravel's paginator JSON (with `next_cursor` for infinite scroll), and the scoring jobs are scheduled for you — just keep Laravel's scheduler running. The whole feed `bootstrap` wrote is a few lines of config:
+
+```php
+'posts' => [
+    'preset' => 'social',   // catalog | social | events
+    'model' => App\Models\Post::class,
+    'interactions' => ['post_likes' => 'like', 'post_views' => 'view'],
 ],
 ```
 
-Add an optional `scopeRecommendable()` and `toRecommendationCard()` to the model for visibility and the JSON shape. See [`examples/simple`](examples/simple/).
-
-Then build scores and neighbours:
-
-```bash
-php artisan recommender:update-scores posts
-php artisan recommender:build-neighbours posts
-php artisan recommender:status posts
-```
-
-Expose the feed from a route:
-
-```php
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-
-Route::get('/posts/recommended', fn (Request $request) => recommendations('posts', $request->user()));
-```
-
-The response is Laravel's paginator JSON plus `origin` and `has_more`; `?page=` is read automatically. `Recommender::page('posts', $user)` does the same.
-
-**[Follow the first-feed tutorial →](docs/tutorial.md)** for the required table shape, checks, scheduler and troubleshooting. Run the maintenance commands after your app has recorded interactions; the first score run excludes the most recent minute.
+**[Follow the first-feed tutorial →](docs/tutorial.md)** for other table shapes, custom classes and troubleshooting.
 
 ## Choose your next step
 
@@ -109,13 +114,9 @@ Gate::define('viewRecommender', fn ($user) => $user->is_admin);
 
 **[Dashboard guide →](docs/dashboard.md)**
 
-## Inspect and tune
+## Why does a user see this?
 
-```bash
-php artisan recommender:explain posts 123
-```
-
-Replace `123` with a real user ID. Each row shows the score per source, the item's **final** position after exploration and diversity, and where it sits in the list the user is **served** right now. `Recommender::stats('posts', $post)` tells you how good one item is (rate, confidence-adjusted quality, popularity). If the user has little history or few shared interactions, trending may be the only useful signal. See [tuning](docs/tuning.md) before changing weights.
+Use *Explain a user* on the dashboard (or `php artisan recommender:explain posts 123`): every item's score split by source, plus where it lands after exploration and diversity. `Recommender::stats('posts', $post)` tells you how good one item is. Rebuilds, pruning and scale are in [operations](docs/operations.md); weights in [tuning](docs/tuning.md).
 
 ## For coding agents
 

@@ -80,9 +80,13 @@ class BootstrapCommand extends Command
         $healthy = $this->call('recommender:doctor', ['feed' => $name]) === self::SUCCESS;
 
         $this->components->info($healthy ? "Feed [{$name}] is ready." : "Feed [{$name}] is registered — fix the checks above, then run `php artisan recommender:doctor {$name}`.");
-        $this->line('  Route:     '."Route::get('/{$name}/recommended', fn (Request \$r) => recommendations('{$name}', \$r->user()));");
+        $model = config("recommender.feeds.{$name}.model");
+        $serve = is_string($model) && $model !== ''
+            ? class_basename($model).'::recommendedFor($r->user()));   // model uses Recommendable'
+            : "recommendations('{$name}', \$r->user()));";
+        $this->line('  Route:     '."Route::get('/{$name}/recommended', fn (Request \$r) => {$serve}");
         $this->line('  Dashboard: /recommender  (production: Gate::define(\'viewRecommender\', …))');
-        $this->line('  Schedule:  recommender:update-scores every 10 min · build-neighbours nightly · prune daily');
+        $this->line('  Schedule:  automatic — just keep Laravel\'s scheduler running (schedule:work / cron)');
 
         return $healthy && $ok ? self::SUCCESS : self::FAILURE;
     }

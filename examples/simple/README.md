@@ -26,7 +26,7 @@ On the model (both optional):
 Serve it:
 
 ```php
-Route::get('/articles/for-you', fn (Request $request) => recommendations('articles', $request->user()));
+Route::get('/articles/for-you', fn (Request $request) => Article::recommendedFor($request->user()));
 ```
 
 Returning the page gives Laravel's paginator JSON (`?page=` is read automatically). Schedule `recommender:update-scores` and `recommender:build-neighbours` as usual.

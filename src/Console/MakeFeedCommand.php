@@ -450,7 +450,7 @@ class MakeFeedCommand extends Command
             return;
         }
 
-        $source = dirname(__DIR__, 2).'/config/recommender.php';
+        $source = dirname(__DIR__, 2).'/stubs/config.php';
         $this->files->copy($source, $target);
         $this->components->info('Published: '.$target);
     }
@@ -577,7 +577,7 @@ PHP;
         $this->info("Feed [{$feed}] registered — no classes needed. Add this to {$modelFqcn} (both methods optional):");
         $this->line(<<<PHP
 
-    use \\SolutionForest\\Recommender\\Eloquent\\Recommendable; // refresh cached cards on save / delete
+    use \\SolutionForest\\Recommender\\Eloquent\\Recommendable; // {$model}::recommendedFor(\$user), fresh cards on save
 
     public function scopeRecommendable(\\Illuminate\\Database\\Eloquent\\Builder \$query, \\SolutionForest\\Recommender\\Support\\Context \$context): void
     {

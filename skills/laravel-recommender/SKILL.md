@@ -72,13 +72,14 @@ Historical imports: set `scores_backfill_days` before the first run. For a later
 use SolutionForest\Recommender\Facades\Recommender;
 
 // Returns paginator JSON; reads ?page= automatically. Accepts the user model, an id, or null.
-Route::get('/posts/for-you', fn (Request $request) => recommendations('posts', $request->user()));
+Route::get('/posts/for-you', fn (Request $request) => Post::recommendedFor($request->user())); // model uses Recommendable
+// or by feed name: recommendations('posts', $request->user())
 
 // Same thing: Recommender::page('posts', $request->user())
 // Livewire: Recommender::page('posts', $user)->toPaginator()
 ```
 
-6. **Schedule** (prod): scores ~every 10 min · neighbours nightly · prune daily. Queue `recommender`. Cache store with locks: **redis** (preferred) or **database** + `cache_locks` (L11–13). Override: `RECOMMENDER_CACHE_STORE`.
+6. **Schedule**: automatic (scores ~every 10 min · neighbours nightly · prune daily) — just run Laravel's scheduler; `RECOMMENDER_SCHEDULE=false` to do it yourself. Queue `recommender`. Cache store with locks: **redis** (preferred) or **database** + `cache_locks` (L11–13). Override: `RECOMMENDER_CACHE_STORE`.
 
 ---
 

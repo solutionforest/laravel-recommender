@@ -85,7 +85,8 @@ Built-ins:
 The shortest route returns the page; it renders as paginator JSON and reads `?page=` itself:
 
 ```php
-Route::get('/posts/for-you', fn (Request $request) => recommendations('posts', $request->user()));
+Route::get('/posts/for-you', fn (Request $request) => Post::recommendedFor($request->user()));   // model with `use Recommendable`
+Route::get('/posts/for-you', fn (Request $request) => recommendations('posts', $request->user())); // same, by feed name
 ```
 
 `recommendations($feed, $user, $page = null, $perPage = null, $attributes = [])` is the same as `Recommender::page()`. Pass the user model (it becomes `$context->attribute('user')`), an id, or `null` for guests.
@@ -127,6 +128,12 @@ Recommender::forgetTrending('posts');
 Recommender::trending('posts');
 Recommender::explain('posts', $userId);    // see "Explain" below
 ```
+
+### Config file
+
+`php artisan vendor:publish --tag=recommender-config` (and `make-feed` / `bootstrap`) publish a **short** `config/recommender.php`: `enabled`, `cache_store` and `feeds`. Every other key keeps its package default until you add it; the full list is in [configuration](#configuration), or publish the full file with `--tag=recommender-config-full`.
+
+`Model::recommendedFor($user, ?$feed)` (from `Recommendable`) uses the one feed whose `model` is that class; pass `$feed` when several do. When a first page comes back empty, one log notice per feed per hour points at `recommender:doctor`.
 
 ### Presets
 
@@ -220,14 +227,15 @@ Rows are in blended-score order.
 | Nightly | `recommender:build-neighbours` | Item–item graph |
 | Daily | `recommender:prune` | Idle score rows |
 
-In `routes/console.php`:
+The package registers these with Laravel's scheduler itself (`withoutOverlapping()->onOneServer()`), so you only run the scheduler. Change the times, or turn it off to schedule them yourself:
 
 ```php
-use Illuminate\Support\Facades\Schedule;
-
-Schedule::command('recommender:update-scores')->everyTenMinutes()->withoutOverlapping()->onOneServer();
-Schedule::command('recommender:build-neighbours')->dailyAt('03:30')->withoutOverlapping(120)->onOneServer();
-Schedule::command('recommender:prune')->dailyAt('04:30')->withoutOverlapping(60)->onOneServer();
+'schedule' => [
+    'enabled' => env('RECOMMENDER_SCHEDULE', true),
+    'scores' => '*/10 * * * *',
+    'neighbours' => '30 3 * * *',
+    'prune' => '30 4 * * *',
+],
 ```
 
 Run Laravel's scheduler and use a shared lock-capable cache for `onOneServer()` across hosts. The maintenance commands run synchronously; the queue worker is needed when using `warm()` with an asynchronous queue.

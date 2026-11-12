@@ -57,6 +57,21 @@ return [
         'refresh' => 10, // seconds between live updates (0 = off)
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Schedule
+    |--------------------------------------------------------------------------
+    | The package schedules its own jobs (like Horizon / Telescope): you only
+    | need Laravel's scheduler running. Times are cron expressions; set
+    | RECOMMENDER_SCHEDULE=false to schedule them yourself.
+    */
+    'schedule' => [
+        'enabled' => env('RECOMMENDER_SCHEDULE', true),
+        'scores' => '*/10 * * * *',     // recommender:update-scores
+        'neighbours' => '30 3 * * *',   // recommender:build-neighbours
+        'prune' => '30 4 * * *',        // recommender:prune
+    ],
+
     /* Database connection for the package tables (null = default). */
     'database_connection' => env('RECOMMENDER_DB_CONNECTION'),
 

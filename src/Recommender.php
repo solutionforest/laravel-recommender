@@ -71,6 +71,28 @@ class Recommender
     }
 
     /**
+     * The one feed whose `model` is $model.
+     *
+     * @param  class-string|Model  $model
+     */
+    public function feedFor(string|Model $model): string
+    {
+        $class = $model instanceof Model ? $model::class : $model;
+        $names = [];
+        foreach ((array) config('recommender.feeds', []) as $name => $config) {
+            if (is_array($config) && ($config['model'] ?? null) === $class) {
+                $names[] = (string) $name;
+            }
+        }
+
+        return match (count($names)) {
+            1 => $names[0],
+            0 => throw new InvalidArgumentException("No recommender feed has 'model' => {$class}::class. Add one to config/recommender.php or run php artisan recommender:bootstrap."),
+            default => throw new InvalidArgumentException("Several recommender feeds use {$class} (".implode(', ', $names)."); pass the feed name, e.g. recommendedFor(\$user, '{$names[0]}')."),
+        };
+    }
+
+    /**
      * Package presets, overridden / extended by the app's `presets`.
      *
      * @return array<string, mixed>
@@ -192,6 +214,7 @@ class Recommender
         [$cards, $servedIds, $consumed] = $this->render($feed, $unseen, $perPage);
         $this->cache->markSeen($feed, $userId, $consumed);
         $this->recordImpressions($feed, $servedIds);
+        $this->hintIfEmpty($feed, $page, $servedIds);
 
         $remaining = max(0, count($unseen) - count($consumed));
         if ($servedIds !== [] && $tail !== [] && array_diff(array_map('strval', $servedIds), array_keys($tail)) === []) {
@@ -477,6 +500,7 @@ class Recommender
 
         [$cards, $servedIds, $consumed] = $this->render($feed, $window, $perPage);
         $this->recordImpressions($feed, $servedIds);
+        $this->hintIfEmpty($feed, $page, $servedIds);
         $remaining = max(0, count($window) - count($consumed));
 
         return new FeedPage(
@@ -641,6 +665,21 @@ class Recommender
             'weights' => $sourceWeights,
             'boost_weights' => $boostWeights,
         ];
+    }
+
+    /**
+     * @param  list<int|string>  $ids
+     */
+    /**
+     * @param  list<int|string>  $ids
+     */
+    private function hintIfEmpty(FeedDefinition $feed, int $page, array $ids): void
+    {
+        // An empty first page is almost always setup (no scores, a filter that
+        // hides everything, a missing card). Say where to look — at most hourly.
+        if ($page === 1 && $ids === [] && $this->cache->once($feed, 'empty-hint', 3600)) {
+            Log::notice("[recommender:{$feed->name}] served an empty first page. Run `php artisan recommender:doctor {$feed->name}` or open /recommender to see why.");
+        }
     }
 
     /**
