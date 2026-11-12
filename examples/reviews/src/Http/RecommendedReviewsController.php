@@ -3,6 +3,7 @@
 namespace SolutionForest\Recommender\Examples\Reviews\Http;
 
 use Illuminate\Http\Request;
+use SolutionForest\Recommender\Examples\Reviews\Models\Review;
 use SolutionForest\Recommender\Support\FeedPage;
 
 /**
@@ -13,6 +14,6 @@ class RecommendedReviewsController
 {
     public function __invoke(Request $request): FeedPage
     {
-        return recommendations('reviews', $request->user());
+        return Review::recommendedFor($request->user());
     }
 }

@@ -20,19 +20,21 @@ The package does not collect views or likes. Your app needs item records and int
 
 ```php
 'posts' => [
+    'preset' => 'social',   // catalog | social | events: sensible weights in one line
     'model' => App\Models\Post::class,
     'interactions' => ['post_likes' => 'like', 'post_views' => 'view'],
 ],
 ```
 
-Your app also decides which items may be shown (a `recommendable` scope on the model) and which fields a card contains (`toRecommendationCard()`).
+Your app also decides which items may be shown (a `recommendable` scope on the model) and which fields a card contains (`toRecommendationCard()`). `php artisan recommender:bootstrap posts` writes this for you.
 
-Maintenance commands read the interactions and store derived scores and neighbours. The first request for a user may build a ranked list, which is then cached. A guest uses a shared trending list. A new user may have little personal signal, and a new catalog may have no scored items yet.
+Background jobs — scheduled by the package, you only run Laravel's scheduler — read the interactions and store derived scores and neighbours. The first request for a user may build a ranked list, which is then cached. A guest uses a shared trending list. A new user may have little personal signal, and a new catalog may have no scored items yet.
 
 ## Continue
 
 1. [Create and verify a feed](tutorial.md).
 2. [Understand the request and ranking pipeline](how-it-works.md).
 3. [Adjust the ranking](tuning.md) only after you can see results.
+4. [Advanced usage](advanced.md): your own sources and boosters, custom classes, several feeds, A/B tests, testing.
 
 For configuration and method signatures use the [reference](reference.md); to monitor feeds use the [dashboard](dashboard.md); for scheduling, caching and recovery use [operations](operations.md). The [maths](maths.md) is optional.

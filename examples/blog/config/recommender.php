@@ -23,6 +23,7 @@ return [
     'feeds' => [
         'posts' => [
             // What to recommend, and where interactions live — no classes needed.
+            'preset' => 'social',   // events, decay; own sources + boosters below
             'model' => Post::class,
             'interactions' => [
                 'post_likes' => 'like',
@@ -48,17 +49,12 @@ return [
                 QualityBooster::class => 0.15,
                 SponsoredShopBooster::class => 0.25,  // rank them higher
             ],
-            'exploration_sources' => [TrendingSource::class],
             'exploration_ratio' => 0.05,
             'diversity' => ['author_id' => 1],            // sponsor cannot fill whole page
             'trending_sources' => [
                 TrendingSource::class => 1.0,
                 FreshPostSource::class => 0.15,        // guests / empty scores only
             ],
-
-            'events' => ['view' => 1.0, 'like' => 4.0],
-            'positive_events' => ['like'],
-            'exposure_events' => ['view'],
         ],
     ],
 ];

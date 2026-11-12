@@ -3,6 +3,7 @@
 namespace SolutionForest\Recommender\Examples\EventsAdvanced\Http;
 
 use Illuminate\Http\Request;
+use SolutionForest\Recommender\Examples\EventsAdvanced\Models\Event;
 use SolutionForest\Recommender\Support\FeedPage;
 
 /**
@@ -13,6 +14,6 @@ class RecommendedEventsController
 {
     public function __invoke(Request $request): FeedPage
     {
-        return recommendations('events', $request->user());
+        return Event::recommendedFor($request->user());
     }
 }

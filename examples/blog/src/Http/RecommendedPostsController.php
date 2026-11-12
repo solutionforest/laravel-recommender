@@ -3,6 +3,7 @@
 namespace SolutionForest\Recommender\Examples\Blog\Http;
 
 use Illuminate\Http\Request;
+use SolutionForest\Recommender\Examples\Blog\Models\Post;
 use SolutionForest\Recommender\Support\FeedPage;
 
 /**
@@ -13,6 +14,6 @@ class RecommendedPostsController
 {
     public function __invoke(Request $request): FeedPage
     {
-        return recommendations('posts', $request->user());
+        return Post::recommendedFor($request->user());
     }
 }

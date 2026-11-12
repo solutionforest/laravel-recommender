@@ -83,4 +83,5 @@ Full guide: [docs/maths.md §5](../../docs/maths.md). Tune **config source weigh
 1. Copy `src/` folders → `app/Recommendation/Events`, and the model's scopes into your `Event` model.
 2. Merge feed `events` into `config/recommender.php` and run `php artisan recommender:doctor events`.
 3. Map `host_id` / `district_id` / `type_id` / comments to your schema.
-4. Tune weights: raise district for local apps, host for organiser loyalty, type for taste, `comment` / `CommentHeatBooster` when discussion matters.
+4. Route: `Route::get('/events/recommended', fn (Request $r) => Event::recommendedFor($r->user()));` — jobs are scheduled by the package.
+5. Tune weights: raise district for local apps, host for organiser loyalty, type for taste, `comment` / `CommentHeatBooster` when discussion matters.
