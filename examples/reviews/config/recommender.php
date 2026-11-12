@@ -3,12 +3,9 @@
 use SolutionForest\Recommender\Boosters\QualityBooster;
 use SolutionForest\Recommender\Examples\Reviews\Sources\FreshReviewSource;
 use SolutionForest\Recommender\Examples\Reviews\Sources\PetTypeMatchSource;
-use SolutionForest\Recommender\Examples\Reviews\Cards\ReviewCardTransformer;
-use SolutionForest\Recommender\Examples\Reviews\Interactions\ReviewInteractionSource;
-use SolutionForest\Recommender\Examples\Reviews\Groups\ReviewShopGroups;
-use SolutionForest\Recommender\Examples\Reviews\Filters\VisibleReviewFilter;
 use SolutionForest\Recommender\Sources\CoInteractionSource;
 use SolutionForest\Recommender\Sources\TrendingSource;
+use SolutionForest\Recommender\Examples\Reviews\Models\Review;
 
 /*
  * Inspiration-style reviews feed — personalisation + pet-type rule source.
@@ -19,6 +16,13 @@ return [
 
     'feeds' => [
         'reviews' => [
+            // What to recommend, and where interactions live — no classes needed.
+            'model' => Review::class,
+            'interactions' => [
+                'review_likes' => 'like',
+                'review_views' => 'view',
+            ],
+
             'page_size' => 12,
             'feed_size' => 200,
             'trending_size' => 200,
@@ -35,7 +39,7 @@ return [
             ],
             'exploration_sources' => [TrendingSource::class],
             'exploration_ratio' => 0.05,
-            'diversity' => ['shop' => 2, 'writer' => 1],
+            'diversity' => ['shop_id' => 2, 'user_id' => 1], // per shop / per writer
             'trending_sources' => [
                 TrendingSource::class => 1.0,
                 FreshReviewSource::class => 0.15,
@@ -44,11 +48,6 @@ return [
             'events' => ['view' => 1.0, 'like' => 4.0],
             'positive_events' => ['like'],
             'exposure_events' => ['view'],
-
-            'interactions' => ReviewInteractionSource::class,
-            'filter' => VisibleReviewFilter::class,
-            'cards' => ReviewCardTransformer::class,
-            'groups' => ReviewShopGroups::class,
         ],
     ],
 ];

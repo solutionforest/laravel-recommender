@@ -1,34 +1,26 @@
 # Example: recommended blog posts
 
-Minimal integration: likes + views → recommended posts. Covered by [`BlogExampleTest`](../../tests/Feature/BlogExampleTest.php).
+Likes + views → recommended posts, with a sponsored-author campaign and one post per author per page. Covered by [`BlogExampleTest`](../../tests/Feature/BlogExampleTest.php).
 
-Also see: [`../products`](../products/) (three events) · [`../reviews`](../reviews/) (custom sources) · [index](../README.md).
-
-**First time with the package?** Start at [docs/getting-started.md](../../docs/getting-started.md), then come back here to copy files.
+Also see: [`../simple`](../simple/) (smallest feed) · [`../products`](../products/) (three events) · [`../reviews`](../reviews/) (custom sources) · [index](../README.md).
 
 ```mermaid
 flowchart LR
-  L[(post_likes)] & V[(post_views)] --> I[PostInteractionSource]
-  I --> J["update-scores / build-neighbours"]
+  L[(post_likes)] & V[(post_views)] -->|interactions config| J["update-scores / build-neighbours"]
   J --> R[Recommender]
-  P[(posts)] --> F[VisiblePostFilter] --> R
-  P --> FS[FreshPostSource] --> R
-  P --> G[PostAuthorGroups] --> R
-  R --> C[PostCardTransformer] --> API["GET /posts/recommended"]
+  P[(posts)] -->|Post::scopeRecommendable| R
+  P --> FS[FreshPostSource] & SS[SponsoredShopSource] --> R
+  R -->|Post::toRecommendationCard| API["GET /posts/recommended"]
 ```
 
 | Path | Role |
 |---|---|
-| `src/Interactions/` | Stream likes/views |
-| `src/Filters/` | Published, not mine |
-| `src/Cards/` | API card (shared cache) |
-| `src/Sources/` | Fresh + sponsored |
+| `config/recommender.php` | The feed: `model`, `interactions`, weights, `'diversity' => ['author_id' => 1]` |
+| `src/Models/Post.php` | Visibility (published, not mine) + card |
+| `src/Sources/` | Fresh posts (guests) + sponsored posts |
 | `src/Boosters/` | Freshness + sponsored |
-| `src/Groups/` | Max 1 author per page |
-| `src/Http/` | JSON controller |
+| `src/Http/` | One-line controller |
 | `src/Support/` | Infinite scroll helper |
-| `src/Models/` | Post |
-| `config/recommender.php` | Feed weights |
 
 ## Try it
 
@@ -38,16 +30,15 @@ vendor/bin/pest tests/Feature/BlogExampleTest.php
 
 ## Use in your app
 
-1. Copy `src/*` → `app/Recommendation/Posts` (fix namespaces).
-2. Merge `config/recommender.php`.
-3. Add the route.
-4. Schedule jobs — [getting started](../../docs/tutorial.md#5-keep-it-updated).
-5. Run `update-scores` + `build-neighbours` once before go-live.
+1. Merge the feed from `config/recommender.php` into yours (`model` → your model class).
+2. Copy the model's `scopeRecommendable()` and `toRecommendationCard()` into your model, and add `use Recommendable;`.
+3. Route: `Route::get('/posts/recommended', fn (Request $r) => recommendations('posts', $r->user()));`
+4. Check it: `php artisan recommender:doctor posts`, then schedule `update-scores` / `build-neighbours` — see [the tutorial](../../docs/tutorial.md#5-keep-it-updated).
 
 ## Lab ideas
 
 - **Infinite scroll** — ranked then chronological tail: `InfiniteScrollFeed`.
 - **Don’t optimise for “latest”** — high Fresh\* collapses cohorts: [tuning](../../docs/tuning.md).
-- **Video covers** — poster URL in the transformer, not `.mp4` in `<img>`.
+- **Video covers** — poster URL in `toRecommendationCard()`, not `.mp4` in `<img>`.
 - **Sponsors** — Source + Booster + diversity caps.
 - **How we score** — [How we score (maths)](../../docs/maths.md).

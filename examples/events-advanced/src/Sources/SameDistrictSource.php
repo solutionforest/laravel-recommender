@@ -26,7 +26,7 @@ class SameDistrictSource implements CandidateSource
         }
 
         $events = Event::query()
-            ->recommendable($context->now(), $context->userId)
+            ->recommendable($context)
             ->where('district_id', $districtId)
             ->orderBy('starts_at')
             ->limit($limit)

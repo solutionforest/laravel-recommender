@@ -128,3 +128,7 @@ it('serves guests without district or host affinity', function () {
         ->not->toContain(5)
         ->not->toContain(6);
 });
+
+it('passes recommender:doctor with the config-only feed', function () {
+    $this->artisan('recommender:doctor', ['feed' => 'events'])->assertSuccessful();
+});

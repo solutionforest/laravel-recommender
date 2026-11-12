@@ -13,7 +13,7 @@ class FreshEventSource implements CandidateSource
     public function candidates(Context $context, int $limit): array
     {
         $events = Event::query()
-            ->recommendable($context->now())
+            ->recommendable($context)
             ->orderBy('starts_at')
             ->limit($limit)
             ->get(['id']);

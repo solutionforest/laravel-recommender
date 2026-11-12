@@ -24,7 +24,7 @@ class FavoriteHostSource implements CandidateSource
         }
 
         $events = Event::query()
-            ->recommendable($context->now(), $context->userId)
+            ->recommendable($context)
             ->whereIn('host_id', $favoriteHosts->keys())
             ->orderBy('starts_at')
             ->limit($limit)

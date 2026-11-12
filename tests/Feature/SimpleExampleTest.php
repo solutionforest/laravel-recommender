@@ -107,3 +107,7 @@ it('refreshes a cached card when the model is saved', function () {
 
     expect($titles[5])->toBe('Renamed');
 });
+
+it('passes recommender:doctor with the config-only feed', function () {
+    $this->artisan('recommender:doctor', ['feed' => 'articles'])->assertSuccessful();
+});

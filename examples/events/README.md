@@ -10,20 +10,18 @@ Meetup / community **events** people can **view**, **like**, and **join** (RSVP)
 
 Covered by [`EventsExampleTest`](../../tests/Feature/EventsExampleTest.php).
 
-Want **district / living area / favorite event type** on top of this? See the full standalone copy in [`../events-advanced`](../events-advanced/).
+Want **district / living area / favorite event type** on top of this? See [`../events-advanced`](../events-advanced/).
 
 ```mermaid
 flowchart LR
-  V[(views)] & L[(likes)] & J[(joins)] --> I[EventInteractionSource]
-  I --> Jobs["update-scores / build-neighbours"]
+  V[(views)] & L[(likes)] & J[(joins)] -->|interactions config| Jobs["update-scores / build-neighbours"]
   Jobs --> R[Recommender]
-  E[(events)] --> F[VisibleEventFilter] --> R
-  R --> C[EventCardTransformer] --> API["GET /events/recommended"]
+  E[(events)] -->|Event::scopeRecommendable| R
+  E --> FS[FreshEventSource] --> R
+  R -->|Event::toRecommendationCard| API["GET /events/recommended"]
 ```
 
-## Layout
-
-`Models/` · `Interactions/` · `Sources/` · `Filters/` · `Cards/` · `Groups/` · `Http/` — see [examples README](../README.md).
+`Event::scopeRecommendable()` hides unpublished, past and own-hosted events (it uses `$context->now()`). Similar items use like + join only (`positive_events`).
 
 ## Try it
 
@@ -33,9 +31,7 @@ vendor/bin/pest tests/Feature/EventsExampleTest.php
 
 ## Use in your app
 
-1. Copy `src/` folders → `app/Recommendation/Events` (fix namespaces).
-2. Merge feed `events` into `config/recommender.php`.
-3. Route → `Http/RecommendedEventsController` (or Livewire + `toPaginator()`).
-4. Scaffold shortcut: `php artisan recommender:make-feed events --preset=events -n`
-
-Neighbours use **like + join** only (not every view). Filter hides unpublished / past / own-hosted events.
+1. Merge the feed from `config/recommender.php` into yours (`model` → your model class).
+2. Copy the model's `scopeRecommendable()` and `toRecommendationCard()` into your model, and add `use Recommendable;`.
+3. Route: `Route::get('/events/recommended', fn (Request $r) => recommendations('events', $r->user()));`
+4. Check it: `php artisan recommender:doctor events`, then schedule `update-scores` / `build-neighbours` — see [the tutorial](../../docs/tutorial.md#5-keep-it-updated).

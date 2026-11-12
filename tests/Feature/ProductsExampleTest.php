@@ -89,3 +89,7 @@ it('serves guests trending products', function () {
     $response->assertOk()->assertJsonPath('origin', 'trending');
     expect(collect($response->json('data'))->pluck('id'))->not->toBeEmpty()->not->toContain(3);
 });
+
+it('passes recommender:doctor with the config-only feed', function () {
+    $this->artisan('recommender:doctor', ['feed' => 'products'])->assertSuccessful();
+});

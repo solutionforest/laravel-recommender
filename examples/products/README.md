@@ -1,6 +1,6 @@
 # Example: product catalog (three event types)
 
-Shows that interactions are **not only likes/views**. Here we stream:
+Shows that interactions are **not only likes/views**:
 
 | Table | Event | Default weight |
 |---|---|---|
@@ -12,16 +12,13 @@ Covered by [`ProductsExampleTest`](../../tests/Feature/ProductsExampleTest.php).
 
 ```mermaid
 flowchart LR
-  V[(views)] & L[(likes)] & P[(purchases)] --> I[ProductInteractionSource]
-  I --> J["update-scores / build-neighbours"]
+  V[(views)] & L[(likes)] & P[(purchases)] -->|interactions config| J["update-scores / build-neighbours"]
   J --> R[Recommender]
-  PR[(products)] --> F[VisibleProductFilter] --> R
-  R --> C[ProductCardTransformer] --> API["GET /products/recommended"]
+  PR[(products)] -->|Product::scopeRecommendable| R
+  R -->|Product::toRecommendationCard| API["GET /products/recommended"]
 ```
 
-## Layout
-
-`Models/` · `Interactions/` · `Sources/` · `Filters/` · `Cards/` · `Groups/` · `Http/` — see [examples README](../README.md).
+Similar items are built from `positive_events` (like + purchase), not every view. `'diversity' => ['seller_id' => 1]` keeps one product per seller per page.
 
 ## Try it
 
@@ -31,7 +28,9 @@ vendor/bin/pest tests/Feature/ProductsExampleTest.php
 
 ## Use in your app
 
-1. Copy `src/` folders → `app/Recommendation/Products` (fix namespaces).
-2. Merge `config/recommender.php` feed `products`.
-3. Add the route.
-4. Yield any extra event names you need — register them under `events` / `positive_events`.
+1. Merge the feed from `config/recommender.php` into yours (`model` → your model class).
+2. Copy the model's `scopeRecommendable()` and `toRecommendationCard()` into your model, and add `use Recommendable;`.
+3. Route: `Route::get('/products/recommended', fn (Request $r) => recommendations('products', $r->user()));`
+4. Check it: `php artisan recommender:doctor products`, then schedule `update-scores` / `build-neighbours` — see [the tutorial](../../docs/tutorial.md#5-keep-it-updated).
+
+Add any other table as a new event: `'product_shares' => 'share'`, then give `share` a weight under `events`.

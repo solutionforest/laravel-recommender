@@ -1,27 +1,25 @@
 # Example: shop reviews / inspiration
 
-UGC reviews on shops, with a **custom rule source** (`PetTypeMatchSource`: same pet type as the viewer). Mimics an inspiration feed without AWS Personalize / `ORDER BY RAND()`.
+UGC reviews on shops, with a **custom rule source** (`PetTypeMatchSource`: same pet type as the viewer). An inspiration feed without AWS Personalize / `ORDER BY RAND()`.
 
 Covered by [`ReviewsExampleTest`](../../tests/Feature/ReviewsExampleTest.php).
 
 ```mermaid
 flowchart LR
-  L[(review_likes)] & V[(review_views)] --> I[ReviewInteractionSource]
+  L[(review_likes)] & V[(review_views)] -->|interactions config| J["update-scores / build-neighbours"]
   PET[(user_pets)] --> P[PetTypeMatchSource]
-  I --> J["update-scores / build-neighbours"]
   J --> R[Recommender]
   P --> R
-  RV[(reviews)] --> F[VisibleReviewFilter] --> R
-  R --> C[ReviewCardTransformer] --> API["GET /reviews/recommended"]
+  RV[(reviews)] -->|Review::scopeRecommendable| R
+  R -->|Review::toRecommendationCard| API["GET /reviews/recommended"]
 ```
 
 | Path | Role |
 |---|---|
-| `src/Interactions/` | likes + views |
-| `src/Sources/PetTypeMatchSource` | same `pet_type_id` as viewer |
-| `src/Filters/` | published, has cover, not mine |
-| `src/Groups/` | diversity by shop |
-| `src/Models/` · `Cards/` · `Http/` | model, cards, controller |
+| `config/recommender.php` | The feed; `'diversity' => ['shop_id' => 2, 'user_id' => 1]` (per shop / per writer) |
+| `src/Models/Review.php` | Visibility (published, has cover, shop open, not mine) + card |
+| `src/Sources/PetTypeMatchSource` | Same `pet_type_id` as the viewer |
+| `src/Http/` | One-line controller |
 
 ## Try it
 
@@ -31,6 +29,8 @@ vendor/bin/pest tests/Feature/ReviewsExampleTest.php
 
 ## Use in your app
 
-1. Copy `src/*` → `app/Recommendation/Reviews` (fix namespaces).
-2. Merge feed `reviews` into `config/recommender.php`.
-3. Replace `pet_type_id` with your real affinity rule (category, district, …).
+1. Merge the feed from `config/recommender.php` into yours (`model` → your model class).
+2. Copy the model's `scopeRecommendable()` and `toRecommendationCard()` into your model, and add `use Recommendable;`.
+2b. Replace `pet_type_id` with your real affinity rule (category, district, …).
+3. Route: `Route::get('/reviews/recommended', fn (Request $r) => recommendations('reviews', $r->user()));`
+4. Check it: `php artisan recommender:doctor reviews`, then schedule `update-scores` / `build-neighbours` — see [the tutorial](../../docs/tutorial.md#5-keep-it-updated).

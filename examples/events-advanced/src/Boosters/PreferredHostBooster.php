@@ -17,7 +17,7 @@ class PreferredHostBooster implements Booster
             return [];
         }
 
-        $favoriteHosts = JoinPreferences::hosts($context->userId)->keys()->all();
+        $favoriteHosts = array_values(JoinPreferences::hosts($context->userId)->keys()->all());
 
         if ($favoriteHosts === []) {
             return [];

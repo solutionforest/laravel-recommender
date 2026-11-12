@@ -95,3 +95,7 @@ it('serves guests a trending events listing', function () {
         ->not->toContain(3)
         ->not->toContain(4);
 });
+
+it('passes recommender:doctor with the config-only feed', function () {
+    $this->artisan('recommender:doctor', ['feed' => 'events'])->assertSuccessful();
+});

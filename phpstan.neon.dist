@@ -6,6 +6,10 @@ parameters:
     paths:
         - src
         - examples/blog/src
+        - examples/events/src
+        - examples/events-advanced/src
+        - examples/products/src
+        - examples/reviews/src
         - examples/simple/src
     level: 8
     treatPhpDocTypesAsCertain: false

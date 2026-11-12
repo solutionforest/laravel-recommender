@@ -1,13 +1,10 @@
 <?php
 
 use SolutionForest\Recommender\Boosters\QualityBooster;
-use SolutionForest\Recommender\Examples\Events\Cards\EventCardTransformer;
-use SolutionForest\Recommender\Examples\Events\Groups\EventHostGroups;
-use SolutionForest\Recommender\Examples\Events\Interactions\EventInteractionSource;
 use SolutionForest\Recommender\Examples\Events\Sources\FreshEventSource;
-use SolutionForest\Recommender\Examples\Events\Filters\VisibleEventFilter;
 use SolutionForest\Recommender\Sources\CoInteractionSource;
 use SolutionForest\Recommender\Sources\TrendingSource;
+use SolutionForest\Recommender\Examples\Events\Models\Event;
 
 /*
  * Events listing — view / like / join → personalised upcoming events.
@@ -18,6 +15,14 @@ return [
 
     'feeds' => [
         'events' => [
+            // What to recommend, and where interactions live — no classes needed.
+            'model' => Event::class,
+            'interactions' => [
+                'event_views' => 'view',
+                'event_likes' => 'like',
+                'event_joins' => 'join',
+            ],
+
             'page_size' => 10,
             'feed_size' => 200,
             'trending_size' => 200,
@@ -32,7 +37,7 @@ return [
             ],
             'exploration_sources' => [FreshEventSource::class],
             'exploration_ratio' => 0.08,
-            'diversity' => ['host' => 1],
+            'diversity' => ['host_id' => 1],
             'trending_sources' => [
                 TrendingSource::class => 1.0,
                 FreshEventSource::class => 0.25,
@@ -45,11 +50,6 @@ return [
             ],
             'positive_events' => ['like', 'join'],
             'exposure_events' => ['view'],
-
-            'interactions' => EventInteractionSource::class,
-            'filter' => VisibleEventFilter::class,
-            'cards' => EventCardTransformer::class,
-            'groups' => EventHostGroups::class,
         ],
     ],
 ];

@@ -2,12 +2,9 @@
 
 use SolutionForest\Recommender\Boosters\QualityBooster;
 use SolutionForest\Recommender\Examples\Products\Sources\FreshProductSource;
-use SolutionForest\Recommender\Examples\Products\Cards\ProductCardTransformer;
-use SolutionForest\Recommender\Examples\Products\Interactions\ProductInteractionSource;
-use SolutionForest\Recommender\Examples\Products\Groups\ProductSellerGroups;
-use SolutionForest\Recommender\Examples\Products\Filters\VisibleProductFilter;
 use SolutionForest\Recommender\Sources\CoInteractionSource;
 use SolutionForest\Recommender\Sources\TrendingSource;
+use SolutionForest\Recommender\Examples\Products\Models\Product;
 
 /*
  * Catalog feed — three event types (view / like / purchase).
@@ -19,6 +16,14 @@ return [
 
     'feeds' => [
         'products' => [
+            // What to recommend, and where interactions live — no classes needed.
+            'model' => Product::class,
+            'interactions' => [
+                'product_views' => 'view',
+                'product_likes' => 'like',
+                'product_purchases' => 'purchase',
+            ],
+
             'page_size' => 10,
             'feed_size' => 200,
             'trending_size' => 200,
@@ -33,7 +38,7 @@ return [
             ],
             'exploration_sources' => [TrendingSource::class],
             'exploration_ratio' => 0.05,
-            'diversity' => ['seller' => 1],
+            'diversity' => ['seller_id' => 1],
             'trending_sources' => [
                 TrendingSource::class => 1.0,
                 FreshProductSource::class => 0.15,
@@ -47,11 +52,6 @@ return [
             ],
             'positive_events' => ['like', 'purchase'],
             'exposure_events' => ['view'],
-
-            'interactions' => ProductInteractionSource::class,
-            'filter' => VisibleProductFilter::class,
-            'cards' => ProductCardTransformer::class,
-            'groups' => ProductSellerGroups::class,
         ],
     ],
 ];
