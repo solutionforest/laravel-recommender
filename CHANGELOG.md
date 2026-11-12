@@ -14,6 +14,8 @@ This project uses [Semantic Versioning](https://semver.org/).
 - `FeedPage` is `Responsable` / `JsonSerializable`; return it from a route to get paginator JSON
 - GitHub Actions [`release.yml`](.github/workflows/release.yml) — push `v*.*.*` tag → Release with notes from `CHANGELOG.md`
 
+- `tests/Feature/StressTest.php` — data-volume and interaction-frequency stress tests (`--group=stress`, `RECOMMENDER_STRESS_SCALE`)
+
 ### Changed
 - `page()` / `build()` / `warm()` / `forgetUser()` / `explain()` accept the user model as well as an id; a model is added as the `user` attribute
 - `page()`'s `$page` defaults to the request's `?page=` (was `1`); `toPaginator()`'s `path` defaults to the current URL (was `/`)

@@ -1,27 +1,14 @@
 <?php
 
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use SolutionForest\Recommender\Interactions\DatabaseInteractions;
 use SolutionForest\Recommender\Recommender;
 use SolutionForest\Recommender\Support\Bindings;
 use SolutionForest\Recommender\Support\FeedDefinition;
 
 beforeEach(function () {
-    Schema::create('video_plays', function (Blueprint $t) {
-        $t->id();
-        $t->uuid('viewer_uuid');
-        $t->uuid('video_uuid');
-        $t->timestamp('played_at');
-    });
-    Schema::create('video_favourites', function (Blueprint $t) {
-        $t->id();
-        $t->uuid('viewer_uuid');
-        $t->uuid('clip_uuid');
-        $t->timestamp('played_at');
-    });
+    $this->loadMigrationsFrom(__DIR__.'/../Fixtures/migrations');
 
     $this->feed = FeedDefinition::make('videos', [], [
         'interactions' => [
@@ -85,15 +72,9 @@ it('falls back to every table when no history event matches', function () {
 it('derives the item column from the model name', function () {
     $feed = FeedDefinition::make('articles', [], [
         'model' => \SolutionForest\Recommender\Examples\Simple\Models\Article::class,
-        'interactions' => ['article_likes' => 'like'],
+        'interactions' => ['fixture_article_likes' => 'like'],
     ]);
-    Schema::create('article_likes', function (Blueprint $t) {
-        $t->id();
-        $t->unsignedBigInteger('user_id');
-        $t->unsignedBigInteger('article_id');
-        $t->timestamp('created_at');
-    });
-    DB::table('article_likes')->insert(['user_id' => 9, 'article_id' => 4, 'created_at' => now()]);
+    DB::table('fixture_article_likes')->insert(['user_id' => 9, 'article_id' => 4, 'created_at' => now()]);
 
     expect((new DatabaseInteractions($feed))->recentItems(9, 5))->toBe([4]);
 });

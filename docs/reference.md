@@ -246,5 +246,10 @@ composer analyse
 | `tests/Feature/MaintenanceTest.php` | scores, neighbours, versions, event weight → `hot` order |
 | `tests/Feature/ScaleTest.php` | shards, memory, bulk writes |
 | `tests/Feature/BlogExampleTest.php` | sample app E2E + sponsored source/booster |
+| `tests/Feature/SimpleExampleTest.php` | config-only feed (`model` + interaction tables) E2E |
+| `tests/Feature/DatabaseInteractionsTest.php` | table-driven interactions: UUIDs, per-table columns, user chunk paging |
+| `tests/Feature/StressTest.php` | **volume**: 100k events / 2k users / 1k items — exact counts, bounded memory & queries, constant serving cost · **frequency**: per-minute score runs with bursts and boundary events (no loss, no double count), rapid-fire paging (no repeats, throttled rebuilds), edits between requests |
+
+Stress tests run in the normal suite (~10 s on SQLite). Run them alone or bigger with `RECOMMENDER_STRESS_SCALE=5 vendor/bin/pest --group=stress`.
 
 CI: PHPStan + PHP 8.3–8.4 × Laravel 11–13 (SQLite) + Laravel 13 / MySQL 8.
