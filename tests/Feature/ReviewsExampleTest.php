@@ -3,8 +3,8 @@
 use Illuminate\Auth\GenericUser;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
-use SolutionForest\Recommender\Examples\Reviews\RecommendedReviewsController;
-use SolutionForest\Recommender\Examples\Reviews\Review;
+use SolutionForest\Recommender\Examples\Reviews\Http\RecommendedReviewsController;
+use SolutionForest\Recommender\Examples\Reviews\Models\Review;
 
 /*
  * examples/reviews — custom PetTypeMatchSource + shop diversity.

@@ -61,6 +61,28 @@ Then scale so the best candidate in the batch is `1.0`.
 - **Explore:** ~`exploration_ratio` slots from `exploration_sources`.
 - **Diversify:** greedy cap per group; overflow to later pages.
 
+## 5. Helpers for your custom sources (`Math`)
+
+When you write a `CandidateSource` / `Booster`, return **any positive floats** — the blender normalises each source. You do **not** need perfect ML scores. Pick a helper that matches the intent:
+
+| Intent | Helper | Typical use |
+|---|---|---|
+| Query order alone (row 0 best) | `Math::fromPosition($i)` | Soonest events, nearest matches |
+| Preference strength × soft order | `Math::fromAffinity($w, $i, step: 0.05)` | Favorite type/host × starts_at order |
+| Newer is better | `Math::fromAge($age, $halfLife)` | Fresh posts (`halfLife` in same unit as `$age`) |
+| Scale batch so max = 1 | `Math::normalizeMax($scores)` | Boosters comparing counts |
+| Whole ordered query → scores | `Math::scoreInOrder($rows)` / `scoreInOrder($rows, fn ($row) => $weight)` | Custom sources without a scoring loop |
+| Soft-boost preferred attributes | `Math::preferRanked($ids, $favoriteKeys, $attrById)` | Boosters (“favorite type/host”) |
+
+**How to choose**
+
+1. Ordered SQL (`orderBy starts_at`) and every row is “equally matching”? → `scoreInOrder($rows)`.
+2. Rows share a weight (join count for a type) but you still want a light order nudge? → `scoreInOrder($rows, fn ($row) => $weight)`.
+3. Time since publish/start matters more than list index? → `fromAge`.
+4. Unsure? Start with `scoreInOrder`; tune feed **weights** in config before inventing formulas.
+
+See `examples/events-advanced` (`JoinPreferences`, Event scopes, these helpers).
+
 ## What we are *not* claiming
 
 No deep learning, two-tower retrieval, or online bandits. For sparse first-party like/view data this interpretable baseline is often the right production default. You can still plug a learned `CandidateSource` later.

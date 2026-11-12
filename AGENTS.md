@@ -14,7 +14,7 @@ Human docs live under [`docs/`](docs/). Prefer linking there over pasting walls 
 | [docs/operations.md](docs/operations.md) | Go-live / FAQ / scale |
 | [docs/maths.md](docs/maths.md) | How we score (formulas) |
 | [skills/laravel-recommender/SKILL.md](skills/laravel-recommender/SKILL.md) | Cursor skill for **consuming apps** |
-| [examples/](examples/) | Samples: `blog`, `products`, `events` (view/like/join), `events-advanced` (district + type), `reviews` (+ pet match) |
+| [examples/](examples/) | Samples (`Models/` · `Sources/` · `Boosters/` · …): `blog`, `products`, `events`, `events-advanced`, `reviews` |
 
 ---
 

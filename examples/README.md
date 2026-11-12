@@ -7,8 +7,27 @@ Copy-paste integrations covered by Pest so the docs cannot rot.
 | [`blog/`](blog/) | Likes + views → posts; sponsors; diversity | `BlogExampleTest` |
 | [`products/`](products/) | **Three events** (`view` / `like` / `purchase`) → catalog | `ProductsExampleTest` |
 | [`events/`](events/) | **Meetup listing** (`view` / `like` / `join`) → recommended events | `EventsExampleTest` |
-| [`events-advanced/`](events-advanced/) | District + living district + favorite event type (join frequency) on top of view/like/join | `EventsAdvancedExampleTest` |
+| [`events-advanced/`](events-advanced/) | Full copy of `events/` + district, host party, type, comments; for simple view/like/join see `events/` | `EventsAdvancedExampleTest` |
 | [`reviews/`](reviews/) | Shop UGC + custom `PetTypeMatchSource` | `ReviewsExampleTest` |
+
+## Folder layout (every example)
+
+```
+example/
+  config/recommender.php
+  database/migrations/
+  README.md
+  src/
+    Models/          # Eloquent items
+    Interactions/    # InteractionSource (views / likes / …)
+    Sources/         # CandidateSource (what to recommend)
+    Boosters/        # Booster (re-score items already in the pool)
+    Filters/         # ItemFilter (visibility)
+    Cards/           # CardTransformer (API payload)
+    Groups/          # DiversityGroups
+    Http/            # Controllers
+    Support/         # Helpers (optional)
+```
 
 ```bash
 vendor/bin/pest tests/Feature/BlogExampleTest.php

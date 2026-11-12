@@ -10,7 +10,7 @@ Meetup / community **events** people can **view**, **like**, and **join** (RSVP)
 
 Covered by [`EventsExampleTest`](../../tests/Feature/EventsExampleTest.php).
 
-Want **district / living area / favorite event type**? See [`../events-advanced`](../events-advanced/).
+Want **district / living area / favorite event type** on top of this? See the full standalone copy in [`../events-advanced`](../events-advanced/).
 
 ```mermaid
 flowchart LR
@@ -21,6 +21,10 @@ flowchart LR
   R --> C[EventCardTransformer] --> API["GET /events/recommended"]
 ```
 
+## Layout
+
+`Models/` · `Interactions/` · `Sources/` · `Filters/` · `Cards/` · `Groups/` · `Http/` — see [examples README](../README.md).
+
 ## Try it
 
 ```bash
@@ -29,9 +33,9 @@ vendor/bin/pest tests/Feature/EventsExampleTest.php
 
 ## Use in your app
 
-1. Copy `src/*` → `app/Recommendation/Events` (fix namespaces).
+1. Copy `src/` folders → `app/Recommendation/Events` (fix namespaces).
 2. Merge feed `events` into `config/recommender.php`.
-3. Route → `RecommendedEventsController` (or Livewire + `toPaginator()`).
+3. Route → `Http/RecommendedEventsController` (or Livewire + `toPaginator()`).
 4. Scaffold shortcut: `php artisan recommender:make-feed events --preset=events -n`
 
 Neighbours use **like + join** only (not every view). Filter hides unpublished / past / own-hosted events.

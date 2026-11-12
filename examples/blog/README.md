@@ -17,17 +17,18 @@ flowchart LR
   R --> C[PostCardTransformer] --> API["GET /posts/recommended"]
 ```
 
-| File | Role |
+| Path | Role |
 |---|---|
-| `src/PostInteractionSource.php` | Stream likes/views |
-| `src/VisiblePostFilter.php` | Published, not mine — one query |
-| `src/PostCardTransformer.php` | API card (shared cache) |
+| `src/Interactions/` | Stream likes/views |
+| `src/Filters/` | Published, not mine |
+| `src/Cards/` | API card (shared cache) |
+| `src/Sources/` | Fresh + sponsored |
+| `src/Boosters/` | Freshness + sponsored |
+| `src/Groups/` | Max 1 author per page |
+| `src/Http/` | JSON controller |
+| `src/Support/` | Infinite scroll helper |
+| `src/Models/` | Post |
 | `config/recommender.php` | Feed weights |
-| `src/RecommendedPostsController.php` | `toPaginatorArray()` JSON |
-| `src/FreshPostSource.php` | Guest / empty-score fallback |
-| `src/PostAuthorGroups.php` | Max 1 author per page |
-| `src/InfiniteScrollFeed.php` | Ranked batches → catalog tail |
-| `src/SponsoredShopSource.php` + `Booster` | Campaign placement |
 
 ## Try it
 

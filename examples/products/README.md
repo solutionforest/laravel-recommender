@@ -19,6 +19,10 @@ flowchart LR
   R --> C[ProductCardTransformer] --> API["GET /products/recommended"]
 ```
 
+## Layout
+
+`Models/` · `Interactions/` · `Sources/` · `Filters/` · `Cards/` · `Groups/` · `Http/` — see [examples README](../README.md).
+
 ## Try it
 
 ```bash
@@ -27,7 +31,7 @@ vendor/bin/pest tests/Feature/ProductsExampleTest.php
 
 ## Use in your app
 
-1. Copy `src/*` → `app/Recommendation/Products` (fix namespaces).
+1. Copy `src/` folders → `app/Recommendation/Products` (fix namespaces).
 2. Merge `config/recommender.php` feed `products`.
 3. Add the route.
 4. Yield any extra event names you need — register them under `events` / `positive_events`.

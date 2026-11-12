@@ -15,12 +15,13 @@ flowchart LR
   R --> C[ReviewCardTransformer] --> API["GET /reviews/recommended"]
 ```
 
-| File | Role |
+| Path | Role |
 |---|---|
-| `ReviewInteractionSource` | likes + views |
-| `PetTypeMatchSource` | reviews by writers with the same `pet_type_id` |
-| `VisibleReviewFilter` | published, has cover, not mine |
-| `ReviewShopGroups` | diversity by shop |
+| `src/Interactions/` | likes + views |
+| `src/Sources/PetTypeMatchSource` | same `pet_type_id` as viewer |
+| `src/Filters/` | published, has cover, not mine |
+| `src/Groups/` | diversity by shop |
+| `src/Models/` · `Cards/` · `Http/` | model, cards, controller |
 
 ## Try it
 

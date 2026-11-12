@@ -5,16 +5,16 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Advanced events sample: district + type on events, living district on users,
- * view / like / join interactions.
+ * Full copy of the events example tables, plus district / type / living district / comments.
+ * Standalone — do not run alongside examples/events in the same DB.
  */
 return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('meetup_events', function (Blueprint $table) {
+        Schema::create('events', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('host_id')->index();
+            $table->unsignedBigInteger('host_id')->index(); // hosting party / organiser
             $table->unsignedBigInteger('district_id')->index();
             $table->unsignedTinyInteger('type_id')->index(); // 1=outdoor, 2=workshop, …
             $table->string('title');
@@ -23,11 +23,14 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        foreach (['meetup_event_views', 'meetup_event_likes', 'meetup_event_joins'] as $table) {
-            Schema::create($table, function (Blueprint $blueprint) {
+        foreach (['event_views', 'event_likes', 'event_joins', 'event_comments'] as $table) {
+            Schema::create($table, function (Blueprint $blueprint) use ($table) {
                 $blueprint->id();
                 $blueprint->unsignedBigInteger('user_id')->index();
                 $blueprint->unsignedBigInteger('event_id')->index();
+                if ($table === 'event_comments') {
+                    $blueprint->text('body')->nullable();
+                }
                 $blueprint->timestamp('created_at')->nullable()->index();
             });
         }
@@ -43,9 +46,10 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('user_districts');
-        Schema::dropIfExists('meetup_event_joins');
-        Schema::dropIfExists('meetup_event_likes');
-        Schema::dropIfExists('meetup_event_views');
-        Schema::dropIfExists('meetup_events');
+        Schema::dropIfExists('event_comments');
+        Schema::dropIfExists('event_joins');
+        Schema::dropIfExists('event_likes');
+        Schema::dropIfExists('event_views');
+        Schema::dropIfExists('events');
     }
 };

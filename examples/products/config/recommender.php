@@ -1,11 +1,11 @@
 <?php
 
 use SolutionForest\Recommender\Boosters\QualityBooster;
-use SolutionForest\Recommender\Examples\Products\FreshProductSource;
-use SolutionForest\Recommender\Examples\Products\ProductCardTransformer;
-use SolutionForest\Recommender\Examples\Products\ProductInteractionSource;
-use SolutionForest\Recommender\Examples\Products\ProductSellerGroups;
-use SolutionForest\Recommender\Examples\Products\VisibleProductFilter;
+use SolutionForest\Recommender\Examples\Products\Sources\FreshProductSource;
+use SolutionForest\Recommender\Examples\Products\Cards\ProductCardTransformer;
+use SolutionForest\Recommender\Examples\Products\Interactions\ProductInteractionSource;
+use SolutionForest\Recommender\Examples\Products\Groups\ProductSellerGroups;
+use SolutionForest\Recommender\Examples\Products\Filters\VisibleProductFilter;
 use SolutionForest\Recommender\Sources\CoInteractionSource;
 use SolutionForest\Recommender\Sources\TrendingSource;
 

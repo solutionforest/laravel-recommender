@@ -3,8 +3,8 @@
 use Illuminate\Auth\GenericUser;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
-use SolutionForest\Recommender\Examples\Products\Product;
-use SolutionForest\Recommender\Examples\Products\RecommendedProductsController;
+use SolutionForest\Recommender\Examples\Products\Models\Product;
+use SolutionForest\Recommender\Examples\Products\Http\RecommendedProductsController;
 use SolutionForest\Recommender\Facades\Recommender;
 
 /*

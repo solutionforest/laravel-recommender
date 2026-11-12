@@ -27,8 +27,6 @@ final class QualityBooster implements Booster
 
         // Relative to the best candidate: absolute like-rates are small, the
         // ordering between candidates is what matters.
-        $max = $out === [] ? 0.0 : max($out);
-
-        return $max > 0 ? array_map(fn ($v) => $v / $max, $out) : $out;
+        return Math::normalizeMax($out);
     }
 }

@@ -7,6 +7,15 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.0.14] — 2026-11-12
+
+### Added
+- `examples/events-advanced` — district, host party, event type, comments on top of events; `JoinPreferences` + Pest tests
+- Scoring helpers: `Math::fromPosition`, `fromAffinity`, `fromAge`, `normalizeMax`, `scoreInOrder`, `preferRanked` ([docs/maths.md](docs/maths.md) §5)
+
+### Changed
+- All examples use categorized folders: `Models/` · `Interactions/` · `Sources/` · `Boosters/` · `Filters/` · `Cards/` · `Groups/` · `Http/` · `Support/`
+
 ## [0.0.13] — 2026-11-12
 
 ### Changed

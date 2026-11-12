@@ -1,12 +1,12 @@
 <?php
 
 use SolutionForest\Recommender\Boosters\QualityBooster;
-use SolutionForest\Recommender\Examples\Reviews\FreshReviewSource;
-use SolutionForest\Recommender\Examples\Reviews\PetTypeMatchSource;
-use SolutionForest\Recommender\Examples\Reviews\ReviewCardTransformer;
-use SolutionForest\Recommender\Examples\Reviews\ReviewInteractionSource;
-use SolutionForest\Recommender\Examples\Reviews\ReviewShopGroups;
-use SolutionForest\Recommender\Examples\Reviews\VisibleReviewFilter;
+use SolutionForest\Recommender\Examples\Reviews\Sources\FreshReviewSource;
+use SolutionForest\Recommender\Examples\Reviews\Sources\PetTypeMatchSource;
+use SolutionForest\Recommender\Examples\Reviews\Cards\ReviewCardTransformer;
+use SolutionForest\Recommender\Examples\Reviews\Interactions\ReviewInteractionSource;
+use SolutionForest\Recommender\Examples\Reviews\Groups\ReviewShopGroups;
+use SolutionForest\Recommender\Examples\Reviews\Filters\VisibleReviewFilter;
 use SolutionForest\Recommender\Sources\CoInteractionSource;
 use SolutionForest\Recommender\Sources\TrendingSource;
 

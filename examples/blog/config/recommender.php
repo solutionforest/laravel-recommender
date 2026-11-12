@@ -1,13 +1,13 @@
 <?php
 
 use SolutionForest\Recommender\Boosters\QualityBooster;
-use SolutionForest\Recommender\Examples\Blog\FreshPostSource;
-use SolutionForest\Recommender\Examples\Blog\PostAuthorGroups;
-use SolutionForest\Recommender\Examples\Blog\PostCardTransformer;
-use SolutionForest\Recommender\Examples\Blog\PostInteractionSource;
-use SolutionForest\Recommender\Examples\Blog\SponsoredShopBooster;
-use SolutionForest\Recommender\Examples\Blog\SponsoredShopSource;
-use SolutionForest\Recommender\Examples\Blog\VisiblePostFilter;
+use SolutionForest\Recommender\Examples\Blog\Sources\FreshPostSource;
+use SolutionForest\Recommender\Examples\Blog\Groups\PostAuthorGroups;
+use SolutionForest\Recommender\Examples\Blog\Cards\PostCardTransformer;
+use SolutionForest\Recommender\Examples\Blog\Interactions\PostInteractionSource;
+use SolutionForest\Recommender\Examples\Blog\Boosters\SponsoredShopBooster;
+use SolutionForest\Recommender\Examples\Blog\Sources\SponsoredShopSource;
+use SolutionForest\Recommender\Examples\Blog\Filters\VisiblePostFilter;
 use SolutionForest\Recommender\Sources\CoInteractionSource;
 use SolutionForest\Recommender\Sources\TrendingSource;
 

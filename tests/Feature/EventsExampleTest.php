@@ -3,8 +3,8 @@
 use Illuminate\Auth\GenericUser;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
-use SolutionForest\Recommender\Examples\Events\Event;
-use SolutionForest\Recommender\Examples\Events\RecommendedEventsController;
+use SolutionForest\Recommender\Examples\Events\Models\Event;
+use SolutionForest\Recommender\Examples\Events\Http\RecommendedEventsController;
 use SolutionForest\Recommender\Facades\Recommender;
 
 /*

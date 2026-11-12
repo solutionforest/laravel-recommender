@@ -75,3 +75,54 @@ it('ranks recent events above old ones in log space', function () {
         ->and(Math::logAddExp(null, 1.5))->toBe(1.5)
         ->and(Math::logAddExp(0.0, 0.0))->toEqualWithDelta(log(2), 1e-12);
 });
+
+it('scores list position with a steep decay', function () {
+    expect(Math::fromPosition(0))->toBe(1.0)
+        ->and(Math::fromPosition(1))->toEqualWithDelta(0.5, 1e-9)
+        ->and(Math::fromPosition(3))->toEqualWithDelta(0.25, 1e-9);
+});
+
+it('softens affinity by position without wiping the weight', function () {
+    expect(Math::fromAffinity(10, 0))->toBe(10.0)
+        ->and(Math::fromAffinity(10, 2, step: 0.05))->toEqualWithDelta(10 / 1.1, 1e-9)
+        ->and(Math::fromAffinity(10, 1, step: 1.0))->toEqualWithDelta(5.0, 1e-9);
+});
+
+it('decays by age with a half-life', function () {
+    expect(Math::fromAge(0, 14))->toBe(1.0)
+        ->and(Math::fromAge(14, 14))->toEqualWithDelta(exp(-1), 1e-9)
+        ->and(Math::fromAge(7, 14))->toBeGreaterThan(Math::fromAge(21, 14));
+});
+
+it('normalises a score batch to max 1', function () {
+    expect(Math::normalizeMax([1 => 2.0, 2 => 4.0, 3 => 1.0]))->toBe([1 => 0.5, 2 => 1.0, 3 => 0.25])
+        ->and(Math::normalizeMax([]))->toBe([]);
+});
+
+it('scores an ordered list without a manual loop', function () {
+    expect(Math::scoreInOrder([10, 20, 30]))->toBe([
+        10 => 1.0,
+        20 => 0.5,
+        30 => 1 / 3,
+    ]);
+
+    $weighted = Math::scoreInOrder(
+        [(object) ['id' => 1, 'w' => 10], (object) ['id' => 2, 'w' => 4]],
+        fn ($row) => $row->w,
+        step: 0.05,
+    );
+
+    expect($weighted[1])->toBe(10.0)
+        ->and($weighted[2])->toEqualWithDelta(4 / 1.05, 1e-9);
+});
+
+it('boosts ids whose attribute is in a preferred list', function () {
+    expect(Math::preferRanked(
+        ids: [100, 200, 300],
+        preferred: [2, 1],
+        attributeById: [100 => 1, 200 => 9, 300 => 2],
+    ))->toBe([
+        100 => 0.5,
+        300 => 1.0,
+    ]);
+});

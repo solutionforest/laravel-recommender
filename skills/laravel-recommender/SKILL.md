@@ -24,7 +24,7 @@ Human docs (prefer linking over pasting):
 | `…/docs/tuning.md` | Weight recipes |
 | `…/docs/operations.md` | Go-live / FAQ |
 | `…/AGENTS.md` | Short agent rules |
-| `…/examples/` | `blog` · `products` · `events` (view/like/join) · `events-advanced` (district + type) · `reviews` (+ PetTypeMatchSource) |
+| `…/examples/` | `blog` · `products` · `events` · `events-advanced` · `reviews` — each uses `Models/` · `Sources/` · `Boosters/` · `Filters/` · `Cards/` · `Groups/` · `Interactions/` · `Http/` |
 
 ---
 
@@ -114,6 +114,18 @@ Recommender::forgetTrending('posts');
 ## Custom sources (product rules)
 
 Implement `CandidateSource` / `Booster` / `DiversityGroups` when the product needs rules the package does not know (same pet type, related shops, sponsored ids). Keep queries indexed + `LIMIT`. Guests: `$context->userId` may be `null`.
+
+Scoring helpers (`SolutionForest\Recommender\Scoring\Math`) — prefer these over hand-rolled `1/(1+$i)`:
+
+| Helper | When |
+|---|---|
+| `scoreInOrder($rows)` | Ordered query → scores |
+| `scoreInOrder($rows, fn)` | Affinity × soft order |
+| `preferRanked($ids, $fav, $attr)` | Booster for favorite keys |
+| `fromPosition` / `fromAffinity` / `fromAge` | Single-value building blocks |
+| `normalizeMax($scores)` | Booster max=1 |
+
+Docs: `docs/maths.md` §5. Example: `examples/events-advanced` (`JoinPreferences` + Event scopes).
 
 Sponsored pattern: **Source** (inject) + **Booster** (push) + diversity cap. See `examples/blog`.
 

@@ -1,11 +1,11 @@
 <?php
 
 use SolutionForest\Recommender\Boosters\QualityBooster;
-use SolutionForest\Recommender\Examples\Events\EventCardTransformer;
-use SolutionForest\Recommender\Examples\Events\EventHostGroups;
-use SolutionForest\Recommender\Examples\Events\EventInteractionSource;
-use SolutionForest\Recommender\Examples\Events\FreshEventSource;
-use SolutionForest\Recommender\Examples\Events\VisibleEventFilter;
+use SolutionForest\Recommender\Examples\Events\Cards\EventCardTransformer;
+use SolutionForest\Recommender\Examples\Events\Groups\EventHostGroups;
+use SolutionForest\Recommender\Examples\Events\Interactions\EventInteractionSource;
+use SolutionForest\Recommender\Examples\Events\Sources\FreshEventSource;
+use SolutionForest\Recommender\Examples\Events\Filters\VisibleEventFilter;
 use SolutionForest\Recommender\Sources\CoInteractionSource;
 use SolutionForest\Recommender\Sources\TrendingSource;
 

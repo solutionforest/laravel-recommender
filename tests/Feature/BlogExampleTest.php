@@ -3,8 +3,8 @@
 use Illuminate\Auth\GenericUser;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
-use SolutionForest\Recommender\Examples\Blog\Post;
-use SolutionForest\Recommender\Examples\Blog\RecommendedPostsController;
+use SolutionForest\Recommender\Examples\Blog\Models\Post;
+use SolutionForest\Recommender\Examples\Blog\Http\RecommendedPostsController;
 
 /*
  * Runs the sample in examples/blog end to end, so the documentation can't rot:
@@ -96,11 +96,11 @@ it('surfaces sponsored author posts via source and booster', function () {
         'recommender.feeds.posts.sources' => [
             \SolutionForest\Recommender\Sources\CoInteractionSource::class => 0.05,
             \SolutionForest\Recommender\Sources\TrendingSource::class => 0.15,
-            \SolutionForest\Recommender\Examples\Blog\SponsoredShopSource::class => 0.80,
+            \SolutionForest\Recommender\Examples\Blog\Sources\SponsoredShopSource::class => 0.80,
         ],
         'recommender.feeds.posts.boosters' => [
             \SolutionForest\Recommender\Boosters\QualityBooster::class => 0.05,
-            \SolutionForest\Recommender\Examples\Blog\SponsoredShopBooster::class => 0.90,
+            \SolutionForest\Recommender\Examples\Blog\Boosters\SponsoredShopBooster::class => 0.90,
         ],
         'recommender.feeds.posts.exploration_ratio' => 0,
     ]);
