@@ -1,0 +1,69 @@
+{
+    "name": "solutionforest/laravel-recommender",
+    "description": "Self-hosted, low-overhead recommendation feeds for Laravel (co-interaction similarity, time-decayed trending, Redis-cached feeds).",
+    "type": "library",
+    "license": "proprietary",
+    "keywords": [
+        "laravel",
+        "recommendation",
+        "feed",
+        "personalization"
+    ],
+    "require": {
+        "php": "^8.1",
+        "illuminate/bus": "^10.0|^11.0|^12.0",
+        "illuminate/cache": "^10.0|^11.0|^12.0",
+        "illuminate/console": "^10.0|^11.0|^12.0",
+        "illuminate/contracts": "^10.0|^11.0|^12.0",
+        "illuminate/database": "^10.0|^11.0|^12.0",
+        "illuminate/queue": "^10.0|^11.0|^12.0",
+        "illuminate/support": "^10.0|^11.0|^12.0",
+        "nesbot/carbon": "^2.62|^3.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^8.0|^9.0|^10.0",
+        "pestphp/pest": "^2.0|^3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "SolutionForest\\Recommender\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "SolutionForest\\Recommender\\Tests\\": "tests/",
+            "SolutionForest\\Recommender\\Examples\\Blog\\": "examples/blog/src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "SolutionForest\\Recommender\\RecommenderServiceProvider"
+            ],
+            "aliases": {
+                "Recommender": "SolutionForest\\Recommender\\Facades\\Recommender"
+            }
+        },
+        "branch-alias": {
+            "dev-main": "0.1.x-dev"
+        }
+    },
+    "scripts": {
+        "test": "pest"
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "homepage": "https://github.com/solutionforest/laravel-recommender",
+    "authors": [
+        {
+            "name": "Solution Forest Limited",
+            "homepage": "https://solutionforest.com"
+        }
+    ]
+}

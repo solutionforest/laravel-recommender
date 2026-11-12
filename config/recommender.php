@@ -1,0 +1,114 @@
+<?php
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Kill switch
+    |--------------------------------------------------------------------------
+    | When disabled, Recommender::page() serves the shared trending list only:
+    | one cache read per request, no per-user work.
+    */
+    'enabled' => env('RECOMMENDER_ENABLED', true),
+
+    /*
+    | Cache store used for feeds, seen-sets, cards, trending lists and locks.
+    | null = the application's default store. Use Redis in production.
+    */
+    'cache_store' => env('RECOMMENDER_CACHE_STORE'),
+
+    /* Prefix for every cache key the package writes (easy to flush). */
+    'prefix' => env('RECOMMENDER_PREFIX', 'rec'),
+
+    /* Queue + connection used by the BuildFeed warm-up job. */
+    'queue' => env('RECOMMENDER_QUEUE', 'recommender'),
+    'queue_connection' => env('RECOMMENDER_QUEUE_CONNECTION'),
+
+    /* Database connection for the package tables (null = default). */
+    'database_connection' => env('RECOMMENDER_DB_CONNECTION'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Defaults applied to every feed (each feed may override any key)
+    |--------------------------------------------------------------------------
+    */
+    'defaults' => [
+        'page_size' => 12,
+
+        // Per-user ranked list
+        'feed_size' => 200,          // ids kept per user
+        'feed_ttl' => 1800,          // seconds before the list is rebuilt
+        'min_rebuild_interval' => 60, // page 1 may rebuild an exhausted list at most this often
+        'source_limit' => 200,       // max candidates asked from each source
+
+        // "Already seen" set per user (replaces session based exclusion)
+        'seen_ttl' => 259200,        // 3 days
+        'seen_max' => 200,           // most recent N ids kept (stored packed, ~1.5 KB)
+
+        // Shared fallback list (guests, kill switch, build failures)
+        'trending_sources' => [      // sources that work without a user
+            \SolutionForest\Recommender\Sources\TrendingSource::class => 1.0,
+        ],
+        'trending_size' => 200,
+        'trending_ttl' => 600,
+
+        // Rendered card cache
+        'card_ttl' => 3600,
+
+        // Protection against duplicate concurrent builds for the same user
+        'build_lock_seconds' => 10,
+        'build_lock_wait' => 2,
+
+        // Ranking
+        'sources' => [],             // [CandidateSource::class => weight]
+        'boosters' => [],            // [Booster::class => weight]
+        'exploration_sources' => [], // [CandidateSource::class, ...]
+        'exploration_ratio' => 0.15, // share of slots reserved for exploration
+        'diversity' => [],           // ['shop' => 2, 'writer' => 1] max per page
+
+        // Interaction weighting (used by update-scores)
+        'events' => ['view' => 1.0, 'like' => 4.0],
+        'positive_events' => ['like'],
+        'exposure_events' => ['view'],
+        'half_life_days' => 7,
+        'scores_backfill_days' => 30,
+        'scores_slice_minutes' => 60,    // update-scores commits per time slice (bounded memory, resumable)
+        'scores_retention_days' => 180,  // prune: drop score rows with no event for this long
+
+        // Co-interaction neighbours (used by build-neighbours)
+        'history_days' => 90,
+        'history_per_user' => 30,
+        'recent_items' => 20,
+        'neighbours_max' => 30,
+        'neighbours_min_co_count' => 2,
+        'neighbours_memory_limit_mb' => 512, // per pass; above it the job restarts with 2x shards
+        'neighbours_max_shards' => 64,
+
+        // Batch sizes for bulk writes / deletes (never row by row)
+        'write_chunk' => 500,
+        'delete_chunk' => 5000,
+
+        // App bindings (class names resolved from the container)
+        'interactions' => null,      // InteractionSource
+        'filter' => null,            // ItemFilter
+        'cards' => null,             // CardTransformer
+        'groups' => null,            // DiversityGroups (optional)
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Feeds
+    |--------------------------------------------------------------------------
+    | 'reviews' => [
+    |     'sources' => [
+    |         \SolutionForest\Recommender\Sources\CoInteractionSource::class => 0.35,
+    |         \SolutionForest\Recommender\Sources\TrendingSource::class => 0.10,
+    |     ],
+    |     'boosters' => [\SolutionForest\Recommender\Boosters\QualityBooster::class => 0.20],
+    |     'interactions' => \App\Recommendation\ReviewInteractionSource::class,
+    |     'filter' => \App\Recommendation\VisibleReviewFilter::class,
+    |     'cards' => \App\Recommendation\ReviewCardTransformer::class,
+    | ],
+    */
+    'feeds' => [],
+];
