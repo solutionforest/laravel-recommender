@@ -9,7 +9,7 @@ It builds a ranked **"for you" list per user** from data your app already stores
 
 **Highlights:**
 - Works with Laravel 10, 11, 12 and 13 on PHP 8.1+.
-- Needs a cache store with locks (Redis in production) and a queue.
+- Needs a **cache** (Redis recommended in production) and a queue.
 - **Math you can explain:** item–item CF (Amazon-style), Wilson quality (Reddit-style), exponential half-life trending with **incremental log-sum-exp** updates — see [Ideas & maths](#ideas--maths).
 - **Never copies your raw events.** It reads your existing tables. Its own 3 tables grow with the number of *recently active items*, never with traffic.
 - **Every write is bulk:** chunked upserts, inserts and deletes. Every read is either indexed and `LIMIT`ed, or a primary-key lookup.
@@ -323,7 +323,7 @@ Do this **once** after wiring contracts and config. Skipping it is the usual rea
 | 5 | Build neighbours | `php artisan recommender:build-neighbours {feed}` |
 | 6 | Explain a known active user | `php artisan recommender:explain {feed} {userId}` — expect `CoInteractionSource` / custom sources, not only `TrendingSource` |
 | 7 | Schedule the three jobs | See [Background jobs](#background-jobs) |
-| 8 | Redis + dedicated queue worker | Cache locks + `queue:work --queue=recommender` |
+| 8 | Redis (prod) + dedicated queue worker | Cache locks + `queue:work --queue=recommender`. Lab may use `array`/`database` (unlocked fallback). |
 
 ### Historical imports (lab / migration from an old feed)
 
@@ -467,7 +467,23 @@ php artisan migrate     # rec_item_scores, rec_item_neighbours, rec_state
 php artisan vendor:publish --tag=recommender-config      # optional
 ```
 
-The service provider and the `Recommender` facade are auto-discovered. Use Redis for the cache in production: `CACHE_DRIVER=redis`, or `RECOMMENDER_CACHE_STORE=redis` to use Redis only for the recommender.
+The service provider and the `Recommender` facade are auto-discovered.
+
+### Cache requirement (Redis vs lab drivers)
+
+| Environment | Recommended | Why |
+|---|---|---|
+| **Production** | **Redis** (`CACHE_STORE=redis`, or `RECOMMENDER_CACHE_STORE=redis`) | Atomic **per-user build locks**, fast list/seen/card reads. Two tabs for the same user will not stampede rebuilds. |
+| **Local / CI lab** | `array`, `file`, or `database` | Works out of the box. If the store cannot provide locks, the package **falls back** to building without a lock (last write wins). Fine for one developer; not ideal under concurrent load. |
+
+```bash
+# Production (or Herd with Redis)
+CACHE_STORE=redis
+# or only for this package:
+RECOMMENDER_CACHE_STORE=redis
+```
+
+If you keep `CACHE_STORE=database`, create Laravel’s cache + lock tables (`php artisan cache:table` / `cache:table --locks` and migrate) **or** accept the unlocked fallback. Redis remains the production recommendation.
 
 ---
 
@@ -649,7 +665,7 @@ Designed so ops teams do not need to fear lock storms:
 | **Two score jobs at once** | Schedule with `withoutOverlapping()`. Each slice is one short DB transaction (bulk upsert + watermark). No long open transaction across the whole backfill. |
 | **Score job vs live traffic** | Requests do **not** touch `rec_item_scores` / `rec_item_neighbours` on the hot path — they read Redis. Live users are not blocked by job upserts. |
 | **Neighbour rebuild mid-request** | New rows are written under a **new version**. Readers keep using the previous active version until activate flips the pointer; then old rows are deleted in `delete_chunk` batches (no giant multi-minute `DELETE`). |
-| **Two builds for the same user** | Per-user **cache lock** (`build_lock_seconds` / `build_lock_wait`). If the lock is busy, the other request serves the existing list (or waits briefly) instead of stacking duplicate builds. |
+| **Two builds for the same user** | Per-user **cache lock** when the store supports it (`build_lock_seconds` / `build_lock_wait`). Busy lock → serve existing list. **Without locks** (some `database`/`file` labs): builds still run; concurrent rebuilds may race (last write wins). Use Redis in production. |
 | **Warm-up job pile-up** | `BuildFeed` is `ShouldBeUnique` per feed+user on the `recommender` queue. |
 | **App-table deadlocks** | Jobs only **SELECT** your interaction tables (via your source). They do not update likes/views. Deadlock risk on *your* write-heavy tables is unchanged by this package. |
 | **Long row locks** | Writes are chunked (`write_chunk` / `delete_chunk`). Prefer InnoDB; avoid running `build-neighbours` and a huge manual `DELETE` on the same table at once. |
@@ -755,6 +771,9 @@ As a pure ML model it isn't stronger. But for sparse like/view data, item-to-ite
 
 **Will it slow down the database when data grows?**
 The request path doesn't touch the database for ranking. Builds are bounded per active user. The jobs read only new or windowed data, write in bulk and are memory-guarded. See [What happens at 100× data](#what-happens-at-100-data).
+
+**Do I need Redis?**
+**Production: yes (strongly recommended)** for atomic per-user build locks and fast cache. **Local lab:** `array` / `file` / `database` work; if locks are unavailable the package builds without a lock (tradeoff: concurrent rebuilds for the same user may race). See [Cache requirement](#cache-requirement-redis-vs-lab-drivers).
 
 **Will the jobs deadlock our database?**
 Unlikely for the usual fear case. Live requests do not contend on `rec_*` tables; jobs use short chunked transactions and `withoutOverlapping()`; neighbour swaps are versioned so readers keep the previous graph. The package only *reads* your interaction tables. See [Deadlocks, locks, and overlapping runs](#deadlocks-locks-and-overlapping-runs).

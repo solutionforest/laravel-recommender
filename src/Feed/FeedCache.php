@@ -2,11 +2,12 @@
 
 namespace SolutionForest\Recommender\Feed;
 
+use Illuminate\Cache\Repository as CacheRepository;
 use Illuminate\Contracts\Cache\Factory as CacheFactory;
 use Illuminate\Contracts\Cache\Lock;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Repository;
-use RuntimeException;
+use Illuminate\Support\Facades\Log;
 use SolutionForest\Recommender\Support\FeedDefinition;
 use SolutionForest\Recommender\Support\Ids;
 
@@ -201,19 +202,27 @@ final class FeedCache
         $seconds = $feed->int('build_lock_seconds', 10);
         $name = $this->key($feed, "lock:{$userId}");
 
+        // Laravel 11+ Repository is not a LockProvider; locks live on the inner store
+        // (Redis / database / array). Older wrappers may still implement LockProvider.
         if ($store instanceof LockProvider) {
             return $store->lock($name, $seconds);
         }
 
-        // Array / file drivers expose locks on the underlying store, not the repository.
-        if (method_exists($store, 'getStore')) {
+        if ($store instanceof CacheRepository) {
             $inner = $store->getStore();
             if ($inner instanceof LockProvider) {
                 return $inner->lock($name, $seconds);
             }
         }
 
-        throw new RuntimeException('Recommender cache store must support locks (use Redis in production).');
+        // Tradeoff: stores with no LockProvider still serve feeds; concurrent rebuilds
+        // for the same user may race (last write wins). Prefer Redis in production.
+        Log::debug('[recommender] cache store has no locks; building without a per-user lock', [
+            'feed' => $feed->name,
+            'user' => $userId,
+        ]);
+
+        return new UnlockedBuildLock;
     }
 
     public function key(FeedDefinition $feed, string $suffix): string
