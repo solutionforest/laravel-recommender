@@ -52,3 +52,5 @@ The test does the following:
    ```
 4. Add the three scheduler entries from the main README.
 5. Run the two jobs once to fill the tables.
+
+For weight recipes, historical backfill, and inspiration-feed lessons (fine-tune / first-time setup), see the main README: [First-time go-live checklist](../../README.md#first-time-go-live-checklist), [Fine-tuning weights](../../README.md#fine-tuning-weights).

@@ -19,16 +19,19 @@ It builds a ranked **"for you" list per user** from data your app already stores
 
 1. [How it works](#how-it-works)
 2. [Quick start (5 steps)](#quick-start-5-steps)
-3. [Installation (private repository)](#installation-private-repository)
-4. [Contracts reference](#contracts-reference)
-5. [Serving a feed](#serving-a-feed)
-6. [Background jobs](#background-jobs)
-7. [Configuration reference](#configuration-reference)
-8. [Performance, scale and storage](#performance-scale-and-storage)
-9. [Operations](#operations)
-10. [Testing](#testing)
-11. [FAQ](#faq)
-12. [Limitations and roadmap](#limitations-and-roadmap)
+3. [First-time go-live checklist](#first-time-go-live-checklist)
+4. [Fine-tuning weights](#fine-tuning-weights)
+5. [Lessons from a real inspiration feed](#lessons-from-a-real-inspiration-feed)
+6. [Installation (private repository)](#installation-private-repository)
+7. [Contracts reference](#contracts-reference)
+8. [Serving a feed](#serving-a-feed)
+9. [Background jobs](#background-jobs)
+10. [Configuration reference](#configuration-reference)
+11. [Performance, scale and storage](#performance-scale-and-storage)
+12. [Operations](#operations)
+13. [Testing](#testing)
+14. [FAQ](#faq)
+15. [Limitations and roadmap](#limitations-and-roadmap)
 
 ---
 
@@ -243,6 +246,139 @@ Then check a ranking:
 ```bash
 php artisan recommender:explain posts 1
 ```
+
+---
+
+## First-time go-live checklist
+
+Do this **once** after wiring contracts and config. Skipping it is the usual reason a feed looks “empty”, “only trending”, or “not personal”.
+
+| Step | Command / action | Why |
+|---|---|---|
+| 1 | `php artisan migrate` | Creates `rec_item_scores`, `rec_item_neighbours`, `rec_state` |
+| 2 | Publish config (optional) | `php artisan vendor:publish --tag=recommender-config` |
+| 3 | Index **your** interaction / item tables | Sources are your SQL — without `(user_id, created_at)`, `(item_id, created_at)`, etc. builds are slow |
+| 4 | Backfill scores | `php artisan recommender:update-scores {feed}` |
+| 5 | Build neighbours | `php artisan recommender:build-neighbours {feed}` |
+| 6 | Explain a known active user | `php artisan recommender:explain {feed} {userId}` — expect `CoInteractionSource` / custom sources, not only `TrendingSource` |
+| 7 | Schedule the three jobs | See [Background jobs](#background-jobs) |
+| 8 | Redis + dedicated queue worker | Cache locks + `queue:work --queue=recommender` |
+
+### Historical imports (lab / migration from an old feed)
+
+Default `scores_backfill_days` is **30**. If you import years of clicks/likes, either:
+
+1. Truncate `rec_item_scores` for that feed and delete `rec_state` key `scores:{feed}:watermark`, **or**
+2. Set a temporary large window on the feed, e.g. `scores_backfill_days => 1600`, `scores_slice_minutes => 10080` (weekly slices), run `update-scores`, then restore smaller incremental settings.
+
+Then rebuild neighbours with enough history (`history_days`) so `CoInteractionSource` is not empty.
+
+### Livewire / HTTP `Artisan::call`
+
+Package console commands are registered even when the app is not in the CLI so Ops panels and Livewire can call them. Prefer queued jobs in production; Artisan::call is fine for a local lab.
+
+### Cache after config or weight changes
+
+Changing `sources` / `boosters` does not rebuild cached lists by itself:
+
+```php
+Recommender::forgetUser('reviews', $userId);
+Recommender::forgetTrending('reviews');
+// or flush keys under your RECOMMENDER_PREFIX
+```
+
+---
+
+## Fine-tuning weights
+
+Weights are **relative**. The blender mixes each source’s scores, then boosters. Exploration **interleaves** a share of slots from `exploration_sources` (not the same as raising a source weight).
+
+### Recipes (starting points)
+
+**A. Inspiration / “for you” (personal first)** — use when signals like co-view, related shops, pet match matter:
+
+```php
+'sources' => [
+    CoInteractionSource::class => 0.35,
+    RelatedShopSource::class => 0.20,   // your CandidateSource
+    PetMatchSource::class => 0.25,      // your CandidateSource
+    TrendingSource::class => 0.15,
+    FreshReviewSource::class => 0.05,   // your CandidateSource
+],
+'boosters' => [
+    QualityBooster::class => 0.20,
+    FreshnessBooster::class => 0.05,    // your Booster — keep small
+],
+'exploration_ratio' => 0.10,
+```
+
+**B. Fresher home feed (chronological spice)** — use when “new posts first” matters more than peers:
+
+```php
+'sources' => [
+    FreshReviewSource::class => 0.45,
+    CoInteractionSource::class => 0.25,
+    TrendingSource::class => 0.20,
+],
+'boosters' => [
+    FreshnessBooster::class => 0.35,
+    QualityBooster::class => 0.10,
+],
+'exploration_ratio' => 0.25,
+'half_life_days' => 3,
+```
+
+Raising freshness a lot makes **every cohort look the same** (dog vs cat owners see the same newest posts). Prefer recipe A for pet / segment personalisation demos.
+
+**C. Cold start / guests** — already built in: guests and empty personal lists fall back to `trending_sources`. Keep at least one source that works with `$context->userId === null` (usually `TrendingSource` + a fresh source).
+
+### How to tune in practice
+
+1. Pick 2–3 **real** users with different signals (e.g. dog-only, cat-only, heavy clicker, brand-new user).
+2. Run `php artisan recommender:explain {feed} {userId} --limit=12`.
+3. Read which sources appear on the top rows. If you only see `Fresh*` / `Trending*`, personal sources are too weak **or** empty (no neighbours, no journey shops, …).
+4. Change **one** weight at a time; forget user + trending cache; re-explain.
+5. Watch latency: `source_limit` / `feed_size` / heavy `CandidateSource` SQL dominate cold builds (SQLite lab: keep `source_limit` ~100–200).
+
+### Knobs that are not weights
+
+| Knob | Effect |
+|---|---|
+| `exploration_ratio` | Fraction of slots reserved for exploration pool (fresh exposure) |
+| `half_life_days` | How fast trending “hot” forgets old events |
+| `history_days` / `neighbours_min_co_count` | Density of the neighbour graph → strength of `CoInteractionSource` |
+| `recent_items` | How many of the user’s recent items seed co-interaction |
+| `feed_size` / `trending_size` / `seen_max` | How long a unique scroll lasts before recycle / end |
+| `diversity` | Cap per shop/author/… per page (needs `groups`) |
+
+---
+
+## Lessons from a real inspiration feed
+
+Validated against a pet-a-hood-style reviews feed (prod-sized SQLite lab: ~50k reviews, clicks, likes, pets, journeys).
+
+| Observation | Takeaway |
+|---|---|
+| **“Latest first” fights personalisation** | High `Fresh*` + `FreshnessBooster` made cat and dog owners see the same newest cards. Keep freshness as a **spice**. |
+| **Peer signals ≠ content topic** | “Same `pet_type_id` as writer” ≠ “card is about cats”. Multi-pet writers match several cohorts. Segment demos need strong peer weight **and** realistic expectations. |
+| **Empty `CoInteractionSource`** | Neighbour graph was tiny until `build-neighbours` ran over enough history; users’ clicked items had 0 neighbours. Always explain after rebuild. |
+| **Huge journey payloads** | Loading a multi-thousand-id `related_bu` JSON just to `array_slice(0, 20)` is slow. Prefer `recent_view_*` first; only open related lists when needed. |
+| **Source SQL shape** | Prefer one indexed `whereIn` + PHP cap-per-group, or bounded `UNION ALL` of per-id `LIMIT`s — not unbounded `ORDER BY created_at` over large IN lists. |
+| **First paint for new users** | Works via trending + exploration; page 1 is never empty if trending has scores. |
+| **Scroll is long, not infinite** | Unique depth ≈ `feed_size` + `trending_size`, then recycle via `seen_max`. True catalog-tail pagination is not built in yet. |
+| **Media URLs** | If `cover_url` can be `.mp4`, map to a poster/thumb in `CardTransformer` — do not put video URLs in `<img>`. |
+| **Ops from HTTP** | Commands must be callable outside CLI (already supported) for Livewire labs; debounce live user-id inputs so every keystroke does not rebuild. |
+
+### Better first-time / config support (wishlist)
+
+Useful package upgrades suggested by that experience (not all shipped yet):
+
+1. **`php artisan recommender:bootstrap {feed}`** — migrate check, one-shot scores + neighbours, print explain for a sample user, warn if `CoInteraction` is empty.
+2. **Named presets** in config (`inspiration`, `fresh_home`) that expand to weight sets.
+3. **Backfill helpers** — e.g. `update-scores --from=2022-01-01` / `--slice=1d` without hand-editing watermark keys.
+4. **Explain shows weighted contributions** (not only raw per-source scores) and flags empty sources.
+5. **Optional built-in `FreshnessBooster`** (age from an item table callback) so apps do not reimplement decay.
+6. **Health metrics** — neighbour coverage %, score watermark lag, cold-build p95.
 
 ---
 
@@ -518,11 +654,25 @@ Yes. Decide in the controller which users get `Recommender::page()` and which ge
 **Can I add a learned model later?**
 Yes. Implement `CandidateSource` and give it a weight.
 
+**Why do cat / dog (or other segment) users see almost the same cards?**
+Usually freshness/trending weights dominate, or your peer source matches “same segment as the *writer*” while writers are multi-segment. Raise personal sources, lower `Fresh*` / `exploration_ratio`, and verify with `recommender:explain`. See [Fine-tuning weights](#fine-tuning-weights).
+
+**Why is `CoInteractionSource` missing from explain?**
+Neighbours were never built, history window is too short, or `neighbours_min_co_count` filters everything out. Run `recommender:build-neighbours` and check that the user’s recent item ids appear in `rec_item_neighbours`.
+
+**I imported old events; trending still looks empty / tiny.**
+First `update-scores` only walks `scores_backfill_days` (default 30). Reset the watermark and widen the backfill, or set the watermark to the start of your data. See [Historical imports](#historical-imports-lab--migration-from-an-old-feed).
+
+**Is the feed infinite?**
+No. You get a long personal + trending pool (`feed_size` / `trending_size`). After that, `hasMore` becomes false or the seen-set recycles (`seen_max`). A chronological “catalog tail” after the ranked list is on the wishlist.
+
 ---
 
 ## Limitations and roadmap
 
 - **Impressions** (shown but not clicked) aren't used yet. They are the next most useful signal.
 - **Cursor pagination** isn't exposed. Pages rely on the seen-set; page numbers only drive paginator metadata.
+- **No catalog tail** after personal + trending pools are exhausted (long scroll ≠ full catalog).
 - **Item-to-item similarity only.** User-to-user or embedding-based sources can be added as `CandidateSource`s.
 - **Item ids must not contain commas,** because cached lists are stored packed as `id,id,…`.
+- **DX upgrades** listed under [Better first-time / config support](#better-first-time--config-support-wishlist): bootstrap command, presets, backfill flags, richer explain.

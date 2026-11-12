@@ -59,11 +59,13 @@ return [
         'build_lock_seconds' => 10,
         'build_lock_wait' => 2,
 
-        // Ranking
+        // Ranking — see README "Fine-tuning weights".
+        // Inspiration/segments: keep personal sources high; Fresh* / exploration low.
+        // Chronological spice: raise Fresh* + exploration_ratio (cohorts will look more alike).
         'sources' => [],             // [CandidateSource::class => weight]
         'boosters' => [],            // [Booster::class => weight]
         'exploration_sources' => [], // [CandidateSource::class, ...]
-        'exploration_ratio' => 0.15, // share of slots reserved for exploration
+        'exploration_ratio' => 0.15, // share of slots reserved for exploration (interleave, not a blend weight)
         'diversity' => [],           // ['shop' => 2, 'writer' => 1] max per page
 
         // Interaction weighting (used by update-scores)
@@ -71,11 +73,13 @@ return [
         'positive_events' => ['like'],
         'exposure_events' => ['view'],
         'half_life_days' => 7,
+        // First run only walks this many days; widen for historical imports (README checklist).
         'scores_backfill_days' => 30,
         'scores_slice_minutes' => 60,    // update-scores commits per time slice (bounded memory, resumable)
         'scores_retention_days' => 180,  // prune: drop score rows with no event for this long
 
         // Co-interaction neighbours (used by build-neighbours)
+        // Too short / sparse → CoInteractionSource missing from explain.
         'history_days' => 90,
         'history_per_user' => 30,
         'recent_items' => 20,
