@@ -87,3 +87,33 @@ it('explains a ranking', function () {
         ->expectsOutputToContain('CoInteractionSource')
         ->assertSuccessful();
 });
+
+it('surfaces sponsored author posts via source and booster', function () {
+    // Author 112 owns post 12. Cold user 99 has no likes — pool comes from
+    // trending + sponsored injection, then booster lifts sponsored items.
+    config([
+        'recommender.feeds.posts.sponsored_author_ids' => [112],
+        'recommender.feeds.posts.sources' => [
+            \SolutionForest\Recommender\Sources\CoInteractionSource::class => 0.05,
+            \SolutionForest\Recommender\Sources\TrendingSource::class => 0.15,
+            \SolutionForest\Recommender\Examples\Blog\SponsoredShopSource::class => 0.80,
+        ],
+        'recommender.feeds.posts.boosters' => [
+            \SolutionForest\Recommender\Boosters\QualityBooster::class => 0.05,
+            \SolutionForest\Recommender\Examples\Blog\SponsoredShopBooster::class => 0.90,
+        ],
+        'recommender.feeds.posts.exploration_ratio' => 0,
+    ]);
+    $this->app->forgetInstance(\SolutionForest\Recommender\Recommender::class);
+
+    $response = $this->actingAs(new GenericUser(['id' => 99]))->getJson('/posts/recommended');
+    $ids = collect($response->json('data'))->pluck('id');
+
+    $response->assertOk()->assertJsonPath('origin', 'personal');
+    expect($ids->first())->toBe(12)
+        ->and($ids)->toContain(12);
+
+    $this->artisan('recommender:explain', ['feed' => 'posts', 'user' => 99, '--limit' => 5])
+        ->expectsOutputToContain('SponsoredShopSource')
+        ->assertSuccessful();
+});

@@ -56,6 +56,29 @@ it('ranks trending by time-decayed popularity', function () {
         ->and($hot[2])->toBe(1.0);
 });
 
+it('lets event weights decide whether likes or views count more toward hot', function () {
+    $now = CarbonImmutable::parse('2026-11-08 12:00:00');
+
+    // Same moment: item 10 = one like, item 20 = one view.
+    ArrayInteractions::add(1, 10, 'like', '2026-11-08 10:00');
+    ArrayInteractions::add(2, 20, 'view', '2026-11-08 10:00');
+
+    $this->configureFeed(['events' => ['view' => 1.0, 'like' => 4.0]]);
+    app(ScoreUpdater::class)->run(app(Recommender::class)->feed('reviews'), $now);
+    expect(array_keys(app(ScoreStore::class)->hottest('reviews', 10)))->toBe([10, 20]);
+
+    // Rebuild from scratch with views weighted higher than likes.
+    DB::table('rec_item_scores')->delete();
+    DB::table('rec_state')->where('key', 'like', 'scores:reviews:%')->delete();
+    ArrayInteractions::reset();
+    ArrayInteractions::add(1, 10, 'like', '2026-11-08 10:00');
+    ArrayInteractions::add(2, 20, 'view', '2026-11-08 10:00');
+
+    $this->configureFeed(['events' => ['view' => 10.0, 'like' => 1.0]]);
+    app(ScoreUpdater::class)->run(app(Recommender::class)->feed('reviews'), $now);
+    expect(array_keys(app(ScoreStore::class)->hottest('reviews', 10)))->toBe([20, 10]);
+});
+
 it('builds bounded co-interaction neighbours and replaces old versions', function () {
     $feed = app(Recommender::class)->feed('reviews');
     // Users 1-3 liked 10 and 11; user 4 liked 10 and 12 (only once together).

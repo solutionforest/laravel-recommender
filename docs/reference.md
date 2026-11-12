@@ -153,9 +153,9 @@ composer analyse
 | Suite | Covers |
 |---|---|
 | `tests/Unit/ScoringTest.php` | blend, explore, diversity, Wilson, decay |
-| `tests/Feature/RecommenderPageTest.php` | paging, cache, filters, guests, kill switch |
-| `tests/Feature/MaintenanceTest.php` | scores, neighbours, versions |
+| `tests/Feature/RecommenderPageTest.php` | paging, cache, filters, guests, kill switch, unlocked lock fallback |
+| `tests/Feature/MaintenanceTest.php` | scores, neighbours, versions, event weight → `hot` order |
 | `tests/Feature/ScaleTest.php` | shards, memory, bulk writes |
-| `tests/Feature/BlogExampleTest.php` | sample app E2E |
+| `tests/Feature/BlogExampleTest.php` | sample app E2E + sponsored source/booster |
 
 CI: PHPStan + PHP 8.3–8.4 × Laravel 11–13 (SQLite) + Laravel 13 / MySQL 8.

@@ -2,10 +2,13 @@
 
 use Illuminate\Support\Facades\Cache;
 use SolutionForest\Recommender\Facades\Recommender;
+use SolutionForest\Recommender\Feed\FeedCache;
+use SolutionForest\Recommender\Feed\UnlockedBuildLock;
 use SolutionForest\Recommender\Recommender as RecommenderService;
 use SolutionForest\Recommender\Storage\ScoreStore;
 use SolutionForest\Recommender\Tests\Fixtures\ArrayCards;
 use SolutionForest\Recommender\Tests\Fixtures\ArrayFilter;
+use SolutionForest\Recommender\Tests\Fixtures\PlainArrayStore;
 use SolutionForest\Recommender\Tests\Fixtures\StaticSource;
 
 beforeEach(function () {
@@ -139,6 +142,27 @@ it('uses the existing list when another request holds the build lock', function 
     $lock->release();
 
     expect($page->ids)->toBe([11, 21, 31]);
+});
+
+it('still serves pages when the cache store has no LockProvider', function () {
+    Cache::extend('plain', fn () => Cache::repository(new PlainArrayStore));
+    config([
+        'cache.stores.plain' => ['driver' => 'plain'],
+        'recommender.cache_store' => 'plain',
+    ]);
+    $this->app->forgetInstance(FeedCache::class);
+    $this->app->forgetInstance(RecommenderService::class);
+
+    $cache = app(FeedCache::class);
+    $feed = app(RecommenderService::class)->feed('reviews');
+
+    expect($cache->supportsLocks())->toBeFalse()
+        ->and($cache->lock($feed, 7))->toBeInstanceOf(UnlockedBuildLock::class);
+
+    $page = Recommender::page('reviews', 7, 1);
+
+    expect($page->ids)->toBe([11, 21, 31])
+        ->and($page->origin)->toBe('personal');
 });
 
 it('caps the seen set', function () {
