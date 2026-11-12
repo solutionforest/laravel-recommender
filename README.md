@@ -79,18 +79,7 @@ php artisan migrate
 php artisan vendor:publish --tag=recommender-config   # optional
 ```
 
-Until Packagist is live, add the VCS repo:
-
-```json
-"repositories": [
-  { "type": "vcs", "url": "https://github.com/solutionforest/laravel-recommender" }
-],
-"require": {
-  "solutionforest/laravel-recommender": "^0.0.1"
-}
-```
-
-Current release: **v0.0.1**.
+On [Packagist](https://packagist.org/packages/solutionforest/laravel-recommender). Prefer **`^0.0.1`** (current). An older `v0.1.0` tag also exists — do not use it.
 
 ---
 

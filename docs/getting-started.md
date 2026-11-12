@@ -63,12 +63,10 @@ That is the whole integration. Everything else is config + schedule.
 ### Step 0 — Install
 
 ```bash
-composer require solutionforest/laravel-recommender
+composer require solutionforest/laravel-recommender:^0.0.1
 php artisan migrate
 php artisan vendor:publish --tag=recommender-config   # optional
 ```
-
-Until Packagist is live, add the VCS repo (see [README](../README.md#install)).
 
 You should now have three tables: `rec_item_scores`, `rec_item_neighbours`, `rec_state`.  
 Those are the package’s notebooks. Your likes table stays yours.
