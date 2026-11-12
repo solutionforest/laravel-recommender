@@ -7,8 +7,14 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.0.5] — 2026-11-12
+
 ### Added
-- `docs/tutorial.md` — step-by-step scaffold checklist for easy onboarding
+- `docs/tutorial.md` — step-by-step scaffold checklist (`make-feed` → edit → cook → schedule)
+
+### Changed
+- README “Start here” points at the scaffold tutorial first
+- Docs: English-only wording
 
 ## [0.0.4] — 2026-11-12
 
@@ -38,7 +44,8 @@ This project uses [Semantic Versioning](https://semver.org/).
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.4...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.5...HEAD
+[0.0.5]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.5
 [0.0.4]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.4
 [0.0.3]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.3
 [0.0.2]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.2
