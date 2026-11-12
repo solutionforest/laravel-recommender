@@ -3,20 +3,21 @@
 namespace SolutionForest\Recommender\Console;
 
 use Illuminate\Console\Command;
+use SolutionForest\Recommender\Console\Concerns\ResolvesFeedArgument;
 use SolutionForest\Recommender\Maintenance\NeighbourBuilder;
 use SolutionForest\Recommender\Recommender;
 
 class BuildNeighboursCommand extends Command
 {
+    use ResolvesFeedArgument;
+
     protected $signature = 'recommender:build-neighbours {feed? : Feed name (default: all feeds)}';
 
     protected $description = 'Rebuild item-to-item similarities (run nightly, off-peak)';
 
     public function handle(Recommender $recommender, NeighbourBuilder $builder): int
     {
-        $feeds = $this->argument('feed') ? [$this->argument('feed')] : $recommender->feeds();
-
-        foreach ($feeds as $name) {
+        foreach ($this->feedNames($recommender) as $name) {
             $started = microtime(true);
             $result = $builder->run($recommender->feed($name));
             $this->info(sprintf(

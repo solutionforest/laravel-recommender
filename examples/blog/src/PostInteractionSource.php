@@ -43,8 +43,8 @@ class PostInteractionSource implements InteractionSource
             $events = $this->events(fn ($q) => $q->whereBetween('user_id', [$start, $start + self::USER_RANGE - 1]), $since);
 
             foreach ($events->groupBy('user_id') as $userId => $rows) {
-                yield (int) $userId => $rows->sortByDesc('created_at')->pluck('post_id')
-                    ->map(fn ($id) => (int) $id)->unique()->take($perUser)->values()->all();
+                yield (int) $userId => array_values($rows->sortByDesc('created_at')->pluck('post_id')
+                    ->map(fn ($id) => (int) $id)->unique()->take($perUser)->all());
             }
         }
     }
@@ -52,11 +52,15 @@ class PostInteractionSource implements InteractionSource
     /** Used when a user's feed is built: their latest posts. */
     public function recentItems(int|string $userId, int $limit): array
     {
-        return $this->events(fn ($q) => $q->where('user_id', $userId)->orderByDesc('created_at')->limit($limit))
+        return array_values($this->events(fn ($q) => $q->where('user_id', $userId)->orderByDesc('created_at')->limit($limit))
             ->sortByDesc('created_at')->pluck('post_id')
-            ->map(fn ($id) => (int) $id)->unique()->take($limit)->values()->all();
+            ->map(fn ($id) => (int) $id)->unique()->take($limit)->all());
     }
 
+    /**
+     * @param  callable(\Illuminate\Database\Query\Builder): \Illuminate\Database\Query\Builder  $scope
+     * @return Collection<int, object{user_id: mixed, post_id: mixed, created_at: mixed}>
+     */
     private function events(callable $scope, ?DateTimeInterface $since = null): Collection
     {
         $all = collect();

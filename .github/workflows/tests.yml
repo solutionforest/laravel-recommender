@@ -6,6 +6,21 @@ on:
   pull_request:
 
 jobs:
+  phpstan:
+    runs-on: ubuntu-latest
+    name: PHPStan
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+      - run: |
+          composer config audit.block-insecure false
+          composer require "laravel/framework:13.*" "orchestra/testbench:11.*" "pestphp/pest:4.*" --dev --no-update --no-interaction
+          composer update --prefer-dist --no-interaction --no-progress
+      - run: composer analyse
+
   sqlite:
     runs-on: ubuntu-latest
     strategy:

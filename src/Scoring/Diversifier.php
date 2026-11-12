@@ -57,6 +57,11 @@ final class Diversifier
         return $result;
     }
 
+    /**
+     * @param  array<int|string, array<string, int|string|null>>  $groups
+     * @param  array<string, int>  $maxPerGroup
+     * @param  array<string, array<int|string, int>>  $counts
+     */
     private function fits(int|string $id, array $groups, array $maxPerGroup, array $counts): bool
     {
         foreach ($maxPerGroup as $group => $max) {
@@ -69,6 +74,11 @@ final class Diversifier
         return true;
     }
 
+    /**
+     * @param  array<int|string, array<string, int|string|null>>  $groups
+     * @param  array<string, int>  $maxPerGroup
+     * @param  array<string, array<int|string, int>>  $counts
+     */
     private function count(int|string $id, array $groups, array $maxPerGroup, array &$counts): void
     {
         foreach ($maxPerGroup as $group => $max) {

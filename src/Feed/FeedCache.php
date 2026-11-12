@@ -4,7 +4,9 @@ namespace SolutionForest\Recommender\Feed;
 
 use Illuminate\Contracts\Cache\Factory as CacheFactory;
 use Illuminate\Contracts\Cache\Lock;
+use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Repository;
+use RuntimeException;
 use SolutionForest\Recommender\Support\FeedDefinition;
 use SolutionForest\Recommender\Support\Ids;
 
@@ -178,7 +180,14 @@ final class FeedCache
      */
     public function trending(FeedDefinition $feed, callable $build): array
     {
-        return $this->store()->remember($this->key($feed, 'trending'), $feed->int('trending_ttl', 600), $build);
+        /** @var list<int|string> $ids */
+        $ids = $this->store()->remember(
+            $this->key($feed, 'trending'),
+            $feed->int('trending_ttl', 600),
+            static fn () => $build(),
+        );
+
+        return $ids;
     }
 
     public function forgetTrending(FeedDefinition $feed): void
@@ -189,9 +198,22 @@ final class FeedCache
     public function lock(FeedDefinition $feed, int|string $userId): Lock
     {
         $store = $this->store();
-        $provider = method_exists($store, 'getStore') ? $store->getStore() : $store;
+        $seconds = $feed->int('build_lock_seconds', 10);
+        $name = $this->key($feed, "lock:{$userId}");
 
-        return $provider->lock($this->key($feed, "lock:{$userId}"), $feed->int('build_lock_seconds', 10));
+        if ($store instanceof LockProvider) {
+            return $store->lock($name, $seconds);
+        }
+
+        // Array / file drivers expose locks on the underlying store, not the repository.
+        if (method_exists($store, 'getStore')) {
+            $inner = $store->getStore();
+            if ($inner instanceof LockProvider) {
+                return $inner->lock($name, $seconds);
+            }
+        }
+
+        throw new RuntimeException('Recommender cache store must support locks (use Redis in production).');
     }
 
     public function key(FeedDefinition $feed, string $suffix): string

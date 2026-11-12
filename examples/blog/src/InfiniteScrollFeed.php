@@ -2,7 +2,7 @@
 
 namespace SolutionForest\Recommender\Examples\Blog;
 
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Builder;
 use SolutionForest\Recommender\Facades\Recommender;
 
 /**
@@ -57,9 +57,9 @@ final class InfiniteScrollFeed
     /**
      * Chronological catalog tail after the ranked pool is exhausted.
      *
-     * @param  callable():Collection<int, Post>  $query  must already apply visibility; will receive cursor + limit
+     * @param  callable(): Builder<Post>  $query  must already apply visibility; will receive cursor + limit
      * @param  list<int|string>  $alreadyShown
-     * @param  callable(Post): (?array)  $toCard
+     * @param  callable(Post): (?array<string, mixed>)  $toCard
      * @return array{items: list<array<string, mixed>>, ids: list<int|string>, hasMore: bool, origin: string, phase: 'tail', cursor: ?string}
      */
     public function nextTail(

@@ -24,7 +24,7 @@ final class ScoreStore
     public function merge(string $feed, array $deltas, int $chunk = 500): int
     {
         $written = 0;
-        foreach (array_chunk($deltas, $chunk, true) as $part) {
+        foreach (array_chunk($deltas, max(1, $chunk), true) as $part) {
             $ids = array_map('strval', array_keys($part));
             $existing = $this->connection()->table('rec_item_scores')
                 ->where('feed', $feed)
@@ -71,10 +71,10 @@ final class ScoreStore
     /**
      * @template T
      *
-     * @param  callable(): T  $callback
+     * @param  \Closure(): T  $callback
      * @return T
      */
-    public function transaction(callable $callback): mixed
+    public function transaction(\Closure $callback): mixed
     {
         return $this->connection()->transaction($callback);
     }

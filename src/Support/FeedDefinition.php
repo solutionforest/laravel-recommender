@@ -47,7 +47,7 @@ final class FeedDefinition
     }
 
     /**
-     * @return array<class-string, float>
+     * @return array<string, float>  class => weight (keys are usually class-strings)
      */
     public function weighted(string $key): array
     {
@@ -59,7 +59,7 @@ final class FeedDefinition
 
                 continue;
             }
-            $out[$class] = (float) $weight;
+            $out[(string) $class] = (float) $weight;
         }
 
         return $out;

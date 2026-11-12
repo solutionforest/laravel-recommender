@@ -44,7 +44,7 @@ final class NeighbourStore
      */
     public function write(string $feed, int $version, array $rows, int $chunk = 500): void
     {
-        foreach (array_chunk($rows, $chunk, true) as $part) {
+        foreach (array_chunk($rows, max(1, $chunk), true) as $part) {
             $insert = [];
             foreach ($part as $itemId => $neighbours) {
                 $insert[] = [
@@ -107,10 +107,10 @@ final class NeighbourStore
         $out = [];
         foreach ($rows as $row) {
             $decoded = json_decode((string) $row->neighbours, true) ?: [];
-            $out[Ids::normalize($row->item_id)] = array_map(
+            $out[Ids::normalize($row->item_id)] = array_values(array_map(
                 fn ($pair) => [Ids::normalize($pair[0]), (float) $pair[1]],
                 $decoded,
-            );
+            ));
         }
 
         return $out;

@@ -751,7 +751,8 @@ Source, booster and build failures are logged as warnings (`[recommender:{feed}]
 
 ```bash
 composer install
-vendor/bin/pest                       # SQLite in memory + array cache
+composer test                         # or: vendor/bin/pest
+composer analyse                      # PHPStan level 8 + Larastan (src + examples/blog)
 RECOMMENDER_TEST_DB=mysql DB_HOST=127.0.0.1 DB_DATABASE=rec_test DB_USERNAME=root vendor/bin/pest
 ```
 
@@ -763,7 +764,7 @@ RECOMMENDER_TEST_DB=mysql DB_HOST=127.0.0.1 DB_DATABASE=rec_test DB_USERNAME=roo
 | `tests/Feature/ScaleTest.php` | shard equivalence, memory guard, crash-resume without double counting, bulk-write statement counts, chunked prune, packed cache values |
 | `tests/Feature/BlogExampleTest.php` | the sample app end to end |
 
-CI (`.github/workflows/tests.yml`) runs PHP 8.1–8.4 × Laravel 10–13 on SQLite, plus Laravel 13 on MySQL 8.
+CI (`.github/workflows/tests.yml`) runs **PHPStan**, PHP 8.1–8.4 × Laravel 10–13 on SQLite, and Laravel 13 on MySQL 8.
 
 ---
 

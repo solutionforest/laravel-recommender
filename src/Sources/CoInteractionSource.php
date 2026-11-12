@@ -34,9 +34,14 @@ final class CoInteractionSource implements CandidateSource
             return [];
         }
 
+        $userId = $context->userId;
+        if ($userId === null) {
+            return [];
+        }
+
         /** @var InteractionSource $interactions */
         $interactions = $this->container->make($class);
-        $recent = $interactions->recentItems($context->userId, $context->feed->int('recent_items', 20));
+        $recent = $interactions->recentItems($userId, $context->feed->int('recent_items', 20));
         if ($recent === []) {
             return [];
         }
