@@ -4,7 +4,6 @@ namespace SolutionForest\Recommender\Examples\Blog;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
 use SolutionForest\Recommender\Facades\Recommender;
 
 /**
@@ -19,11 +18,9 @@ class RecommendedPostsController
 
         $result = Recommender::page('posts', $user?->getAuthIdentifier(), $page, attributes: ['user' => $user]);
 
-        // Keep the usual Laravel paginator JSON shape for API clients.
-        $paginator = new LengthAwarePaginator($result->items, $result->total(), $result->perPage, $page, [
+        return response()->json($result->toPaginatorArray([
             'path' => $request->url(),
-        ]);
-
-        return response()->json($paginator->toArray() + ['origin' => $result->origin]);
+            'query' => $request->query(),
+        ]));
     }
 }

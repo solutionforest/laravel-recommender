@@ -159,6 +159,17 @@ it('explains rankings per source', function () {
         ->and($rows[0]['sources'])->toHaveKey('StaticSource');
 });
 
+it('exposes a Laravel LengthAwarePaginator', function () {
+    $page = Recommender::page('reviews', 7, 1);
+    $paginator = $page->toPaginator(['path' => 'http://example.test/feed']);
+
+    expect($paginator)->toBeInstanceOf(\Illuminate\Pagination\LengthAwarePaginator::class)
+        ->and($paginator->items())->toHaveCount(3)
+        ->and($paginator->total())->toBe($page->total())
+        ->and($page->toPaginatorArray(['path' => 'http://example.test/feed']))
+        ->toHaveKeys(['data', 'current_page', 'last_page', 'origin', 'has_more']);
+});
+
 it('rejects unknown feeds', function () {
     Recommender::page('nope', 1);
 })->throws(InvalidArgumentException::class);

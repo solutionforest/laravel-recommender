@@ -285,7 +285,7 @@ Route::get('/posts/recommended', RecommendedPostsController::class);
 // RecommendedPostsController
 $result = Recommender::page('posts', $request->user()?->id, (int) $request->query('page', 1));
 
-return new LengthAwarePaginator($result->items, $result->total(), $result->perPage, $page);
+return response()->json($result->toPaginatorArray(['path' => request()->url()]));
 ```
 
 ```php
@@ -525,9 +525,17 @@ $result = Recommender::page('posts', $user?->id, page: $page, perPage: 10, attri
 $result->items;     // cards, in order
 $result->ids;       // their ids
 $result->hasMore;   // more items queued
-$result->total();   // for LengthAwarePaginator
+$result->total();   // estimated total for LengthAwarePaginator
 $result->origin;    // 'personal' or 'trending'
+
+// Same shape as Model::paginate() — JSON links, Blade {{ $paginator->links() }}
+$paginator = $result->toPaginator(['path' => request()->url()]);
+
+// Or JSON in one step (includes origin + has_more):
+return response()->json($result->toPaginatorArray(['path' => request()->url()]));
 ```
+
+`page()` itself stays a `FeedPage` (seen-set / rebuild semantics). It does **not** use SQL `OFFSET`; the paginator is a view over the cached ranked list.
 
 These are the rules `page()` follows:
 - **Page 1 reuses the list** while it's fresh (`feed_ttl`). It rebuilds when the list is stale or nearly fully seen.

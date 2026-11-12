@@ -2,8 +2,14 @@
 
 namespace SolutionForest\Recommender\Support;
 
+use Illuminate\Pagination\LengthAwarePaginator;
+
 /**
  * One page of a feed, ready to be returned by a controller.
+ *
+ * Use {@see toPaginator()} when you want Laravel's usual LengthAwarePaginator
+ * (JSON shape, links, Blade `{{ $paginator->links() }}`). Note: page numbers are
+ * metadata — uniqueness comes from the seen-set, not SQL OFFSET.
  */
 final class FeedPage
 {
@@ -30,6 +36,37 @@ final class FeedPage
     public function total(): int
     {
         return max(0, ($this->page - 1) * $this->perPage) + count($this->items) + $this->remaining;
+    }
+
+    /**
+     * Laravel LengthAwarePaginator for API JSON / Blade pagination links.
+     *
+     * @param  array<string, mixed>  $options  e.g. ['path' => $request->url(), 'query' => $request->query()]
+     * @return LengthAwarePaginator<int, array<string, mixed>>
+     */
+    public function toPaginator(array $options = []): LengthAwarePaginator
+    {
+        return new LengthAwarePaginator(
+            $this->items,
+            $this->total(),
+            $this->perPage,
+            $this->page,
+            $options,
+        );
+    }
+
+    /**
+     * Paginator JSON shape plus recommender fields (`origin`, `has_more`).
+     *
+     * @param  array<string, mixed>  $options
+     * @return array<string, mixed>
+     */
+    public function toPaginatorArray(array $options = []): array
+    {
+        return $this->toPaginator($options)->toArray() + [
+            'origin' => $this->origin,
+            'has_more' => $this->hasMore,
+        ];
     }
 
     /**
