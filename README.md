@@ -154,7 +154,7 @@ Then `recommender:explain posts {userId}` to verify. More recipes: [Tuning](docs
 ## Install
 
 ```bash
-composer require solutionforest/laravel-recommender:^0.0.7
+composer require solutionforest/laravel-recommender:^0.0.8
 php artisan migrate
 php artisan recommender:make-feed posts
 ```
@@ -163,7 +163,7 @@ php artisan recommender:make-feed posts
 
 Full walkthrough: **[Scaffold tutorial](docs/tutorial.md)**. Or copy [`examples/blog`](examples/blog) by hand.
 
-On [Packagist](https://packagist.org/packages/solutionforest/laravel-recommender). Current: **`^0.0.7`** (PHP 8.3+ / Laravel 11–13).
+On [Packagist](https://packagist.org/packages/solutionforest/laravel-recommender). Current: **`^0.0.8`** (PHP 8.3+ / Laravel 11–13).
 
 Changelog: [CHANGELOG.md](CHANGELOG.md) · Releases: [GitHub Releases](https://github.com/solutionforest/laravel-recommender/releases)
 
@@ -199,6 +199,24 @@ Details: [getting started → schedule](docs/getting-started.md#step-4--schedule
 | **array** / **file** | Local / CI; fine for one process |
 
 `php artisan recommender:status` shows whether locks are available. Details: [reference → Cache](docs/reference.md#cache-store--locks).
+
+---
+
+## For AI agents / Cursor
+
+This package ships agent guidance so coding agents can wire feeds correctly in your app:
+
+| File | Purpose |
+|---|---|
+| [`AGENTS.md`](AGENTS.md) | Short rules (package + consuming apps) |
+| [`skills/laravel-recommender/SKILL.md`](skills/laravel-recommender/SKILL.md) | Cursor **Skill** — install into `.cursor/skills/` of the app |
+
+```bash
+mkdir -p .cursor/skills
+cp -R vendor/solutionforest/laravel-recommender/skills/laravel-recommender .cursor/skills/
+```
+
+Then ask the agent to add a for-you / inspiration feed — it should use `recommender:make-feed`, not invent Personalize or `ORDER BY RAND()`.
 
 ---
 

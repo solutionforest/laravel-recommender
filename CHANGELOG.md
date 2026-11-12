@@ -7,6 +7,13 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.0.8] — 2026-11-12
+
+### Added
+- Cursor skill: `skills/laravel-recommender/SKILL.md` for consuming apps
+- README section: For AI agents / Cursor
+- Expanded `AGENTS.md` for app wiring + package maintainers
+
 ## [0.0.7] — 2026-11-12
 
 ### Changed
@@ -58,7 +65,8 @@ This project uses [Semantic Versioning](https://semver.org/).
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.7...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.8...HEAD
+[0.0.8]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.8
 [0.0.7]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.7
 [0.0.6]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.6
 [0.0.5]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.5
