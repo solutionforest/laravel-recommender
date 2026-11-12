@@ -7,6 +7,11 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.0.6] — 2026-11-12
+
+### Added
+- Tests: cache stores **array / file / database / redis** provide locks and serve `page()` (redis skipped if unavailable)
+
 ### Changed
 - Docs/config: cache locks are any `LockProvider` store (redis recommended; database OK on L11–13 with `cache_locks`); `RECOMMENDER_CACHE_STORE` empty → null
 
@@ -47,7 +52,8 @@ This project uses [Semantic Versioning](https://semver.org/).
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.5...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.6...HEAD
+[0.0.6]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.6
 [0.0.5]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.5
 [0.0.4]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.4
 [0.0.3]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.3

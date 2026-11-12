@@ -167,6 +167,7 @@ composer analyse
 |---|---|
 | `tests/Unit/ScoringTest.php` | blend, explore, diversity, Wilson, decay |
 | `tests/Feature/RecommenderPageTest.php` | paging, cache, filters, guests, kill switch, unlocked lock fallback |
+| `tests/Feature/CacheStoreTest.php` | array / file / database / redis stores provide locks + serve pages |
 | `tests/Feature/MaintenanceTest.php` | scores, neighbours, versions, event weight → `hot` order |
 | `tests/Feature/ScaleTest.php` | shards, memory, bulk writes |
 | `tests/Feature/BlogExampleTest.php` | sample app E2E + sponsored source/booster |
