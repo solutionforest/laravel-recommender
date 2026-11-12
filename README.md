@@ -152,7 +152,7 @@ Short version below; full story in [Ideas & maths](#ideas--maths).
 
 This package is not a black-box neural ranker. It assembles **classic, production-proven ideas** so product / eng can *explain* every card (`recommender:explain`) and tune weights without retraining a model.
 
-| Idea in the package | Where it shows up | Intellectual lineage (why it feels “勁”) |
+| Idea in the package | Where it shows up | Classical lineage |
 |---|---|---|
 | Item–item collaborative filtering | `build-neighbours`, `CoInteractionSource` | Same family as **Amazon’s item-to-item CF** (Linden et al.): “people who engaged with *X* also engaged with *Y*” — stable for sparse likes/views, no per-request matrix multiply |
 | Cosine on binary interaction sets | Neighbour similarity | Standard IR / CF measure: popular items don’t automatically dominate just by volume |
