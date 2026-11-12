@@ -111,3 +111,21 @@ it('refreshes a cached card when the model is saved', function () {
 it('passes recommender:doctor with the config-only feed', function () {
     $this->artisan('recommender:doctor', ['feed' => 'articles'])->assertSuccessful();
 });
+
+it('drops an item from already-cached lists as soon as it is unpublished', function () {
+    $user = new GenericUser(['id' => 1]);
+    config(['recommender.feeds.articles.page_size' => 1]);
+    $this->app->forgetInstance(\SolutionForest\Recommender\Recommender::class);
+
+    expect(Recommender::page('articles', $user, 1)->ids)->toBe([2]); // list + card for 2 now cached
+    Recommender::forgetUser('articles', $user);                       // forget seen: 2 would be served again
+    Recommender::build('articles', $user);                            // cached list still starts with 2
+
+    // Unpublish while the list (and the card) are cached. The Recommendable
+    // trait forgets the card, so the next render re-checks the scope.
+    Article::find(2)->update(['published' => false]);
+
+    $ids = collect(range(1, 5))->flatMap(fn ($p) => Recommender::page('articles', $user, $p)->ids);
+    expect($ids)->not->toContain(2)
+        ->and(Recommender::page('articles', null)->ids)->not->toContain(2); // trending too
+});

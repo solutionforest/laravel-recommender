@@ -26,12 +26,16 @@ class ExplainCommand extends Command
 
         $rows = $recommender->explain($feedName, $userId, (int) $this->option('limit'));
 
-        $this->table(['#', 'item', 'score', 'sources'], array_map(fn ($row, $i) => [
-            $i + 1,
+        $this->table(['#', 'item', 'score', 'final', 'cached', 'sources'], array_map(fn ($row, $i) => [
+            $row['exploration'] ? '—' : $i + 1,
             $row['id'],
             $row['score'],
-            collect($row['sources'])->map(fn ($v, $k) => "{$k}={$v}")->implode('  '),
+            $row['final'] ?? '—',
+            $row['cached'] ?? '—',
+            $row['exploration'] ? 'exploration' : collect($row['sources'])->map(fn ($v, $k) => "{$k}={$v}")->implode('  '),
         ], $rows, array_keys($rows)));
+
+        $this->line('<fg=gray>#: blended score order · final: position after exploration + diversity in this fresh build · cached: position in the list served now (— = not in it)</>');
 
         return self::SUCCESS;
     }

@@ -96,13 +96,19 @@ final class FeedCache
 
     /**
      * Ids as one comma separated string: far smaller than a serialized PHP
-     * array (~7 vs ~20 bytes per id). Item ids must not contain commas.
+     * array (~7 vs ~20 bytes per id). Any id may be used: `%` and `,` inside
+     * an id are percent-encoded, so plain ids keep the compact format.
      *
      * @param  list<int|string>  $ids
      */
     public static function pack(array $ids): string
     {
-        return implode(',', $ids);
+        $out = [];
+        foreach ($ids as $id) {
+            $out[] = is_int($id) ? (string) $id : strtr($id, ['%' => '%25', ',' => '%2C']);
+        }
+
+        return implode(',', $out);
     }
 
     /**
@@ -110,7 +116,16 @@ final class FeedCache
      */
     public static function unpack(string $packed): array
     {
-        return $packed === '' ? [] : Ids::normalizeAll(explode(',', $packed));
+        if ($packed === '') {
+            return [];
+        }
+
+        $ids = explode(',', $packed);
+        if (str_contains($packed, '%')) {
+            $ids = array_map(fn (string $id) => strtr($id, ['%2C' => ',', '%25' => '%']), $ids);
+        }
+
+        return Ids::normalizeAll($ids);
     }
 
     public function forgetSeen(FeedDefinition $feed, int|string $userId): void
@@ -189,6 +204,18 @@ final class FeedCache
         );
 
         return $ids;
+    }
+
+    /**
+     * The cached trending list, without building it.
+     *
+     * @return list<int|string>|null
+     */
+    public function peekTrending(FeedDefinition $feed): ?array
+    {
+        $value = $this->store()->get($this->key($feed, 'trending'));
+
+        return is_array($value) ? array_values($value) : null;
     }
 
     public function forgetTrending(FeedDefinition $feed): void

@@ -32,6 +32,7 @@ class RecommenderServiceProvider extends ServiceProvider
             Console\StatusCommand::class,
             Console\MakeFeedCommand::class,
             Console\DoctorCommand::class,
+            Console\RebuildScoresCommand::class,
         ]);
 
         if ($this->app->runningInConsole()) {

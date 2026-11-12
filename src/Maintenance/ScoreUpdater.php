@@ -30,8 +30,12 @@ final class ScoreUpdater
     /**
      * @return array{from: string, to: string, events: int, items: int}  items = row upserts (per slice)
      */
-    public function run(FeedDefinition $feed, ?CarbonImmutable $now = null): array
+    public function run(FeedDefinition $feed, ?CarbonImmutable $now = null, bool $rebuilding = false): array
     {
+        if (! $rebuilding && $this->state->get(ScoreRebuilder::markerKey($feed->name)) !== null) {
+            throw new \RuntimeException("Feed [{$feed->name}] has an unfinished score rebuild; run `php artisan recommender:rebuild-scores {$feed->name}` again to finish it.");
+        }
+
         $source = $this->bindings->interactions($feed)
             ?? throw new \RuntimeException("Feed [{$feed->name}] has no 'interactions' configured.");
 

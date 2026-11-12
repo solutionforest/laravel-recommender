@@ -24,7 +24,7 @@ https://your-app.test/recommender
 
 ![Explain a user](../art/screenshots/dashboard-explain.png)
 
-Each bar is the item's score split by source (the parts add up to the score). `CoInteractionSource` means “people who liked what this user liked also liked this”, and `TrendingSource` means “popular right now”. A user who only gets `TrendingSource` rows has too little history or no shared interactions yet. Explain runs a fresh build before exploration and diversity, so it can differ slightly from the cached page. Live refresh pauses while a user is explained, so the build does not repeat.
+Each bar is the item's score split by source (the parts add up to the score). **Final** is the item's position after exploration and diversity in this fresh build, and **Served** its position in the list the user gets right now — so you can tell a ranking question from a caching one. `CoInteractionSource` means “people who liked what this user liked also liked this”, and `TrendingSource` means “popular right now”. A user who only gets `TrendingSource` rows has too little history or no shared interactions yet. Explain runs a fresh build before exploration and diversity, so it can differ slightly from the cached page. Live refresh pauses while a user is explained, so the build does not repeat.
 
 ### Checks
 

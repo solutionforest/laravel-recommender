@@ -19,7 +19,14 @@ Go-live, storage, locks, FAQ, roadmap.
 
 The first score run reads `scores_backfill_days` (default 30); later runs start at the stored watermark. Increasing the setting after a run does not revisit older events. Likewise, changing event weights or half-life does not recalculate past scores.
 
-For a deliberate full rebuild of one feed, first back up the database, stop overlapping score updates for that feed, and set `scores_backfill_days` wide enough for the intended history. On the configured recommender database connection, delete only that feed's rows from `rec_item_scores` and the `rec_state` key `scores:{feed}:watermark` together in a transaction. Do not truncate the shared table or clear only the watermark: replaying onto existing scores double-counts events. Run `recommender:update-scores {feed}`, check its output and `status`, then restore the setting if desired. Rebuild neighbours separately with an appropriate `history_days`. Invalidate cached trending and affected user lists (or wait for their TTLs), and resume the schedule. Plan for load and a temporary loss of scores during the rebuild.
+To recompute one feed from scratch — after importing old interactions, or changing event weights or `half_life_days` — use the guided command:
+
+```bash
+php artisan recommender:rebuild-scores posts --days=365 --dry-run   # what would happen
+php artisan recommender:rebuild-scores posts --days=365             # asks for confirmation (--force to skip)
+```
+
+It deletes only that feed's score rows and watermark, replays the window, and refreshes trending. It never double-counts: a marker is written first, and while it exists `update-scores` refuses that feed (other feeds keep updating). If the rebuild is interrupted, `recommender:doctor` and the dashboard show it — run the same command again to finish. Rebuild neighbours separately if `history_days` changed; cached user lists refresh within `feed_ttl`. Expect temporarily missing scores for the feed while it runs, so prefer a quiet hour for long windows.
 
 ### Livewire / HTTP `Artisan::call`
 
@@ -54,7 +61,8 @@ A Git tag triggers the workflow; check that the corresponding GitHub Release was
 | Debug ranking | `recommender:explain posts 123` |
 | Health | `recommender:status` / `recommender:status posts` |
 | Rebuild similarities | `recommender:build-neighbours posts` |
-| Recompute scores | Follow the feed-scoped [rebuild procedure](#historical-imports-and-score-rebuilds) |
+| Recompute scores | `recommender:rebuild-scores posts --days=…` ([details](#historical-imports-and-score-rebuilds)) |
+| Check everything | `recommender:doctor` or the `/recommender` dashboard |
 | Neighbour memory guard | Retries with more shards; raise budget or lower `history_per_user` |
 
 Source and build failures are logged and can fall back to trending. Other failures (for example a missing feed or card transformer) may still surface; check application logs.
@@ -151,23 +159,28 @@ Freshness too high, or peer source matches multi-segment writers. See [tuning](t
 Neighbours never built / history short / `neighbours_min_co_count` too high.
 
 **Imported old events, still empty?**  
-The initial window defaults to 30 days. Widen it before the first run, or follow the feed-scoped rebuild procedure above.
+The initial window defaults to 30 days. Widen it before the first run, or run `recommender:rebuild-scores {feed} --days=…`.
 
 **Infinite feed?**  
 No — long pool then `hasMore` false / seen recycle. Catalog tail is app-side (`InfiniteScrollFeed`).
 
 ## Roadmap / wishlist
 
-- Impressions (shown but not clicked)
-- Cursor pagination API (pages today = seen-set + paginator metadata)
-- In-package catalog tail
-- User–user / embedding sources (you can add as `CandidateSource` today)
-- Item ids must not contain commas (packed `id,id,…` cache)
-- DX: `recommender:bootstrap`, named presets, backfill flags, richer explain / health
+Done in 0.1.x / 0.2: config-only feeds, dashboard + `doctor`, guided `rebuild-scores`, explain with final / cached positions, card invalidation on model save, ids with commas, a config-only `make-feed`.
+
+Next, in order:
+
+| Item | Plan |
+|---|---|
+| Catalog tail | Optional `tail` on a feed with a `model`: when the personal list and trending run out, continue with the newest recommendable items (cursor on `created_at`, skipping the seen-set), replacing the app-side `InfiniteScrollFeed`. |
+| Cursor pagination | `FeedPage::nextCursor()` / `toCursorPaginator()`: an opaque cursor (`origin` + offset for trending, `seen` position for personal lists) so infinite-scroll clients stop depending on page numbers. |
+| Impressions | Record "shown but not clicked": `page()` already marks served ids as seen; add an opt-in `impression` event written in bulk from the seen-set so `exposure_events` can use real exposures instead of views. |
+| `recommender:bootstrap` | One command for a new app: publish config → `make-feed` → migrate → first `update-scores` / `build-neighbours` → `doctor`. |
+| Named presets | `'preset' => 'catalog' / 'social' / 'events'` on a feed to set sensible weights, events and exploration in one key. |
+| User–user / embedding sources | Out of the box later; today add them as a `CandidateSource` with a weight. |
 
 ## Limitations
 
 - No impressions yet
 - No cursor API yet
-- Item-to-item only out of the box
-- Ids must not contain `,`
+- Item-to-item collaborative filtering out of the box (add other models as sources)

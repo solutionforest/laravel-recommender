@@ -41,6 +41,8 @@ Add the feed to `config/recommender.php`:
 
 The item column defaults to `{model}_id` (`post_id`); set `item_column`, `user_column` or `timestamp_column` if yours differ, or override per table: `'bookmarks' => ['event' => 'like', 'item' => 'bookmarkable_id']`.
 
+`php artisan recommender:make-feed posts` writes exactly this for you (it asks for the tables and columns) and prints the model methods below.
+
 Then tell the package which posts may be shown and what to return for each, on the model:
 
 ```php
@@ -80,10 +82,10 @@ It lists missing tables or columns, events without a weight and classes that do 
 When your schema needs custom queries, generate classes instead:
 
 ```bash
-php artisan recommender:make-feed posts
+php artisan recommender:make-feed posts --classes
 ```
 
-Choose the blog preset and answer the prompts to match your schema. For a non-interactive starting point use `php artisan recommender:make-feed posts --preset=blog -n`. Existing class files are skipped unless `--force` is supplied; an existing feed configuration is left unchanged. Review command output before continuing.
+Choose the blog preset and answer the prompts to match your schema. For a non-interactive starting point use `php artisan recommender:make-feed posts --classes --preset=blog -n`. Existing class files are skipped unless `--force` is supplied; an existing feed configuration is left unchanged. Review command output before continuing.
 
 The wizard publishes `config/recommender.php` if needed, registers `feeds.posts`, and creates:
 

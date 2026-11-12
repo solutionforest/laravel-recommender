@@ -252,6 +252,10 @@ final class Health
     {
         $checks = [];
 
+        if ($this->state->get(\SolutionForest\Recommender\Maintenance\ScoreRebuilder::markerKey($feed->name)) !== null) {
+            $checks[] = self::fail('Score rebuild was interrupted', "php artisan recommender:rebuild-scores {$feed->name}", 'scores');
+        }
+
         if ($m['watermark'] === null) {
             $checks[] = self::fail('Scores never ran', "php artisan recommender:update-scores {$feed->name}", 'scores');
         } elseif ($m['lag'] > self::MAX_SCORE_LAG) {

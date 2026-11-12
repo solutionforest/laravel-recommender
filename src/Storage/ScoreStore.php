@@ -108,6 +108,34 @@ final class ScoreStore
     }
 
     /**
+     * Delete every score row of one feed, in bulk chunks by primary key.
+     */
+    public function deleteFeed(string $feed, int $chunk = 5000): int
+    {
+        $deleted = 0;
+
+        do {
+            $ids = $this->connection()->table('rec_item_scores')
+                ->where('feed', $feed)
+                ->orderBy('id')
+                ->limit($chunk)
+                ->pluck('id')
+                ->all();
+
+            if ($ids !== []) {
+                $deleted += $this->connection()->table('rec_item_scores')->whereIn('id', $ids)->delete();
+            }
+        } while (count($ids) === $chunk);
+
+        return $deleted;
+    }
+
+    public function count(string $feed): int
+    {
+        return (int) $this->connection()->table('rec_item_scores')->where('feed', $feed)->count();
+    }
+
+    /**
      * Top items by decayed popularity.
      *
      * @return array<int|string, float> id => score in (0, 1], best first

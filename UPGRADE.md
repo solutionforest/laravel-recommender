@@ -1,5 +1,13 @@
 # Upgrade guide
 
+## From 0.1.x to 0.2.0
+
+Nothing to change in your app.
+
+- `recommender:make-feed` now registers a config-only feed and prints the model methods to add. Scripts that relied on it generating classes should add `--classes`.
+- `explain()` rows have three more keys (`final`, `cached`, `exploration`); code that reads rows by key is unaffected.
+- To recompute scores, use `recommender:rebuild-scores {feed}` instead of the manual delete-and-replay steps.
+
 ## From 0.0.x to 0.1.0
 
 Estimated time: 5 minutes. Existing class-based feeds keep working; check the four behaviour changes below.
