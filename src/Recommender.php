@@ -274,7 +274,7 @@ class Recommender
             } catch (Throwable $e) {
                 $this->report($feed, 'trending', $e);
 
-                return [];
+                return null; // not cached: retried on the next request
             }
         });
     }
@@ -701,9 +701,6 @@ class Recommender
         ];
     }
 
-    /**
-     * @param  list<int|string>  $ids
-     */
     /**
      * @param  list<int|string>  $ids
      */

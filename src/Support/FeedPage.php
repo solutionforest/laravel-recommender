@@ -73,7 +73,7 @@ final class FeedPage implements JsonSerializable, Responsable
     /**
      * Laravel LengthAwarePaginator for API JSON / Blade pagination links.
      *
-     * `path` defaults to the current URL, as with Eloquent's paginate().
+     * `path` and `query` default to the current URL and its query string (so `?sort=` survives paging), as with Eloquent's paginate().
      *
      * @param  array<string, mixed>  $options  e.g. ['path' => $request->url(), 'query' => $request->query()]
      * @return LengthAwarePaginator<int, array<string, mixed>>
@@ -85,7 +85,7 @@ final class FeedPage implements JsonSerializable, Responsable
             $this->total(),
             $this->perPage,
             $this->page,
-            $options + ['path' => Paginator::resolveCurrentPath()],
+            $options + ['path' => Paginator::resolveCurrentPath(), 'query' => Paginator::resolveQueryString()],
         );
     }
 

@@ -1,5 +1,9 @@
 # Upgrade guide
 
+## From 0.6.2 to 0.6.3
+
+Nothing to change. Links in paginator JSON now keep your other query parameters. If you relied on the code default `seen_max` of 500 (only when `seen_max` was missing from your config), set it explicitly; the documented default was always 200.
+
 ## From 0.6.0 / 0.6.1 to 0.6.2
 
 Nothing to change. If your item ids are zero-padded strings (`"000123"`), they now stay strings everywhere (before, they could become `123`); cached lists heal within `feed_ttl` (or change `RECOMMENDER_PREFIX` to start with a fresh cache).

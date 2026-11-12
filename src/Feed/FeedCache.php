@@ -87,7 +87,7 @@ final class FeedCache
         }
         $seen = $this->seen($feed, $userId);
         $seen = array_values(array_unique(array_merge($seen, $ids), SORT_REGULAR));
-        $max = $feed->int('seen_max', 500);
+        $max = $feed->int('seen_max', 200);
         if (count($seen) > $max) {
             $seen = array_slice($seen, -$max);
         }
@@ -204,17 +204,29 @@ final class FeedCache
     }
 
     /**
-     * @param  callable(): list<int|string>  $build
+     * $build returns null when it failed: that is served as an empty list but
+     * never cached; an empty list is cached for at most 15 seconds. Either way a recovered source is
+     * picked up quickly instead of after `trending_ttl`.
+     *
+     * @param  callable(): (list<int|string>|null)  $build
      * @return list<int|string>
      */
     public function trending(FeedDefinition $feed, callable $build): array
     {
-        /** @var list<int|string> $ids */
-        $ids = $this->store()->remember(
-            $this->key($feed, 'trending'),
-            $feed->int('trending_ttl', 600),
-            static fn () => $build(),
-        );
+        $key = $this->key($feed, 'trending');
+        $cached = $this->store()->get($key);
+        if (is_array($cached)) {
+            return array_values($cached);
+        }
+
+        $ids = $build();
+        if ($ids === null) {
+            return [];
+        }
+        // An empty list is usually a source that failed (or a brand-new feed):
+        // keep it only briefly so recovery is quick but a rebuild storm is not.
+        $ttl = $feed->int('trending_ttl', 600);
+        $this->store()->put($key, $ids, $ids === [] ? min($ttl, 15) : $ttl);
 
         return $ids;
     }

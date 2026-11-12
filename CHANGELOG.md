@@ -7,6 +7,15 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.6.3] — 2026-11-12
+
+Fixes from review.
+
+### Fixed
+- A failed shared trending build is no longer cached for `trending_ttl`: an exception is never cached and an empty list is kept for at most 15 seconds, so a recovered source shows up quickly (guests and the trending fallback no longer stay empty for ten minutes)
+- `FeedPage::toPaginator()`, `toPaginatorArray()` and JSON encoding keep the request's query string (`?sort=…`) in their links, like returning the page from a route already did
+- Code and docs agree on `seen_max` = 200; the impressions comment no longer promises "one bulk write per page"
+
 ## [0.6.2] — 2026-11-12
 
 Small fixes and options from review.
@@ -256,7 +265,8 @@ First minor release: a feed is now **configuration only** — tell the package w
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.6.2...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.6.3...HEAD
+[0.6.3]: https://github.com/solutionforest/laravel-recommender/compare/v0.6.2...v0.6.3
 [0.6.2]: https://github.com/solutionforest/laravel-recommender/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/solutionforest/laravel-recommender/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.5.1...v0.6.0
