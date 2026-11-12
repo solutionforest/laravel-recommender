@@ -24,7 +24,7 @@ It builds a ranked **"for you" list per user** from data your app already stores
 4. [First-time go-live checklist](#first-time-go-live-checklist)
 5. [Fine-tuning weights](#fine-tuning-weights)
 6. [Lessons from a real inspiration feed](#lessons-from-a-real-inspiration-feed)
-7. [Installation (private repository)](#installation-private-repository)
+7. [Installation](#installation)
 8. [Contracts reference](#contracts-reference)
 9. [Serving a feed](#serving-a-feed)
 10. [Background jobs](#background-jobs)
@@ -460,9 +460,9 @@ Useful package upgrades suggested by that experience (not all shipped yet):
 
 ---
 
-## Installation (private repository)
+## Installation
 
-This repository is **private** to the Solution Forest organisation. Add it as a VCS repository:
+Until the package is on Packagist, add it as a VCS repository:
 
 ```json
 // composer.json of your app
@@ -473,22 +473,6 @@ This repository is **private** to the Solution Forest organisation. Add it as a 
     "solutionforest/laravel-recommender": "^0.1"
 }
 ```
-
-Composer needs read access to the repository.
-
-**Locally:**
-
-```bash
-composer config --global github-oauth.github.com <your-token>
-```
-
-**CI and Docker builds:** pass a token with read access to this repo, without committing it:
-
-```bash
-COMPOSER_AUTH='{"github-oauth":{"github.com":"'"$GITHUB_TOKEN"'"}}' composer install
-```
-
-In a Dockerfile, use a build secret (`RUN --mount=type=secret,id=composer_auth ...`) rather than an `ARG`, so the token doesn't end up in an image layer.
 
 Then install and migrate:
 
@@ -714,7 +698,7 @@ RECOMMENDER_TEST_DB=mysql DB_HOST=127.0.0.1 DB_DATABASE=rec_test DB_USERNAME=roo
 | `tests/Feature/ScaleTest.php` | shard equivalence, memory guard, crash-resume without double counting, bulk-write statement counts, chunked prune, packed cache values |
 | `tests/Feature/BlogExampleTest.php` | the sample app end to end |
 
-Run tests locally with `vendor/bin/pest` (PHP 8.1–8.4 × Laravel 10–13). GitHub Actions workflow is disabled for now to conserve private-repo minutes.
+CI (`.github/workflows/tests.yml`) runs PHP 8.1–8.4 × Laravel 10–13 on SQLite, plus Laravel 13 on MySQL 8.
 
 ---
 
