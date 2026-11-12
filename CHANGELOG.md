@@ -7,6 +7,9 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- GitHub Actions [`release.yml`](.github/workflows/release.yml) — push `v*.*.*` tag → Release with notes from `CHANGELOG.md`
+
 ## [0.0.15] — 2026-11-12
 
 ### Docs

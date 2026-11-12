@@ -85,4 +85,4 @@ Replace `123` with a real user ID. This shows source and booster scores for a fr
 
 Package guidance is available in [AGENTS.md](AGENTS.md) and the [Laravel Recommender skill](skills/laravel-recommender/SKILL.md). Copy the skill into a consuming application's `.cursor/skills/` if desired.
 
-[Changelog](CHANGELOG.md) · [Releases](https://github.com/solutionforest/laravel-recommender/releases) · [MIT license](LICENSE)
+[Changelog](CHANGELOG.md) · [Releases](https://github.com/solutionforest/laravel-recommender/releases) · [Publishing a release](docs/operations.md#publishing-a-package-release) · [MIT license](LICENSE)
