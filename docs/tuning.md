@@ -19,9 +19,9 @@ Start with the generated defaults and change one setting at a time. [Getting sta
 'exposure_events' => ['view'],
 ```
 
-Used by `update-scores` when folding events into `hot`. Only keys in `events` with weight `> 0` count. Raise stronger actions if they should dominate trending; raise `view` if browse volume should matter more. The updater only processes events after its watermark: a rerun does not recalculate past events with new weights. For a historical rebuild, follow [operations](operations.md#historical-imports-and-score-rebuilds).
+Used by `update-scores` when folding events into `hot`. Only keys in `events` with weight `> 0` count. Raise stronger actions if they should dominate trending; raise `view` if browse volume should matter more. The updater only processes events after its watermark: a rerun does not recalculate past events with new weights. To apply new weights to past events, run `recommender:rebuild-scores {feed}` ([operations](operations.md#historical-imports-and-score-rebuilds)).
 
-For neighbours (`build-neighbours`), put the items you care about in `userHistories()` / `recentItems()` — usually strong actions, not every view.
+For neighbours (`build-neighbours`), only strong actions count by default: `history_events`, which defaults to `positive_events` (e.g. likes, joins, purchases — not every view). With an `InteractionSource` class, return the same from `userHistories()` / `recentItems()`.
 
 ## Sponsors (certain posts / shops more often)
 
@@ -75,7 +75,7 @@ Raising freshness a lot makes **every cohort look the same**. Prefer recipe A fo
 
 1. Pick 2–3 real users with different signals.
 2. `php artisan recommender:explain {feed} {userId} --limit=12`.
-3. If you only see `Fresh*` / `Trending*`, personal sources may be weak or empty. `explain` builds a fresh pre-exploration, pre-diversity ranking; it does not inspect the cached page.
+3. If you only see `Fresh*` / `Trending*`, personal sources may be weak or empty. `explain` builds a fresh ranking: rows are in score order, with each item's `final` position (after exploration and diversity) and `cached` position in the served list.
 4. Change **one** weight; forget user + trending cache; re-explain.
 5. Watch latency: `source_limit` / `feed_size` / heavy SQL dominate cold builds.
 

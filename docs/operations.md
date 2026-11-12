@@ -7,13 +7,14 @@ Go-live, storage, locks, FAQ, roadmap.
 | Step | Action | Why |
 |---|---|---|
 | 1 | `php artisan migrate` | `rec_*` tables |
-| 2 | Scaffold a feed | `php artisan recommender:make-feed posts` (config + 3 classes) |
+| 2 | Register a feed | `php artisan recommender:make-feed posts` (config-only: model + interaction tables) |
 | 3 | Index your interaction / item tables | Sources are your SQL |
 | 4 | `recommender:update-scores {feed}` | Fill `hot` / quality |
 | 5 | `recommender:build-neighbours {feed}` | Fill graph |
-| 6 | `recommender:explain {feed} {userId}` | Expect personal sources |
+| 6 | `recommender:doctor` and `recommender:explain {feed} {userId}` | All checks pass; expect personal sources |
 | 7 | Schedule three jobs | See [reference](reference.md#background-jobs) |
 | 8 | Cache with locks (`redis` or `database`+`cache_locks`) + `queue:work --queue=recommender` | Build locks + warm builds |
+| 9 | `Gate::define('viewRecommender', …)` | Dashboard at `/recommender` in production |
 
 ### Historical imports and score rebuilds
 
@@ -25,6 +26,8 @@ To recompute one feed from scratch — after importing old interactions, or chan
 php artisan recommender:rebuild-scores posts --days=365 --dry-run   # what would happen
 php artisan recommender:rebuild-scores posts --days=365             # asks for confirmation (--force to skip)
 ```
+
+![recommender:rebuild-scores --dry-run](../art/screenshots/terminal-rebuild.png)
 
 It deletes only that feed's score rows and watermark, replays the window, and refreshes trending. It never double-counts: a marker is written first, and while it exists `update-scores` refuses that feed (other feeds keep updating). If the rebuild is interrupted, `recommender:doctor` and the dashboard show it — run the same command again to finish. Rebuild neighbours separately if `history_days` changed; cached user lists refresh within `feed_ttl`. Expect temporarily missing scores for the feed while it runs, so prefer a quiet hour for long windows.
 
@@ -166,7 +169,7 @@ No — long pool then `hasMore` false / seen recycle. Catalog tail is app-side (
 
 ## Roadmap / wishlist
 
-Done in 0.1.x / 0.2: config-only feeds, dashboard + `doctor`, guided `rebuild-scores`, explain with final / cached positions, card invalidation on model save, ids with commas, a config-only `make-feed`.
+Done in 0.1 / 0.2: config-only feeds, dashboard + `doctor`, guided `rebuild-scores`, explain with final / cached positions, card invalidation on model save, ids with commas, a config-only `make-feed`, per-item `stats()` (quality / popularity).
 
 Next, in order:
 

@@ -108,7 +108,7 @@ php artisan recommender:explain posts 123
 
 Replace `123` with an actual user ID. The score command skips the newest minute to allow writes to settle and reads the last 30 days on its first run by default. `status` shows the watermark, score rows and neighbour rows. A watermark alone does not mean events were found.
 
-Neighbours need overlapping user histories: by default an item pair must have at least two shared users. A small or new dataset may legitimately have no neighbours; trending can still work if scores exist. `explain` is a fresh diagnostic ranking, before exploration and diversity, and may differ from a cached page.
+Neighbours need overlapping user histories: by default an item pair must have at least two shared users. A small or new dataset may legitimately have no neighbours; trending can still work if scores exist. `explain` is a fresh ranking; its *final* and *cached* columns show where each item lands after exploration and diversity and in the list the user is served now.
 
 ## 4. Serve a page
 

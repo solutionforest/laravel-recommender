@@ -6,7 +6,7 @@ Human docs live under [`docs/`](docs/). Prefer linking there over pasting walls 
 
 | Doc | Use for |
 |---|---|
-| [docs/tutorial.md](docs/tutorial.md) | Scaffold checklist (`make-feed`) |
+| [docs/tutorial.md](docs/tutorial.md) | First feed: config-only (`make-feed`) or classes (`--classes`) |
 | [docs/getting-started.md](docs/getting-started.md) | First-time wiring (slower) |
 | [docs/how-it-works.md](docs/how-it-works.md) | Mental model |
 | [docs/tuning.md](docs/tuning.md) | Weights / lessons |
@@ -22,8 +22,8 @@ Human docs live under [`docs/`](docs/). Prefer linking there over pasting walls 
 ## When working in a **consuming Laravel app**
 
 1. `composer require solutionforest/laravel-recommender` → `php artisan migrate`
-2. Simplest: config-only feed — `'model' => Post::class, 'interactions' => ['post_likes' => 'like', …]` (see `examples/simple`). Otherwise `php artisan recommender:make-feed` (wizard) or `… posts -n`, then tweak scaffolded classes
-3. `recommender:update-scores` → `build-neighbours` → `explain {feed} {userId}`
+2. Simplest: config-only feed — `'model' => Post::class, 'interactions' => ['post_likes' => 'like', …]` (see `examples/simple`). `php artisan recommender:make-feed posts` writes it for you; `--classes` scaffolds InteractionSource / ItemFilter / CardTransformer for custom queries
+3. `recommender:doctor` → `update-scores` → `build-neighbours` → `explain {feed} {userId}`; watch `/recommender`; `Recommender::stats($feed, $item)` for per-item quality
 4. Serve with `recommendations('posts', $request->user())` (or `Recommender::page()`) — return it directly for paginator JSON
 5. Schedule scores / neighbours / prune; cache with locks (`redis` or `database`+`cache_locks`)
 
