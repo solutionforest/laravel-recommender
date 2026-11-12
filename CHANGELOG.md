@@ -7,6 +7,15 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.0.11] — 2026-11-12
+
+### Added
+- Interactive `recommender:make-feed` wizard (presets blog/products/reviews/custom, optional third event, confirm summary)
+- Flags: `--preset`, `--purchases`, `--purchase-event`, `--owner-column`, …
+
+### Changed
+- InteractionSource stub supports N event tables via `TABLES` entries
+
 ## [0.0.10] — 2026-11-12
 
 ### Added
@@ -77,7 +86,8 @@ This project uses [Semantic Versioning](https://semver.org/).
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.10...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.11...HEAD
+[0.0.11]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.11
 [0.0.10]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.10
 [0.0.9]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.9
 [0.0.8]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.8

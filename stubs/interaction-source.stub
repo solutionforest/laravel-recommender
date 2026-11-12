@@ -10,14 +10,14 @@ use SolutionForest\Recommender\Contracts\InteractionSource;
 use SolutionForest\Recommender\Support\Interaction;
 
 /**
- * Reads likes/views from your tables. Adjust TABLES / column names to match your schema.
+ * Reads interactions from your tables (any event names — not only like/view).
+ * Adjust TABLES / column names to match your schema.
  */
 class {{ class }} implements InteractionSource
 {
     /** @var array<string, string> table => event name */
     private const TABLES = [
-        '{{ likes_table }}' => 'like',
-        '{{ views_table }}' => 'view',
+{{ tables_entries }}
     ];
 
     private const USER_RANGE = 500;

@@ -33,7 +33,7 @@ Human docs (prefer linking over pasting):
 1. **Install**
 
 ```bash
-composer require solutionforest/laravel-recommender:^0.0.10
+composer require solutionforest/laravel-recommender:^0.0.11
 php artisan migrate
 ```
 
@@ -42,9 +42,13 @@ Creates `rec_item_scores`, `rec_item_neighbours`, `rec_state`.
 2. **Scaffold a feed** (do not hand-roll the three classes from scratch)
 
 ```bash
-php artisan recommender:make-feed posts
-# or reviews-style:
-php artisan recommender:make-feed reviews --model=App\\Models\\Comment --likes=user_fav_comments --views=user_clicks --item-column=comment_id
+# Interactive wizard (presets: blog / products / reviews / custom; optional 3rd event)
+php artisan recommender:make-feed
+
+# Non-interactive
+php artisan recommender:make-feed posts -n
+php artisan recommender:make-feed products --preset=products -n
+php artisan recommender:make-feed reviews --model=App\\Models\\Comment --likes=user_fav_comments --views=user_clicks --item-column=comment_id -n
 ```
 
 Produces under `app/Recommendation/{Feed}/`:

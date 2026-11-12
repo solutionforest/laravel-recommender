@@ -31,7 +31,7 @@ Example shape (names can differ — you will edit them):
 ## Step 1 — Install
 
 ```bash
-composer require solutionforest/laravel-recommender:^0.0.10
+composer require solutionforest/laravel-recommender:^0.0.11
 php artisan migrate
 ```
 
@@ -41,18 +41,23 @@ Check: tables `rec_item_scores`, `rec_item_neighbours`, `rec_state` exist.
 
 ## Step 2 — Scaffold
 
+**Interactive (recommended):**
+
 ```bash
-php artisan recommender:make-feed posts
+php artisan recommender:make-feed
 ```
 
-Useful options:
+The wizard asks for a preset (`blog` / `products` / `reviews` / `custom`), tables, columns, and an optional **third event** (purchase / share / …). Confirm the summary before files are written.
+
+**Non-interactive / CI** (`-n` skips prompts):
 
 ```bash
-# Custom model / table names
-php artisan recommender:make-feed posts --model=Post --likes=post_likes --views=post_views --item-column=post_id
+php artisan recommender:make-feed posts -n
+php artisan recommender:make-feed products --preset=products -n
+php artisan recommender:make-feed posts --model=Post --likes=post_likes --views=post_views --item-column=post_id -n
 
-# Reviews-style feed
-php artisan recommender:make-feed reviews --model=App\\Models\\Comment --likes=user_fav_comments --views=user_clicks --item-column=comment_id
+# Third event via flags
+php artisan recommender:make-feed products --purchases=product_purchases --purchase-event=purchase -n
 ```
 
 This creates:
