@@ -92,24 +92,24 @@ it('walks the interactive scaffold wizard', function () {
     $files->delete(config_path('recommender.php'));
 
     $presets = [
-        'blog — posts with like + view',
-        'products — catalog with like + view + purchase',
-        'events — meetup listing with like + view + join',
-        'reviews — UGC with like + view',
-        'custom — answer every prompt',
+        'blog' => 'Blog posts — like + view',
+        'products' => 'Product catalog — like + view + purchase',
+        'events' => 'Meetup listing — like + view + join',
+        'reviews' => 'Shop / UGC reviews — like + view',
+        'custom' => 'Custom — answer every prompt',
     ];
 
     $this->artisan('recommender:make-feed', ['--force' => true])
-        ->expectsChoice('Choose a starting preset', $presets[0], $presets)
-        ->expectsQuestion('Feed name (snake_case)', 'posts')
-        ->expectsQuestion('Eloquent model (FQCN or short name)', 'App\\Models\\Post')
+        ->expectsChoice('Choose a starting preset', 'blog', $presets)
+        ->expectsQuestion('Feed name', 'posts')
+        ->expectsQuestion('Eloquent model', 'App\\Models\\Post')
         ->expectsQuestion('Likes table', 'post_likes')
         ->expectsQuestion('Views table', 'post_views')
         ->expectsQuestion('Item FK column on interaction tables', 'post_id')
         ->expectsQuestion('Owner column on item (hide own)', 'author_id')
         ->expectsQuestion('Published column on item', 'published')
         ->expectsQuestion('Title column on item', 'title')
-        ->expectsConfirmation('Add a third interaction type (purchase / share / bookmark / …)?', 'no')
+        ->expectsConfirmation('Add a third interaction type (purchase / join / share / …)?', 'no')
         ->expectsConfirmation('Create these files and register the feed?', 'yes')
         ->expectsOutputToContain('Registered feed [posts]')
         ->assertSuccessful();

@@ -31,7 +31,7 @@ Example shape (names can differ — you will edit them):
 ## Step 1 — Install
 
 ```bash
-composer require solutionforest/laravel-recommender:^0.0.12
+composer require solutionforest/laravel-recommender:^0.0.13
 php artisan migrate
 ```
 
@@ -41,13 +41,13 @@ Check: tables `rec_item_scores`, `rec_item_neighbours`, `rec_state` exist.
 
 ## Step 2 — Scaffold
 
-**Interactive (recommended):**
+**Interactive (recommended)** — uses [Laravel Prompts](https://laravel.com/docs/prompts):
 
 ```bash
 php artisan recommender:make-feed
 ```
 
-The wizard asks for a preset (`blog` / `products` / `events` / `reviews` / `custom`), tables, columns, and an optional **third event** (purchase / join / share / …). Confirm the summary before files are written.
+Beautiful select / text / confirm prompts for preset (`blog` / `products` / `events` / `reviews` / `custom`), tables, columns, and an optional **third event** (purchase / join / share / …). Confirm the summary table before files are written.
 
 **Non-interactive / CI** (`-n` skips prompts):
 

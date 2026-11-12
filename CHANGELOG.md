@@ -7,6 +7,14 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.0.13] — 2026-11-12
+
+### Changed
+- `recommender:make-feed` interactive UI uses [Laravel Prompts](https://laravel.com/docs/prompts) (`select` / `text` / `confirm` / `table` / `intro`)
+
+### Added
+- Composer require `laravel/prompts` (^0.1.25|^0.2|^0.3)
+
 ## [0.0.12] — 2026-11-12
 
 ### Added
@@ -92,7 +100,8 @@ This project uses [Semantic Versioning](https://semver.org/).
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.12...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.13...HEAD
+[0.0.13]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.13
 [0.0.12]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.12
 [0.0.11]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.11
 [0.0.10]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.10

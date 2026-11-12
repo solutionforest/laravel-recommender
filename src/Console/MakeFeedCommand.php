@@ -5,6 +5,15 @@ namespace SolutionForest\Recommender\Console;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Str;
+use Laravel\Prompts\Prompt;
+use function Laravel\Prompts\confirm;
+use function Laravel\Prompts\intro;
+use function Laravel\Prompts\note;
+use function Laravel\Prompts\outro;
+use function Laravel\Prompts\select;
+use function Laravel\Prompts\table;
+use function Laravel\Prompts\text;
+use function Laravel\Prompts\warning;
 
 class MakeFeedCommand extends Command
 {
@@ -22,7 +31,7 @@ class MakeFeedCommand extends Command
         {--title-column= : Title column for cards (default: title)}
         {--force : Overwrite existing class files}';
 
-    protected $description = 'Interactively scaffold InteractionSource, ItemFilter, CardTransformer and register a feed (use -n for non-interactive)';
+    protected $description = 'Interactively scaffold InteractionSource, ItemFilter, CardTransformer and register a feed (Laravel Prompts; use -n for CI)';
 
     public function __construct(private readonly Filesystem $files)
     {
@@ -31,8 +40,17 @@ class MakeFeedCommand extends Command
 
     public function handle(): int
     {
-        // Respect global Symfony `-n` / `--no-interaction` (do not redeclare that option).
+        // Fall back to Symfony questions in CI / non-TTY / Pest so expectsQuestion still works.
+        Prompt::fallbackWhen(
+            ! $this->input->isInteractive() || windows_os() || app()->runningUnitTests()
+        );
+
         $interactive = $this->input->isInteractive();
+
+        if ($interactive) {
+            intro('Laravel Recommender — scaffold a feed');
+            note('Presets fill table names; any event types work (not only like/view).');
+        }
 
         $preset = $this->resolvePreset($interactive);
         $defaults = $this->presetDefaults($preset);
@@ -48,7 +66,7 @@ class MakeFeedCommand extends Command
         $namespace = "App\\Recommendation\\{$studly}";
         $dir = app_path("Recommendation/{$studly}");
 
-        $modelFqcn = $this->resolveModel($interactive, $defaults['model'] ?? "App\\Models\\{$studlySingular}", $studlySingular);
+        $modelFqcn = $this->resolveModel($interactive, $defaults['model'] ?? "App\\Models\\{$studlySingular}");
         $modelClass = class_basename($modelFqcn);
 
         $likes = $this->resolveString($interactive, 'likes', 'Likes table', $defaults['likes'] ?? "{$singular}_likes");
@@ -77,23 +95,30 @@ class MakeFeedCommand extends Command
         }
 
         if ($interactive) {
-            $this->newLine();
-            $this->table(
+            table(
                 ['Setting', 'Value'],
                 [
                     ['preset', $preset],
                     ['feed', $feed],
                     ['model', $modelFqcn],
-                    ['events', implode(', ', array_map(fn ($e, $w) => "{$e}={$w}", array_keys($eventsConfig), $eventsConfig))],
-                    ['tables', implode(', ', array_map(fn ($t, $e) => "{$t}→{$e}", array_keys($tables), $tables))],
+                    ['events', implode(', ', array_map(
+                        fn ($e, $w) => "{$e}={$w}",
+                        array_keys($eventsConfig),
+                        $eventsConfig,
+                    ))],
+                    ['tables', implode(', ', array_map(
+                        fn ($t, $e) => "{$t}→{$e}",
+                        array_keys($tables),
+                        $tables,
+                    ))],
                     ['item column', $itemColumn],
                     ['owner / published / title', "{$ownerColumn} / {$publishedColumn} / {$titleColumn}"],
                     ['classes dir', $dir],
                 ],
             );
 
-            if (! $this->confirm('Create these files and register the feed?', true)) {
-                $this->warn('Aborted.');
+            if (! confirm('Create these files and register the feed?', default: true)) {
+                warning('Aborted — no files written.');
 
                 return self::SUCCESS;
             }
@@ -114,7 +139,7 @@ class MakeFeedCommand extends Command
         foreach ($classes as $class => $stub) {
             $path = "{$dir}/{$class}.php";
             if ($this->files->exists($path) && ! $this->option('force')) {
-                $this->warn("Skipped (exists): {$path}");
+                warning("Skipped (exists): {$path}");
 
                 continue;
             }
@@ -134,7 +159,7 @@ class MakeFeedCommand extends Command
             ]);
 
             $this->files->put($path, $contents);
-            $this->info("Created: {$path}");
+            $this->components->info("Created: {$path}");
         }
 
         $interaction = "{$namespace}\\{$studlySingular}InteractionSource";
@@ -144,16 +169,21 @@ class MakeFeedCommand extends Command
         $this->ensureConfigPublished();
         $this->registerFeed($feed, $interaction, $filter, $cards, $eventsConfig, $positive);
 
-        $this->newLine();
-        $this->info("Feed [{$feed}] scaffolded.");
-        $this->line('Next (see docs/tutorial.md):');
+        if ($interactive) {
+            outro("Feed [{$feed}] ready — see docs/tutorial.md for cook + schedule steps.");
+        } else {
+            $this->newLine();
+            $this->info("Feed [{$feed}] scaffolded.");
+        }
+
+        $this->line('Next:');
         $this->line("  1. Adjust table/column names in {$dir} if needed");
         $this->line('  2. Add a route / Livewire that calls Recommender::page()');
         $this->line("  3. php artisan recommender:update-scores {$feed}");
         $this->line("  4. php artisan recommender:build-neighbours {$feed}");
         $this->line("  5. php artisan recommender:explain {$feed} {userId}");
         if ($extra !== null) {
-            $this->comment("  Tip: neighbours use all TABLES — trim views out of userHistories() if you only want strong signals.");
+            note('Tip: neighbours include all TABLES — trim views from userHistories() if you only want strong signals.');
         }
 
         return self::SUCCESS;
@@ -165,7 +195,7 @@ class MakeFeedCommand extends Command
         if (is_string($presetOpt) && $presetOpt !== '') {
             $preset = strtolower($presetOpt);
             if (! in_array($preset, ['blog', 'products', 'events', 'reviews', 'custom'], true)) {
-                $this->warn("Unknown preset [{$preset}] — using custom.");
+                warning("Unknown preset [{$preset}] — using custom.");
 
                 return 'custom';
             }
@@ -177,19 +207,18 @@ class MakeFeedCommand extends Command
             return 'custom';
         }
 
-        $label = $this->choice(
-            'Choose a starting preset',
-            [
-                'blog — posts with like + view',
-                'products — catalog with like + view + purchase',
-                'events — meetup listing with like + view + join',
-                'reviews — UGC with like + view',
-                'custom — answer every prompt',
+        return select(
+            label: 'Choose a starting preset',
+            options: [
+                'blog' => 'Blog posts — like + view',
+                'products' => 'Product catalog — like + view + purchase',
+                'events' => 'Meetup listing — like + view + join',
+                'reviews' => 'Shop / UGC reviews — like + view',
+                'custom' => 'Custom — answer every prompt',
             ],
-            0,
+            default: 'blog',
+            hint: 'You can still edit every table/column after this.',
         );
-
-        return Str::before($label, ' —');
     }
 
     /**
@@ -246,18 +275,28 @@ class MakeFeedCommand extends Command
         $raw = is_string($nameArg) && $nameArg !== '' ? $nameArg : null;
 
         if ($raw === null && $interactive) {
-            $raw = $this->ask('Feed name (snake_case)', $default ?? 'posts');
+            $raw = text(
+                label: 'Feed name',
+                placeholder: 'posts',
+                default: $default ?? 'posts',
+                required: true,
+                validate: fn (string $value) => preg_match('/^[a-z][a-z0-9_]*$/', Str::of($value)->snake()->lower()->toString())
+                    ? null
+                    : 'Use snake_case letters/numbers (e.g. posts, reviews).',
+                hint: 'Becomes config key feeds.{name}',
+                transform: fn (string $value) => Str::of($value)->snake()->lower()->toString(),
+            );
         }
 
         if (! is_string($raw) || $raw === '') {
-            $this->error('Feed name is required (e.g. posts, reviews).');
+            $this->components->error('Feed name is required (e.g. posts, reviews).');
 
             return null;
         }
 
         $feed = Str::of($raw)->snake()->lower()->toString();
         if ($feed === '' || ! preg_match('/^[a-z][a-z0-9_]*$/', $feed)) {
-            $this->error('Feed name must be snake_case letters/numbers (e.g. posts, reviews).');
+            $this->components->error('Feed name must be snake_case letters/numbers (e.g. posts, reviews).');
 
             return null;
         }
@@ -265,13 +304,19 @@ class MakeFeedCommand extends Command
         return $feed;
     }
 
-    private function resolveModel(bool $interactive, string $default, string $studlySingular): string
+    private function resolveModel(bool $interactive, string $default): string
     {
         $modelInput = $this->option('model');
         $modelInput = is_string($modelInput) && $modelInput !== '' ? $modelInput : null;
 
         if ($modelInput === null && $interactive) {
-            $modelInput = $this->ask('Eloquent model (FQCN or short name)', $default);
+            $modelInput = text(
+                label: 'Eloquent model',
+                placeholder: 'App\\Models\\Post',
+                default: $default,
+                required: true,
+                hint: 'FQCN or short name (Post → App\\Models\\Post)',
+            );
         }
 
         $modelInput = is_string($modelInput) && $modelInput !== '' ? $modelInput : $default;
@@ -281,7 +326,7 @@ class MakeFeedCommand extends Command
             : 'App\\Models\\'.Str::studly($modelInput);
     }
 
-    private function resolveString(bool $interactive, string $option, string $question, string $default): string
+    private function resolveString(bool $interactive, string $option, string $label, string $default): string
     {
         $value = $this->option($option);
         if (is_string($value) && $value !== '') {
@@ -289,7 +334,11 @@ class MakeFeedCommand extends Command
         }
 
         if ($interactive) {
-            return (string) $this->ask($question, $default);
+            return text(
+                label: $label,
+                default: $default,
+                required: true,
+            );
         }
 
         return $default;
@@ -318,9 +367,9 @@ class MakeFeedCommand extends Command
                 return $defaults['extra'];
             }
 
-            if ($this->confirm(
-                "Include third event [{$defaults['extra']['event']}] on table [{$defaults['extra']['table']}]?",
-                true,
+            if (confirm(
+                label: "Include third event [{$defaults['extra']['event']}] on table [{$defaults['extra']['table']}]?",
+                default: true,
             )) {
                 return $defaults['extra'];
             }
@@ -332,18 +381,33 @@ class MakeFeedCommand extends Command
             return null;
         }
 
-        if (! $this->confirm('Add a third interaction type (purchase / share / bookmark / …)?', false)) {
+        if (! confirm('Add a third interaction type (purchase / join / share / …)?', default: false)) {
             return null;
         }
 
-        $table = (string) $this->ask('Third event table', "{$singular}_purchases");
-        $event = (string) $this->ask('Event name (config key)', 'purchase');
-        $weight = (float) $this->ask('Event weight for trending (like=4, purchase≈10)', '10');
+        $table = text(
+            label: 'Third event table',
+            default: "{$singular}_purchases",
+            required: true,
+        );
+        $event = text(
+            label: 'Event name (config key)',
+            default: 'purchase',
+            required: true,
+            hint: 'Arbitrary string — e.g. purchase, join, share',
+        );
+        $weight = text(
+            label: 'Event weight for trending',
+            default: '10',
+            required: true,
+            hint: 'like≈4, purchase/join≈10',
+            validate: fn (string $v) => is_numeric($v) && (float) $v > 0 ? null : 'Enter a positive number.',
+        );
 
         return [
             'table' => $table,
             'event' => $event !== '' ? $event : 'purchase',
-            'weight' => $weight > 0 ? $weight : 10.0,
+            'weight' => (float) $weight > 0 ? (float) $weight : 10.0,
         ];
     }
 
@@ -378,7 +442,7 @@ class MakeFeedCommand extends Command
 
         $source = dirname(__DIR__, 2).'/config/recommender.php';
         $this->files->copy($source, $target);
-        $this->info('Published: '.$target);
+        $this->components->info('Published: '.$target);
     }
 
     /**
@@ -397,7 +461,7 @@ class MakeFeedCommand extends Command
         $contents = $this->files->get($path);
 
         if (preg_match("/['\"]".preg_quote($feed, '/')."['\"]\\s*=>/", $contents) === 1) {
-            $this->warn("Config already has feed [{$feed}] — left unchanged. Wire classes manually if needed.");
+            warning("Config already has feed [{$feed}] — left unchanged. Wire classes manually if needed.");
 
             return;
         }
@@ -442,13 +506,13 @@ PHP;
         }
 
         if (! is_string($updated)) {
-            $this->error('Could not find feeds array in config/recommender.php — add the feed manually.');
+            $this->components->error('Could not find feeds array in config/recommender.php — add the feed manually.');
             $this->line($block);
 
             return;
         }
 
         $this->files->put($path, $updated);
-        $this->info("Registered feed [{$feed}] in config/recommender.php");
+        $this->components->info("Registered feed [{$feed}] in config/recommender.php");
     }
 }

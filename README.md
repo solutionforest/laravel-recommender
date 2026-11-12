@@ -162,16 +162,16 @@ Then `recommender:explain posts {userId}` to verify. More recipes: [Tuning](docs
 ## Install
 
 ```bash
-composer require solutionforest/laravel-recommender:^0.0.12
+composer require solutionforest/laravel-recommender:^0.0.13
 php artisan migrate
 php artisan recommender:make-feed
 ```
 
-`recommender:make-feed` is an **interactive wizard** (presets: blog / products / events / reviews / custom, optional third event). Pass `-n` + flags for CI. It publishes `config/recommender.php` if needed, scaffolds the three classes under `app/Recommendation/...`, and registers the feed.
+`recommender:make-feed` is an **interactive [Laravel Prompts](https://laravel.com/docs/prompts) wizard** (presets: blog / products / events / reviews / custom, optional third event). Pass `-n` + flags for CI. It publishes `config/recommender.php` if needed, scaffolds the three classes under `app/Recommendation/...`, and registers the feed.
 
 Full walkthrough: **[Scaffold tutorial](docs/tutorial.md)**. Or copy an example from [`examples/`](examples/) (`blog` · `products` · `events` · `reviews`).
 
-On [Packagist](https://packagist.org/packages/solutionforest/laravel-recommender). Current: **`^0.0.12`** (PHP 8.3+ / Laravel 11–13).
+On [Packagist](https://packagist.org/packages/solutionforest/laravel-recommender). Current: **`^0.0.13`** (PHP 8.3+ / Laravel 11–13).
 
 Changelog: [CHANGELOG.md](CHANGELOG.md) · Releases: [GitHub Releases](https://github.com/solutionforest/laravel-recommender/releases)
 
