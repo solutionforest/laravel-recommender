@@ -12,8 +12,8 @@ https://your-app.test/recommender
 
 | Area | Shows |
 |---|---|
-| Sidebar | Every feed with its status dot (green / amber / red) and scored-item count; engine, cache store, build locks and environment at the bottom. |
-| Header | Feed status (**Healthy / Warnings / Failing**), time since the last update, the **Live** switch and the theme toggle. |
+| Top bar | Engine on / kill switch, cache store (and whether it can lock), environment, time since the last update, the **Live** switch and the light / dark toggle. |
+| Title & feed tabs | The feed's status (**Healthy / Warnings / Failing**) and, with several feeds, one tab per feed with its status dot and scored-item count. |
 | Pipeline | The four steps a feed goes through — **Interactions → Scores → Similar items → Serving** — so you see at a glance *where* it is broken. |
 | Cards | Checks passing, score lag against the 1-hour limit, scored items, and similar-items coverage (share of items that have neighbours). |
 | Trending now | Top 10 items by time-decayed popularity, with positive (e.g. likes) and exposure (e.g. views) counts and their rate. |

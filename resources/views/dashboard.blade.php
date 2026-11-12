@@ -34,31 +34,33 @@
         code, .mono { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
         svg { width: 16px; height: 16px; flex: none; }
 
-        .layout { display: grid; grid-template-columns: 248px 1fr; min-height: 100vh; background: linear-gradient(90deg, var(--panel) 247px, var(--line) 247px 248px, var(--bg) 248px); }
-        @media (max-width: 900px) { .layout { grid-template-columns: 1fr; background: var(--bg); } .sidebar { position: static !important; height: auto !important; border-bottom: 1px solid var(--line); } }
+        .wrap { max-width: 1200px; margin: 0 auto; padding-left: 32px; padding-right: 32px; }
+        @media (max-width: 700px) { .wrap { padding-left: 16px; padding-right: 16px; } }
 
-        /* Sidebar */
-        .sidebar { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 24px; padding: 20px 14px; background: var(--panel); border-right: 1px solid var(--line); }
-        .brand { display: flex; align-items: center; gap: 10px; padding: 0 8px; font-weight: 650; letter-spacing: -.01em; }
+        /* Top bar */
+        .top { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter: saturate(180%) blur(10px); border-bottom: 1px solid var(--line); }
+        .top-row { display: flex; align-items: center; gap: 16px; height: 60px; }
+        .brand { display: flex; align-items: center; gap: 10px; font-weight: 650; letter-spacing: -.01em; }
         .brand-mark { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; color: #fff; background: linear-gradient(135deg, var(--accent), #22c1a8); }
         .brand-mark svg { width: 16px; height: 16px; }
-        .nav-label { padding: 0 8px 6px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-        .nav a { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 8px; color: var(--ink-2); }
-        .nav a:hover { background: var(--panel-2); }
-        .nav a.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
-        .nav .count { margin-left: auto; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+        .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+        .chip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border: 1px solid var(--line); border-radius: 999px; font-size: 12px; color: var(--muted); background: var(--panel); }
+        .chip b { color: var(--ink); font-weight: 600; }
+        @media (max-width: 800px) { .chips { display: none; } }
+        .tabs { margin-left: auto; display: inline-flex; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); box-shadow: var(--shadow); }
+        .tabs a { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 8px; color: var(--ink-2); font-weight: 500; }
+        .tabs a:hover { background: var(--panel-2); }
+        .tabs a.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+        .tabs .count { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
         .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
         .dot.ok { background: var(--ok); box-shadow: 0 0 0 3px var(--ok-soft); }
         .dot.warn { background: var(--warn); box-shadow: 0 0 0 3px var(--warn-soft); }
         .dot.fail { background: var(--fail); box-shadow: 0 0 0 3px var(--fail-soft); }
-        .env { margin-top: auto; display: grid; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-2); font-size: 12px; }
-        .env div { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); }
-        .env b { color: var(--ink); font-weight: 600; }
+        .btn.icon { width: 32px; padding: 0; justify-content: center; }
 
         /* Main */
-        main { padding: 28px 36px 48px; max-width: 1240px; width: 100%; }
-        @media (max-width: 900px) { main { padding: 20px; } }
-        .topbar { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 24px; }
+        main { padding-top: 28px; padding-bottom: 48px; }
+        .topbar { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; }
         .crumbs { font-size: 12px; color: var(--muted); }
         h1 { margin: 2px 0 0; font-size: 24px; font-weight: 650; letter-spacing: -.02em; display: flex; align-items: center; gap: 12px; }
         .actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
@@ -151,35 +153,33 @@
     </style>
 </head>
 <body>
-<div id="recommender-app" class="layout" data-updated="{{ now()->getTimestamp() }}">
-    <aside class="sidebar">
-        <div class="brand">
-            <span class="brand-mark"><svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 1.5l2.2 5.1 5.3.5-4 3.6 1.2 5.3L10 13.2 5.3 16l1.2-5.3-4-3.6 5.3-.5L10 1.5z"/></svg></span>
-            Recommender
+<div id="recommender-app" data-updated="{{ now()->getTimestamp() }}">
+    <header class="top">
+        <div class="wrap top-row">
+            <div class="brand">
+                <span class="brand-mark"><svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 1.5l2.2 5.1 5.3.5-4 3.6 1.2 5.3L10 13.2 5.3 16l1.2-5.3-4-3.6 5.3-.5L10 1.5z"/></svg></span>
+                Recommender
+            </div>
+            <div class="chips">
+                <span class="chip"><span class="dot {{ $overview['enabled'] ? 'ok' : 'warn' }}"></span>{{ $overview['enabled'] ? 'Engine on' : 'Kill switch on' }}</span>
+                <span class="chip">Cache <b class="mono">{{ $overview['cache_store'] }}</b>{{ $overview['locks'] ? '' : ' · no locks' }}</span>
+                <span class="chip">{{ app()->environment() }}</span>
+            </div>
+            <div class="actions">
+                <span class="crumbs" id="recommender-updated">Updated just now</span>
+                @if ($refresh > 0)
+                    <label class="switch"><span class="pulse"></span>Live<input type="checkbox" id="recommender-live" checked></label>
+                @else
+                    <span class="crumbs">Live paused</span>
+                @endif
+                <button class="btn icon" type="button" id="recommender-theme" title="Toggle light / dark">
+                    <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 2a8 8 0 1 0 0 16V2Z"/><path fill-rule="evenodd" d="M10 1a9 9 0 1 1 0 18 9 9 0 0 1 0-18Zm0 1.5a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 0-15Z" clip-rule="evenodd"/></svg>
+                </button>
+            </div>
         </div>
+    </header>
 
-        <nav class="nav">
-            <div class="nav-label">Feeds</div>
-            @forelse ($feeds as $name => $feed)
-                <a href="?feed={{ urlencode($name) }}" class="{{ $name === $selected ? 'active' : '' }}">
-                    <span class="dot {{ $feed['status'] }}"></span>
-                    {{ $name }}
-                    <span class="count">{{ number_format($feed['metrics']['scores']) }}</span>
-                </a>
-            @empty
-                <div class="nav-label" style="text-transform:none;letter-spacing:0">No feeds yet</div>
-            @endforelse
-        </nav>
-
-        <div class="env">
-            <div>Engine <b class="{{ $overview['enabled'] ? 'ok' : 'warn' }}">{{ $overview['enabled'] ? 'Enabled' : 'Kill switch on' }}</b></div>
-            <div>Cache <b class="mono">{{ $overview['cache_store'] }}</b></div>
-            <div>Build locks <b>{{ $overview['locks'] ? 'Yes' : 'Fallback' }}</b></div>
-            <div>Environment <b>{{ app()->environment() }}</b></div>
-        </div>
-    </aside>
-
-    <main>
+    <main class="wrap">
         @if ($current === null)
             <div class="card empty">
                 No feeds configured. Add one under <code>feeds</code> in <code>config/recommender.php</code>:<br><br>
@@ -191,25 +191,20 @@
             @php($passed = array_values(array_filter($current['checks'], fn ($c) => $c['level'] === 'ok')))
 
             <div class="topbar">
-                <div>
-                    <div class="crumbs">Feeds / {{ $selected }}</div>
-                    <h1>
-                        {{ $selected }}
-                        <span class="pill {{ $current['status'] }}">{!! $icon[$current['status']] !!} {{ $levelText[$current['status']] }}</span>
-                    </h1>
-                </div>
-                <div class="actions">
-                    <span class="crumbs" id="recommender-updated">Updated just now</span>
-                    @if ($refresh > 0)
-                        <label class="switch"><span class="pulse"></span>Live<input type="checkbox" id="recommender-live" checked></label>
-                    @else
-                        <span class="crumbs">Live paused</span>
-                    @endif
-                    <button class="btn" type="button" id="recommender-theme" title="Toggle theme">
-                        <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 2a8 8 0 1 0 0 16V2Z"/><path fill-rule="evenodd" d="M10 1a9 9 0 1 1 0 18 9 9 0 0 1 0-18Zm0 1.5a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 0-15Z" clip-rule="evenodd"/></svg>
-                        Theme
-                    </button>
-                </div>
+                <h1>
+                    {{ $selected }}
+                    <span class="pill {{ $current['status'] }}">{!! $icon[$current['status']] !!} {{ $levelText[$current['status']] }}</span>
+                </h1>
+                @if (count($feeds) > 1)
+                    <nav class="tabs" aria-label="Feeds">
+                        @foreach ($feeds as $name => $feed)
+                            <a href="?feed={{ urlencode($name) }}" class="{{ $name === $selected ? 'active' : '' }}">
+                                <span class="dot {{ $feed['status'] }}"></span>{{ $name }}
+                                <span class="count">{{ number_format($feed['metrics']['scores']) }}</span>
+                            </a>
+                        @endforeach
+                    </nav>
+                @endif
             </div>
 
             {{-- Pipeline: where in the flow something is wrong --}}
