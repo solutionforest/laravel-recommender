@@ -59,6 +59,16 @@ final class DatabaseInteractions implements InteractionSource
         }
     }
 
+    /**
+     * Resolved table definitions (used by health checks).
+     *
+     * @return array<string, array{event: string, item: string, user: string, timestamp: string, key: string}>
+     */
+    public function tables(): array
+    {
+        return $this->tables;
+    }
+
     public function between(DateTimeInterface $from, DateTimeInterface $to): iterable
     {
         foreach ($this->tables as $table => $t) {

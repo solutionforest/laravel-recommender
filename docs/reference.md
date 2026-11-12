@@ -210,6 +210,34 @@ Per feed (defaults, overridable in `feeds.*`):
 | `interactions_connection` | default | DB connection of the interaction tables |
 | `filter`, `cards`, `groups` | – | optional classes; override the model defaults |
 
+## Dashboard
+
+A single read-only page at `/recommender`, like Horizon: per-feed health (score lag, scored items, neighbours), configuration checks, the trending list and an **Explain a user** lookup. It refreshes itself every 10 s; no JavaScript build, no Livewire.
+
+It is open in the `local` environment. Everywhere else, define who may see it:
+
+```php
+// AppServiceProvider::boot()
+Gate::define('viewRecommender', fn ($user) => in_array($user->email, ['ops@example.com']));
+```
+
+| Config `recommender.dashboard.*` | Default | |
+|---|---|---|
+| `enabled` | `true` (`RECOMMENDER_DASHBOARD`) | register the route |
+| `path` | `recommender` | URL prefix |
+| `domain` | `null` | optional sub-domain |
+| `middleware` | `['web']` | add `auth` etc.; the gate is always applied |
+| `refresh` | `10` | seconds between live updates, `0` = off (paused while explaining) |
+
+The same checks run in the terminal, with a non-zero exit code on failures (useful in deploy scripts):
+
+```bash
+php artisan recommender:doctor          # all feeds
+php artisan recommender:doctor posts
+```
+
+Checks cover the model and its table, every interaction table and column, events without a weight, source/booster/filter/cards classes and contracts, score lag, neighbour build and cache locks.
+
 ## Cache store & locks
 
 Configured by `recommender.cache_store` / `RECOMMENDER_CACHE_STORE` (empty → app `CACHE_STORE`).
@@ -248,6 +276,7 @@ composer analyse
 | `tests/Feature/BlogExampleTest.php` | sample app E2E + sponsored source/booster |
 | `tests/Feature/SimpleExampleTest.php` | config-only feed (`model` + interaction tables) E2E |
 | `tests/Feature/DatabaseInteractionsTest.php` | table-driven interactions: UUIDs, per-table columns, user chunk paging |
+| `tests/Feature/DashboardTest.php` | dashboard gate, health/checks/trending/explain, `recommender:doctor` |
 | `tests/Feature/StressTest.php` | **volume**: 100k events / 2k users / 1k items — exact counts, bounded memory & queries, constant serving cost · **frequency**: per-minute score runs with bursts and boundary events (no loss, no double count), rapid-fire paging (no repeats, throttled rebuilds), edits between requests |
 
 Stress tests run in the normal suite (~10 s on SQLite). Run them alone or bigger with `RECOMMENDER_STRESS_SCALE=5 vendor/bin/pest --group=stress`.

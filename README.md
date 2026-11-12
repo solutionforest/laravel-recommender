@@ -91,6 +91,8 @@ The response is Laravel's paginator JSON plus `origin` and `has_more`; `?page=` 
 
 ## Inspect and tune
 
+Open `/recommender` for a Horizon-style dashboard (health, checks, trending, explain). It is open locally; elsewhere `Gate::define('viewRecommender', …)`. `php artisan recommender:doctor` runs the same checks in the terminal.
+
 ```bash
 php artisan recommender:explain posts 123
 ```

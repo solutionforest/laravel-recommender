@@ -40,6 +40,23 @@ return [
     'queue' => env('RECOMMENDER_QUEUE', 'recommender'),
     'queue_connection' => env('RECOMMENDER_QUEUE_CONNECTION'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Dashboard
+    |--------------------------------------------------------------------------
+    | One read-only page at /{path}: health, checks, trending, explain.
+    | Open in the local environment; elsewhere define the gate, as with Horizon:
+    |
+    |   Gate::define('viewRecommender', fn ($user) => $user->is_admin);
+    */
+    'dashboard' => [
+        'enabled' => env('RECOMMENDER_DASHBOARD', true),
+        'path' => env('RECOMMENDER_DASHBOARD_PATH', 'recommender'),
+        'domain' => env('RECOMMENDER_DASHBOARD_DOMAIN'),
+        'middleware' => ['web'],
+        'refresh' => 10, // seconds between live updates (0 = off)
+    ],
+
     /* Database connection for the package tables (null = default). */
     'database_connection' => env('RECOMMENDER_DB_CONNECTION'),
 
