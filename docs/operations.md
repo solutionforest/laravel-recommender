@@ -1,6 +1,6 @@
 # Operations
 
-Go-live, storage, locks, FAQ, roadmap.
+Go-live, storage, locks, FAQ, what is still open.
 
 ## First-time go-live checklist
 
@@ -168,7 +168,7 @@ The initial window defaults to 30 days. Widen it before the first run, or run `r
 **Infinite feed?**  
 Yes for feeds with a `model`: ranked items, then trending, then the newest items the `recommendable` scope allows (`'tail' => true`, the default), until the catalog is exhausted. Clients can follow `next_cursor`. Personal paging skips the seen-set, so raise `seen_max` if users scroll through more than ~200 items in `seen_ttl`.
 
-## Roadmap / wishlist
+## Roadmap / open ideas
 
 Done in 0.1–0.5: `recommender:bootstrap` and named presets (0.5); impressions and quality over time (0.4); catalog tail and cursor pagination (0.3); config-only feeds, dashboard + `doctor`, guided `rebuild-scores`, explain with final / cached positions, card invalidation on model save, ids with commas, a config-only `make-feed`, per-item `stats()` (quality / popularity).
 

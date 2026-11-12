@@ -7,6 +7,9 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Removed
+- `docs/improvements.md` (the improvement proposals page): all items shipped in 0.2–0.5, so it is removed along with its README link. Open ideas stay in [operations → roadmap](docs/operations.md#roadmap--open-ideas)
+
 ## [0.5.0] — 2026-11-12
 
 Even less setup: one command from `composer require` to a working feed, and sensible weights in one line.
