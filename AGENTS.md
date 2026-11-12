@@ -45,7 +45,7 @@ Historical imports: widen `scores_backfill_days` or clear watermark + scores, th
 
 - Bulk writes only (`write_chunk` / `delete_chunk`).
 - Console commands registered outside CLI (Livewire Artisan::call).
-- Support Illuminate ^10–^13.
+- Support PHP ^8.3 and Illuminate ^11–^13.
 - Keep **README.md thin**; put depth in `docs/`.
 
 ## Common failures

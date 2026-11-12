@@ -158,4 +158,4 @@ composer analyse
 | `tests/Feature/ScaleTest.php` | shards, memory, bulk writes |
 | `tests/Feature/BlogExampleTest.php` | sample app E2E |
 
-CI: PHPStan + PHP 8.1–8.4 × Laravel 10–13 (SQLite) + Laravel 13 / MySQL 8.
+CI: PHPStan + PHP 8.3–8.4 × Laravel 11–13 (SQLite) + Laravel 13 / MySQL 8.

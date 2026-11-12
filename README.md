@@ -18,7 +18,7 @@ If your product already stores likes, views, or similar interactions, this packa
 | A Laravel API or Livewire UI | `Recommender::page()` → cards / Laravel paginator JSON |
 | Redis (prod) + a queue worker | Fast cached lists, seen-set paging, explainable rankings |
 
-Built for real product feeds (blog posts, inspiration / reviews, shops). Laravel **10–13**, PHP **8.1+**.
+Built for real product feeds (blog posts, inspiration / reviews, shops). **PHP 8.3+** · Laravel **11–13**.
 
 ---
 

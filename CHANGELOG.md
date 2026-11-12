@@ -7,10 +7,13 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- Require **PHP 8.3+** and **Laravel 11–13** (dropped PHP 8.1/8.2 and Laravel 10)
+
 ## [0.0.1] — 2026-11-12
 
 ### Added
-- Self-hosted recommendation feeds for Laravel 10–13 (PHP 8.1+)
+- Self-hosted recommendation feeds for Laravel 10–13 (PHP 8.1+) — superseded by Unreleased platform bump
 - `Recommender::page()` with seen-set paging and guest trending fallback
 - `FeedPage::toPaginator()` / `toPaginatorArray()` for Laravel paginator JSON
 - Jobs / commands: `update-scores`, `build-neighbours`, `prune`, `explain`, `status`
