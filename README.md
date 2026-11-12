@@ -15,7 +15,7 @@ It builds a ranked **"for you" list per user** from data your app already stores
 - **Every write is bulk:** chunked upserts, inserts and deletes. Every read is either indexed and `LIMIT`ed, or a primary-key lookup.
 - **Runnable sample:** [`examples/blog`](examples/blog) shows the whole integration in about 200 lines. It is covered by the test suite.
 
-> Built for pet-a-hood's *inspiration reviews* feed. Nothing in it is specific to reviews; a feed can hold anything with an id.
+> Built for an *inspiration reviews* feed. Nothing in it is specific to reviews; a feed can hold anything with an id.
 
 ---
 
@@ -434,7 +434,7 @@ Raising freshness a lot makes **every cohort look the same** (dog vs cat owners 
 
 ## Lessons from a real inspiration feed
 
-Validated against a pet-a-hood-style reviews feed (prod-sized SQLite lab: ~50k reviews, clicks, likes, pets, journeys).
+Validated against a production-shaped reviews feed (SQLite lab: ~50k reviews, clicks, likes, pets, journeys).
 
 | Observation | Takeaway |
 |---|---|

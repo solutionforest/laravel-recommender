@@ -2,7 +2,7 @@
 
 This is a complete, minimal integration: "recommended posts" for a blog that already records likes and views. It's the code from the main README's [Quick start](../../README.md#quick-start-5-steps), and it's tested end to end by [`tests/Feature/BlogExampleTest.php`](../../tests/Feature/BlogExampleTest.php).
 
-Patterns below also reflect lessons from a real **inspiration / reviews** lab (pet-a-hood-sized data): infinite scroll, freshness vs personalisation, media posters, first-time jobs.
+Patterns below also reflect lessons from a real **inspiration / reviews** lab (prod-sized data): infinite scroll, freshness vs personalisation, media posters, first-time jobs.
 
 ```mermaid
 flowchart LR
