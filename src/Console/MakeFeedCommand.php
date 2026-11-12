@@ -10,7 +10,7 @@ class MakeFeedCommand extends Command
 {
     protected $signature = 'recommender:make-feed
         {name? : Feed name, e.g. posts or reviews (optional — asked interactively)}
-        {--preset= : blog|products|reviews|custom (skips preset prompt)}
+        {--preset= : blog|products|events|reviews|custom (skips preset prompt)}
         {--model= : Eloquent model FQCN or short name}
         {--likes= : Likes table}
         {--views= : Views table}
@@ -164,7 +164,7 @@ class MakeFeedCommand extends Command
         $presetOpt = $this->option('preset');
         if (is_string($presetOpt) && $presetOpt !== '') {
             $preset = strtolower($presetOpt);
-            if (! in_array($preset, ['blog', 'products', 'reviews', 'custom'], true)) {
+            if (! in_array($preset, ['blog', 'products', 'events', 'reviews', 'custom'], true)) {
                 $this->warn("Unknown preset [{$preset}] — using custom.");
 
                 return 'custom';
@@ -182,6 +182,7 @@ class MakeFeedCommand extends Command
             [
                 'blog — posts with like + view',
                 'products — catalog with like + view + purchase',
+                'events — meetup listing with like + view + join',
                 'reviews — UGC with like + view',
                 'custom — answer every prompt',
             ],
@@ -214,6 +215,15 @@ class MakeFeedCommand extends Command
                 'item' => 'product_id',
                 'owner' => 'seller_id',
                 'extra' => ['table' => 'product_purchases', 'event' => 'purchase', 'weight' => 10.0],
+            ],
+            'events' => [
+                'feed' => 'events',
+                'model' => 'App\\Models\\Event',
+                'likes' => 'event_likes',
+                'views' => 'event_views',
+                'item' => 'event_id',
+                'owner' => 'host_id',
+                'extra' => ['table' => 'event_joins', 'event' => 'join', 'weight' => 10.0],
             ],
             'reviews' => [
                 'feed' => 'reviews',

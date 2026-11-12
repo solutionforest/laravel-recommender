@@ -7,6 +7,12 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.0.12] — 2026-11-12
+
+### Added
+- `examples/events` — meetup listing with `view` / `like` / `join` + Pest test
+- `make-feed --preset=events` defaults (event_joins → `join`)
+
 ## [0.0.11] — 2026-11-12
 
 ### Added
@@ -86,7 +92,8 @@ This project uses [Semantic Versioning](https://semver.org/).
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.11...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.12...HEAD
+[0.0.12]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.12
 [0.0.11]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.11
 [0.0.10]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.10
 [0.0.9]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.9

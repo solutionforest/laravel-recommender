@@ -24,7 +24,7 @@ Human docs (prefer linking over pasting):
 | `…/docs/tuning.md` | Weight recipes |
 | `…/docs/operations.md` | Go-live / FAQ |
 | `…/AGENTS.md` | Short agent rules |
-| `…/examples/` | `blog` · `products` (view/like/purchase) · `reviews` (+ PetTypeMatchSource) |
+| `…/examples/` | `blog` · `products` · `events` (view/like/join) · `reviews` (+ PetTypeMatchSource) |
 
 ---
 
@@ -33,7 +33,7 @@ Human docs (prefer linking over pasting):
 1. **Install**
 
 ```bash
-composer require solutionforest/laravel-recommender:^0.0.11
+composer require solutionforest/laravel-recommender:^0.0.12
 php artisan migrate
 ```
 
@@ -48,6 +48,7 @@ php artisan recommender:make-feed
 # Non-interactive
 php artisan recommender:make-feed posts -n
 php artisan recommender:make-feed products --preset=products -n
+php artisan recommender:make-feed events --preset=events -n
 php artisan recommender:make-feed reviews --model=App\\Models\\Comment --likes=user_fav_comments --views=user_clicks --item-column=comment_id -n
 ```
 

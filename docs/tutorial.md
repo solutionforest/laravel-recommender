@@ -31,7 +31,7 @@ Example shape (names can differ — you will edit them):
 ## Step 1 — Install
 
 ```bash
-composer require solutionforest/laravel-recommender:^0.0.11
+composer require solutionforest/laravel-recommender:^0.0.12
 php artisan migrate
 ```
 
@@ -47,13 +47,14 @@ Check: tables `rec_item_scores`, `rec_item_neighbours`, `rec_state` exist.
 php artisan recommender:make-feed
 ```
 
-The wizard asks for a preset (`blog` / `products` / `reviews` / `custom`), tables, columns, and an optional **third event** (purchase / share / …). Confirm the summary before files are written.
+The wizard asks for a preset (`blog` / `products` / `events` / `reviews` / `custom`), tables, columns, and an optional **third event** (purchase / join / share / …). Confirm the summary before files are written.
 
 **Non-interactive / CI** (`-n` skips prompts):
 
 ```bash
 php artisan recommender:make-feed posts -n
 php artisan recommender:make-feed products --preset=products -n
+php artisan recommender:make-feed events --preset=events -n
 php artisan recommender:make-feed posts --model=Post --likes=post_likes --views=post_views --item-column=post_id -n
 
 # Third event via flags

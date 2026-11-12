@@ -35,7 +35,7 @@ Built for real product feeds (blog posts, inspiration / reviews, shops).
 - **Cheap on the request path** — scroll serves from cache; no `ORDER BY RAND()`, no external API call.
 - **Explainable** — `recommender:explain` shows which sources scored each card.
 - **Tunable** — weights, exploration, diversity caps — not a black-box model.
-- **Runnable samples** — [`examples/`](examples/) (`blog`, `products` with 3 events, `reviews` + custom pet-type source), covered by tests.
+- **Runnable samples** — [`examples/`](examples/) (`blog`, `products`, `events` with view/like/join, `reviews` + pet-type source), covered by tests.
 
 ---
 
@@ -162,16 +162,16 @@ Then `recommender:explain posts {userId}` to verify. More recipes: [Tuning](docs
 ## Install
 
 ```bash
-composer require solutionforest/laravel-recommender:^0.0.11
+composer require solutionforest/laravel-recommender:^0.0.12
 php artisan migrate
 php artisan recommender:make-feed
 ```
 
-`recommender:make-feed` is an **interactive wizard** (presets: blog / products / reviews / custom, optional third event). Pass `-n` + flags for CI. It publishes `config/recommender.php` if needed, scaffolds the three classes under `app/Recommendation/...`, and registers the feed.
+`recommender:make-feed` is an **interactive wizard** (presets: blog / products / events / reviews / custom, optional third event). Pass `-n` + flags for CI. It publishes `config/recommender.php` if needed, scaffolds the three classes under `app/Recommendation/...`, and registers the feed.
 
-Full walkthrough: **[Scaffold tutorial](docs/tutorial.md)**. Or copy an example from [`examples/`](examples/) (`blog` · `products` · `reviews`).
+Full walkthrough: **[Scaffold tutorial](docs/tutorial.md)**. Or copy an example from [`examples/`](examples/) (`blog` · `products` · `events` · `reviews`).
 
-On [Packagist](https://packagist.org/packages/solutionforest/laravel-recommender). Current: **`^0.0.11`** (PHP 8.3+ / Laravel 11–13).
+On [Packagist](https://packagist.org/packages/solutionforest/laravel-recommender). Current: **`^0.0.12`** (PHP 8.3+ / Laravel 11–13).
 
 Changelog: [CHANGELOG.md](CHANGELOG.md) · Releases: [GitHub Releases](https://github.com/solutionforest/laravel-recommender/releases)
 

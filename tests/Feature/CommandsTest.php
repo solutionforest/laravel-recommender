@@ -94,6 +94,7 @@ it('walks the interactive scaffold wizard', function () {
     $presets = [
         'blog — posts with like + view',
         'products — catalog with like + view + purchase',
+        'events — meetup listing with like + view + join',
         'reviews — UGC with like + view',
         'custom — answer every prompt',
     ];
