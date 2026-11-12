@@ -7,8 +7,14 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.0.15] — 2026-11-12
+
 ### Docs
 - Explain `Context` (ranking bag vs HTTP request) in [reference.md](docs/reference.md), getting-started, examples README, and class docblocks
+- README PHPStan level 8 badge
+
+### Fixed
+- PHPStan: `InfiniteScrollFeed` Post import after example folder move, `MakeFeedCommand::resolvePreset()` return type, `Math::itemId()` object id access
 
 ## [0.0.14] — 2026-11-12
 
@@ -112,7 +118,9 @@ This project uses [Semantic Versioning](https://semver.org/).
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.13...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.15...HEAD
+[0.0.15]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.15
+[0.0.14]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.14
 [0.0.13]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.13
 [0.0.12]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.12
 [0.0.11]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.11

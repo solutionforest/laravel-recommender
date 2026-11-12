@@ -163,7 +163,7 @@ Then `recommender:explain posts {userId}` to verify. More recipes: [Tuning](docs
 ## Install
 
 ```bash
-composer require solutionforest/laravel-recommender:^0.0.14
+composer require solutionforest/laravel-recommender:^0.0.15
 php artisan migrate
 php artisan recommender:make-feed
 ```
@@ -172,7 +172,7 @@ php artisan recommender:make-feed
 
 Full walkthrough: **[Scaffold tutorial](docs/tutorial.md)**. Or copy an example from [`examples/`](examples/) (`blog` · `products` · `events` · `events-advanced` · `reviews`).
 
-On [Packagist](https://packagist.org/packages/solutionforest/laravel-recommender). Current: **`^0.0.14`** (PHP 8.3+ / Laravel 11–13).
+On [Packagist](https://packagist.org/packages/solutionforest/laravel-recommender). Current: **`^0.0.15`** (PHP 8.3+ / Laravel 11–13).
 
 Changelog: [CHANGELOG.md](CHANGELOG.md) · Releases: [GitHub Releases](https://github.com/solutionforest/laravel-recommender/releases)
 

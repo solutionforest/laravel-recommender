@@ -88,7 +88,7 @@ public function candidates(Context $context, int $limit): array
 ### Step 0 — Install
 
 ```bash
-composer require solutionforest/laravel-recommender:^0.0.14
+composer require solutionforest/laravel-recommender:^0.0.15
 php artisan migrate
 php artisan recommender:make-feed posts
 ```
