@@ -7,6 +7,7 @@ It builds a ranked **"for you" list per user** from data your app already stores
 **Highlights:**
 - Works with Laravel 10, 11, 12 and 13 on PHP 8.1+.
 - Needs a cache store with locks (Redis in production) and a queue.
+- **Math you can explain:** item–item CF (Amazon-style), Wilson quality (Reddit-style), exponential half-life trending with **incremental log-sum-exp** updates — see [Ideas & maths](#ideas--maths).
 - **Never copies your raw events.** It reads your existing tables. Its own 3 tables grow with the number of *recently active items*, never with traffic.
 - **Every write is bulk:** chunked upserts, inserts and deletes. Every read is either indexed and `LIMIT`ed, or a primary-key lookup.
 - **Runnable sample:** [`examples/blog`](examples/blog) shows the whole integration in about 200 lines. It is covered by the test suite.
@@ -18,20 +19,21 @@ It builds a ranked **"for you" list per user** from data your app already stores
 ## Contents
 
 1. [How it works](#how-it-works)
-2. [Quick start (5 steps)](#quick-start-5-steps)
-3. [First-time go-live checklist](#first-time-go-live-checklist)
-4. [Fine-tuning weights](#fine-tuning-weights)
-5. [Lessons from a real inspiration feed](#lessons-from-a-real-inspiration-feed)
-6. [Installation (private repository)](#installation-private-repository)
-7. [Contracts reference](#contracts-reference)
-8. [Serving a feed](#serving-a-feed)
-9. [Background jobs](#background-jobs)
-10. [Configuration reference](#configuration-reference)
-11. [Performance, scale and storage](#performance-scale-and-storage)
-12. [Operations](#operations)
-13. [Testing](#testing)
-14. [FAQ](#faq)
-15. [Limitations and roadmap](#limitations-and-roadmap)
+2. [Ideas & maths](#ideas--maths)
+3. [Quick start (5 steps)](#quick-start-5-steps)
+4. [First-time go-live checklist](#first-time-go-live-checklist)
+5. [Fine-tuning weights](#fine-tuning-weights)
+6. [Lessons from a real inspiration feed](#lessons-from-a-real-inspiration-feed)
+7. [Installation (private repository)](#installation-private-repository)
+8. [Contracts reference](#contracts-reference)
+9. [Serving a feed](#serving-a-feed)
+10. [Background jobs](#background-jobs)
+11. [Configuration reference](#configuration-reference)
+12. [Performance, scale and storage](#performance-scale-and-storage)
+13. [Operations](#operations)
+14. [Testing](#testing)
+15. [FAQ](#faq)
+16. [Limitations and roadmap](#limitations-and-roadmap)
 
 ---
 
@@ -140,15 +142,89 @@ flowchart LR
 
 ### The two algorithms inside
 
-**Item-to-item similarity.** The nightly job compares items by the users who interacted with them (cosine similarity):
+Short version below; full story in [Ideas & maths](#ideas--maths).
 
-```
-sim(a, b) = |users(a) ∩ users(b)| / sqrt(|users(a)| · |users(b)|)
-```
+**Item-to-item similarity** (cosine over co-interactors) + **time-decayed `hot`** stored in log space and updated with log-sum-exp — so trending stays correct without re-scanning history every request.
 
-For a user, `CoInteractionSource` takes their 20 most recent items, reads those items' precomputed neighbours (one primary-key query) and adds up the similarities. More recent items get more weight.
+---
 
-**Trending without re-aggregating.** The decayed popularity of an item at time *T* is `Σ w · e^(−λ(T − t))`. Ranking by it is the same as ranking by `log Σ w · e^(λt)`, which does not depend on *T*. So the package stores that value (`hot`) once per item and folds new events into it with a log-sum-exp. Every 10 minutes the job reads only the events since the last run, and `ORDER BY hot DESC LIMIT n` stays correct as time passes.
+## Ideas & maths
+
+This package is not a black-box neural ranker. It assembles **classic, production-proven ideas** so product / eng can *explain* every card (`recommender:explain`) and tune weights without retraining a model.
+
+| Idea in the package | Where it shows up | Intellectual lineage (why it feels “勁”) |
+|---|---|---|
+| Item–item collaborative filtering | `build-neighbours`, `CoInteractionSource` | Same family as **Amazon’s item-to-item CF** (Linden et al.): “people who engaged with *X* also engaged with *Y*” — stable for sparse likes/views, no per-request matrix multiply |
+| Cosine on binary interaction sets | Neighbour similarity | Standard IR / CF measure: popular items don’t automatically dominate just by volume |
+| Exponential half-life decay | `half_life_days`, `hot` score | Same *shape* as **HN / Reddit-style time decay** and radioisotope half-life: yesterday’s hit still counts, last year’s doesn’t |
+| Incremental log-sum-exp | `Math::logAddExp` / `hotTerm` | Numerical trick so we store **one number per item** and fold new events in *O(1)* without overflowing `e^{λt}` |
+| Wilson score interval (lower bound) | `QualityBooster` | **Reddit’s** ranking insight (Evan Miller / Wilson): rank by the *conservative* estimate of like-rate so 1/1 doesn’t beat 80/100 |
+| Linear blend of normalised sources | `Blender` | Multi-objective ranking: each signal 0..1, then `Σ w·s` — transparent A/B and product knobs |
+| Exploration interleave | `Explorer` + `exploration_ratio` | Lightweight **explore/exploit**: reserve slots for fresh items so the catalog doesn’t freeze on old winners |
+| Per-page diversity caps | `Diversifier` + `groups` | Presentation constraint (max N per shop/author) without dropping candidates — fairer pages, same pool |
+
+### 1. Item–item CF (“liked / viewed together”)
+
+Nightly job builds, for each item *a*, the top neighbours *b*:
+
+\[
+\mathrm{sim}(a,b)=\frac{|U_a \cap U_b|}{\sqrt{|U_a|\,|U_b|}}
+\]
+
+where \(U_x\) is the set of users who interacted with item *x* (within `history_days`, capped per user). Optional floor: `neighbours_min_co_count` ignores flimsy pairs.
+
+At request time, `CoInteractionSource` does **not** recompute that. It loads the user’s recent items (`recent_items`), one PK read of their neighbour JSON, and scores candidates:
+
+\[
+\mathrm{score}(c)=\sum_{i \in \mathrm{recent}} \mathrm{sim}(i,c)\cdot \frac{1}{1+0.1\cdot \mathrm{rank}(i)}
+\]
+
+More recent seeds weigh more. That is Amazon-style **item–item** (not user–user), which stays cheap when you have many users and fewer active items.
+
+### 2. Trending `hot` without replaying history
+
+Decayed popularity at wall-clock time \(T\):
+
+\[
+\mathrm{pop}(T)=\sum_k w_k\, e^{-\lambda (T-t_k)},\quad \lambda=\frac{\ln 2}{\text{half\_life\_days}}
+\]
+
+Ranking by \(\mathrm{pop}(T)\) is identical to ranking by
+
+\[
+\mathrm{hot}=\log\sum_k w_k\, e^{\lambda t_k}
+\]
+
+because \(e^{-\lambda T}\) is common to every item at query time. So we **store `hot` once** and, for each new event, update:
+
+\[
+\mathrm{hot} \leftarrow \mathrm{logAddExp}\big(\mathrm{hot},\; \log w + \lambda\cdot \mathrm{days}(t)\big)
+\]
+
+(`Math::hotTerm` + `Math::logAddExp`). Every ~10 minutes `update-scores` reads only events since the watermark; `ORDER BY hot DESC LIMIT n` stays correct as time passes. No nightly full re-aggregation for trending.
+
+### 3. Wilson quality (likes vs views)
+
+Raw like-rate \(p = \mathrm{pos}/n\) over-rewards tiny samples. We use the **95% Wilson lower bound** (same formula Reddit popularised):
+
+\[
+\frac{p+\frac{z^2}{2n}-z\sqrt{\frac{p(1-p)+\frac{z^2}{4n}}{n}}}{1+\frac{z^2}{n}}
+\quad(z\approx 1.96)
+\]
+
+Then scale so the best candidate in the batch is `1.0`. One lucky like on one view cannot dominate a well-tested item.
+
+### 4. Blend, explore, diversify (product maths)
+
+- **Blend:** each source’s scores ÷ that source’s max → then `Σ weight · score`. Weights are comparable across unlike signals (co-view vs pet-match vs trending).
+- **Explore:** ~`exploration_ratio` of slots are interleaved from `exploration_sources` (fresh / trending) so new content gets a chance before it has history.
+- **Diversify:** greedy cap per group per page (e.g. max 2 per shop). Overflow slides to later pages; nothing is deleted from the pool.
+
+### What we are *not* claiming
+
+We are **not** shipping deep learning, two-tower retrieval, or online Bayesian bandits. For sparse first-party like/view data, this **interpretable baseline** is often the right production default: fast, explainable, tunable, and strong enough that many products ship it for years. You can still plug a learned `CandidateSource` later and give it a weight.
+
+Unit coverage: `tests/Unit/ScoringTest.php` (Wilson, decay, log-sum-exp, blend, exploration, diversity).
 
 ---
 

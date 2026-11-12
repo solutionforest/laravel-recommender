@@ -7,6 +7,7 @@ Use this when changing the package or helping an app integrate it. Full detail: 
 - Package **never copies** raw events; it reads app tables via `InteractionSource`.
 - Own tables: `rec_item_scores`, `rec_item_neighbours`, `rec_state` only.
 - Hot path: cache list + seen-set + cards. Ranking rebuild is bounded (`source_limit`, `feed_size`).
+- Core maths (document, don’t hand-wave): item–item cosine CF, exponential half-life `hot` via log-sum-exp, Wilson lower bound, weighted blend + exploration interleave. See README **Ideas & maths**.
 
 ## First-time setup (do not skip)
 
