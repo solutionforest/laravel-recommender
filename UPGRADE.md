@@ -1,0 +1,50 @@
+# Upgrade guide
+
+## From 0.0.x to 0.1.0
+
+Estimated time: 5 minutes. Existing class-based feeds keep working; check the four behaviour changes below.
+
+### 1. Default sources (likely to affect you if a feed has no `sources`)
+
+A feed without `sources` used to rank by trending only. It now blends `CoInteractionSource` (0.6) and `TrendingSource` (0.4). To keep the old behaviour, set it explicitly:
+
+```php
+'sources' => [\SolutionForest\Recommender\Sources\TrendingSource::class => 1.0],
+```
+
+Feeds that already list `sources` (including your published `defaults.sources`) are unaffected.
+
+### 2. `page()` reads `?page=` when no page is given
+
+`Recommender::page($feed, $user)` without a page number now uses the request's `?page=` (like `paginate()`), not `1`. Calls that pass a page are unaffected.
+
+### 3. Paginator `path` defaults to the current URL
+
+`FeedPage::toPaginator()` / `toPaginatorArray()` without a `path` option now build links from the current URL instead of `/`. Pass `['path' => …]` to keep a fixed path.
+
+### 4. Dashboard route
+
+A read-only dashboard is registered at `/recommender`. It is open in the `local` environment only; elsewhere it returns 403 until you define the gate:
+
+```php
+Gate::define('viewRecommender', fn ($user) => $user->is_admin);
+```
+
+If `/recommender` is already one of your routes, move the dashboard with `RECOMMENDER_DASHBOARD_PATH=…`, or turn it off with `RECOMMENDER_DASHBOARD=false`.
+
+### Optional: simplify your feeds
+
+If your interaction tables have a user id, an item id and a timestamp, you can delete the generated `InteractionSource`, `ItemFilter` and `CardTransformer` classes and configure the feed instead:
+
+```php
+'posts' => [
+    'model' => App\Models\Post::class,
+    'interactions' => ['post_likes' => 'like', 'post_views' => 'view'],
+],
+```
+
+Move the filter's rules into `scopeRecommendable(Builder $query, Context $context)` on the model, and the card into `toRecommendationCard()`. Then run `php artisan recommender:doctor` to confirm the tables and columns match. Scores and neighbours already built stay valid; there is no data migration. See the [tutorial](docs/tutorial.md).
+
+### New config keys
+
+Publishing the config again is optional — missing keys fall back to the package defaults. New keys: `dashboard.*`, and per feed `model`, `item_column`, `user_column`, `timestamp_column`, `history_events`, `interactions_connection`.

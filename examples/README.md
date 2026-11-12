@@ -15,7 +15,7 @@ These integrations are exercised by Pest. Adapt their schemas, namespaces, visib
 
 Sources / boosters / filters take `Context $context` as the first argument. That is the package’s ranking bag:
 
-- `$context->userId` — viewer from `Recommender::page(…, $userId)` (`null` = guest)
+- `$context->userId` — viewer from `recommendations($feed, $user)` / `Recommender::page(…)` (`null` = guest)
 - `$context->now()` — clock for date filters
 - `$context->feed` — feed config
 

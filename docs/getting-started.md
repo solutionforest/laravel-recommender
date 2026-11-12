@@ -16,7 +16,16 @@ A **neighbour** is an item frequently interacted with by the same users as anoth
 
 ## What you need to supply
 
-The package does not collect views or likes. Your app needs item records and interaction records containing a user ID, an item ID and a timestamp. The generated example expects numeric IDs and separate tables with an `id` column; adapt it for your schema. Your app also decides which items may be shown and which fields a card contains.
+The package does not collect views or likes. Your app needs item records and interaction records containing a user ID, an item ID and a timestamp — usually one table per interaction type (`post_likes`, `post_views`). IDs can be integers, UUIDs or ULIDs. For most apps that is all the configuration needed:
+
+```php
+'posts' => [
+    'model' => App\Models\Post::class,
+    'interactions' => ['post_likes' => 'like', 'post_views' => 'view'],
+],
+```
+
+Your app also decides which items may be shown (a `recommendable` scope on the model) and which fields a card contains (`toRecommendationCard()`).
 
 Maintenance commands read the interactions and store derived scores and neighbours. The first request for a user may build a ranked list, which is then cached. A guest uses a shared trending list. A new user may have little personal signal, and a new catalog may have no scored items yet.
 
@@ -26,4 +35,4 @@ Maintenance commands read the interactions and store derived scores and neighbou
 2. [Understand the request and ranking pipeline](how-it-works.md).
 3. [Adjust the ranking](tuning.md) only after you can see results.
 
-For configuration and method signatures use the [reference](reference.md); for scheduling, caching and recovery use [operations](operations.md). The [maths](maths.md) is optional.
+For configuration and method signatures use the [reference](reference.md); to monitor feeds use the [dashboard](dashboard.md); for scheduling, caching and recovery use [operations](operations.md). The [maths](maths.md) is optional.

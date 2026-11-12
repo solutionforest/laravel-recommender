@@ -19,18 +19,18 @@ public function candidates(Context $context, int $limit): array
 
 | You write | Comes from |
 |---|---|
-| `$context->userId` | 2nd arg to `Recommender::page('posts', $user?->id, …)` (`null` = guest) |
+| `$context->userId` | the user given to `recommendations('posts', $user)` / `Recommender::page('posts', $user)` (`null` = guest) |
 | `$context->feed` | Feed config for this name (`feeds.posts` in `config/recommender.php`) |
 | `$context->feed->get('sponsored_shop_ids')` | Custom keys you put on that feed |
 | `$context->seen` | Ids already served (usually ignore inside sources) |
-| `$context->attribute('user')` | `page(…, attributes: ['user' => $user])` — optional Eloquent model |
+| `$context->attribute('user')` | the user model, when you pass a model (or `attributes: ['user' => $user]`) |
 | `$context->now()` | Clock for “last 7 days / upcoming” (injectable in tests) |
 | `$context->isGuest()` | Shortcut for `$context->userId === null` |
 
 Wire the user once at the edge:
 
 ```php
-Recommender::page('posts', $user?->id, $page, attributes: ['user' => $user]);
+recommendations('posts', $request->user()); // id → $context->userId, model → $context->attribute('user')
 ```
 
 Then sources read `$context->userId` (or `$context->attribute('user')` when they need the full model). Queued `warm()` has **no** `attributes` — only `userId`.

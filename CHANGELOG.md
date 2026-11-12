@@ -7,24 +7,29 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-### Added
-- **Config-only feeds**: set `model` + `interactions` (`[table => event]`) and skip the `InteractionSource`, `ItemFilter`, `CardTransformer` and `DiversityGroups` classes. New `Interactions\DatabaseInteractions` reads the tables (integer, UUID and ULID ids; per-table column overrides; `history_events` for neighbours). `Eloquent\ModelFilter` / `ModelCards` / `ModelGroups` use the model's optional `scopeRecommendable()` / `toRecommendationCard()` and attribute-based diversity keys. See [`examples/simple`](examples/simple/)
-- `Eloquent\Recommendable` model trait + `Recommender::forgetModel()` drop cached cards on save / delete
-- `recommendations($feed, $user)` helper
-- `FeedPage` is `Responsable` / `JsonSerializable`; return it from a route to get paginator JSON
-- GitHub Actions [`release.yml`](.github/workflows/release.yml) — push `v*.*.*` tag → Release with notes from `CHANGELOG.md`
+## [0.1.0] — 2026-11-12
 
-- Dashboard at `/recommender` (Blade, no JS build): health, checks, trending, explain; `viewRecommender` gate, open in `local`; `recommender.dashboard.*` config. Guide with screenshots: [docs/dashboard.md](docs/dashboard.md)
+First minor release: a feed is now **configuration only** — tell the package what you recommend (a model) and where the interactions are (tables) — plus a dashboard to watch it. Upgrading from 0.0.x: see [UPGRADE.md](UPGRADE.md).
+
+### Added
+- **Config-only feeds**: set `model` + `interactions` (`[table => event]`) instead of writing `InteractionSource`, `ItemFilter`, `CardTransformer` and `DiversityGroups` classes. `Interactions\DatabaseInteractions` reads the tables (integer, UUID and ULID ids; per-table column overrides; `history_events` for neighbours). `Eloquent\ModelFilter` / `ModelCards` / `ModelGroups` use the model's optional `scopeRecommendable()` / `toRecommendationCard()` and attribute-based diversity keys. See [`examples/simple`](examples/simple/)
+- `Eloquent\Recommendable` model trait and `Recommender::forgetModel()` drop cached cards on save / delete
+- `recommendations($feed, $user)` helper
+- `FeedPage` is `Responsable` / `JsonSerializable`: return it from a route to get paginator JSON
+- **Dashboard** at `/recommender` (Blade, no JS build): pipeline status, health cards, trending, checks and *Explain a user*; light / dark theme; `viewRecommender` gate, open in `local`; `recommender.dashboard.*` config. Guide with screenshots: [docs/dashboard.md](docs/dashboard.md)
+- `recommender:doctor` — configuration, table, column and pipeline checks; non-zero exit code on failure
 - `explain()` rows include `contributions`: each source / booster's share of the score (they add up to `score`)
-- `recommender:doctor` — configuration / table / column / pipeline checks with a non-zero exit code on failure (`docs/improvements.md` #1)
-- `tests/Feature/StressTest.php` — data-volume and interaction-frequency stress tests (`--group=stress`, `RECOMMENDER_STRESS_SCALE`)
+- Stress tests for data volume (100k events) and interaction frequency (`--group=stress`, `RECOMMENDER_STRESS_SCALE`)
+- GitHub Actions [`release.yml`](.github/workflows/release.yml): push a `v*.*.*` tag → GitHub Release with notes from this file
+- `UPGRADE.md`, `CONTRIBUTING.md`, `SECURITY.md`, `.gitattributes` (tests, CI and artwork are left out of Composer installs)
 
 ### Changed
-- `page()` / `build()` / `warm()` / `forgetUser()` / `explain()` accept the user model as well as an id; a model is added as the `user` attribute
+- `page()`, `build()`, `warm()`, `forgetUser()` and `explain()` accept the user model as well as an id; a model is added as the `user` attribute
 - `page()`'s `$page` defaults to the request's `?page=` (was `1`); `toPaginator()`'s `path` defaults to the current URL (was `/`)
 - Default `sources` are `CoInteractionSource` 0.6 + `TrendingSource` 0.4 (was empty, i.e. trending only). Feeds that set `sources` are unaffected
-- `illuminate/http`, `illuminate/routing` and `illuminate/view` are now explicit dependencies
+- `illuminate/http`, `illuminate/routing` and `illuminate/view` are explicit dependencies
 - `recommender:status` reads its metrics from the shared `Dashboard\Health`
+- Docs: the tutorial and getting started lead with the config-only setup; `make-feed` is option B
 
 ### Fixed
 - `recommender:make-feed` no longer mistakes commented-out config examples for an existing feed
@@ -156,3 +161,7 @@ This project uses [Semantic Versioning](https://semver.org/).
 [0.0.3]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.3
 [0.0.2]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.2
 [0.0.1]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.1
+
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.15...v0.1.0
+[0.0.15]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.14...v0.0.15

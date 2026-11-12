@@ -67,7 +67,7 @@
             }
         },
         "branch-alias": {
-            "dev-main": "0.0.x-dev"
+            "dev-main": "0.1.x-dev"
         }
     },
     "scripts": {
@@ -84,6 +84,11 @@
     "minimum-stability": "stable",
     "prefer-stable": true,
     "homepage": "https://github.com/solutionforest/laravel-recommender",
+    "support": {
+        "issues": "https://github.com/solutionforest/laravel-recommender/issues",
+        "source": "https://github.com/solutionforest/laravel-recommender",
+        "docs": "https://github.com/solutionforest/laravel-recommender/tree/main/docs"
+    },
     "authors": [
         {
             "name": "Solution Forest Limited",
