@@ -84,14 +84,27 @@ The response is Laravel's paginator JSON plus `origin` and `has_more`; `?page=` 
 | Understand ranking and cache behavior | [How it works](docs/how-it-works.md) |
 | Change what influences the feed | [Tuning](docs/tuning.md) |
 | Look up methods, contracts and configuration | [Reference](docs/reference.md) |
+| Monitor feeds in the browser | [Dashboard](docs/dashboard.md) |
 | Run, monitor or rebuild in production | [Operations](docs/operations.md) |
 | Explore the formulas | [Maths](docs/maths.md) (optional) |
 | Adapt an integration | [Examples](examples/) — blog, products, events and reviews |
 | Review proposed usability improvements | [Improvement proposals](docs/improvements.md) |
 
-## Inspect and tune
+## Dashboard
 
-Open `/recommender` for a Horizon-style dashboard (health, checks, trending, explain). It is open locally; elsewhere `Gate::define('viewRecommender', …)`. `php artisan recommender:doctor` runs the same checks in the terminal.
+Open `/recommender` to see each feed's health, what is broken and how to fix it, what is trending, and why a given user gets their recommendations.
+
+![Recommender dashboard](art/screenshots/dashboard-healthy.png)
+
+It is open in the `local` environment. In production, choose who can see it:
+
+```php
+Gate::define('viewRecommender', fn ($user) => $user->is_admin);
+```
+
+`php artisan recommender:doctor` runs the same checks in the terminal and fails a deploy when something is wrong. **[Dashboard guide →](docs/dashboard.md)**
+
+## Inspect and tune
 
 ```bash
 php artisan recommender:explain posts 123

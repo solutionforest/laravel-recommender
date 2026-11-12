@@ -212,6 +212,8 @@ Per feed (defaults, overridable in `feeds.*`):
 
 ## Dashboard
 
+Screenshots and the full list of checks: [dashboard.md](dashboard.md).
+
 A single read-only page at `/recommender`, like Horizon: per-feed health (score lag, scored items, neighbours), configuration checks, the trending list and an **Explain a user** lookup. It refreshes itself every 10 s; no JavaScript build, no Livewire.
 
 It is open in the `local` environment. Everywhere else, define who may see it:
