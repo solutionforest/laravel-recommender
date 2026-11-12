@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Laravel Recommender">
+  <rect width="128" height="128" rx="28" fill="#1B4332"/>
+  <rect x="28" y="38" width="52" height="64" rx="10" fill="#D8F3DC" opacity="0.55" transform="rotate(-12 54 70)"/>
+  <rect x="38" y="34" width="52" height="64" rx="10" fill="#95D5B2" opacity="0.85" transform="rotate(-4 64 66)"/>
+  <rect x="48" y="30" width="52" height="64" rx="10" fill="#F8FAF9"/>
+  <circle cx="64" cy="48" r="6" fill="#1B4332"/>
+  <path d="M58 62h24M58 72h18M58 82h12" stroke="#1B4332" stroke-width="4" stroke-linecap="round"/>
+  <path d="M92 28l6 10 11 2-8 8 2 11-11-5-11 5 2-11-8-8 11-2z" fill="#B7E4C7"/>
+</svg>
