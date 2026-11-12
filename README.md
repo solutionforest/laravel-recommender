@@ -167,50 +167,50 @@ This package is not a black-box neural ranker. It assembles **classic, productio
 
 Nightly job builds, for each item *a*, the top neighbours *b*:
 
-\[
+$$
 \mathrm{sim}(a,b)=\frac{|U_a \cap U_b|}{\sqrt{|U_a|\,|U_b|}}
-\]
+$$
 
-where \(U_x\) is the set of users who interacted with item *x* (within `history_days`, capped per user). Optional floor: `neighbours_min_co_count` ignores flimsy pairs.
+where $U_x$ is the set of users who interacted with item *x* (within `history_days`, capped per user). Optional floor: `neighbours_min_co_count` ignores flimsy pairs.
 
 At request time, `CoInteractionSource` does **not** recompute that. It loads the user’s recent items (`recent_items`), one PK read of their neighbour JSON, and scores candidates:
 
-\[
+$$
 \mathrm{score}(c)=\sum_{i \in \mathrm{recent}} \mathrm{sim}(i,c)\cdot \frac{1}{1+0.1\cdot \mathrm{rank}(i)}
-\]
+$$
 
 More recent seeds weigh more. That is Amazon-style **item–item** (not user–user), which stays cheap when you have many users and fewer active items.
 
 ### 2. Trending `hot` without replaying history
 
-Decayed popularity at wall-clock time \(T\):
+Decayed popularity at wall-clock time $T$:
 
-\[
+$$
 \mathrm{pop}(T)=\sum_k w_k\, e^{-\lambda (T-t_k)},\quad \lambda=\frac{\ln 2}{\text{half\_life\_days}}
-\]
+$$
 
-Ranking by \(\mathrm{pop}(T)\) is identical to ranking by
+Ranking by $\mathrm{pop}(T)$ is identical to ranking by
 
-\[
+$$
 \mathrm{hot}=\log\sum_k w_k\, e^{\lambda t_k}
-\]
+$$
 
-because \(e^{-\lambda T}\) is common to every item at query time. So we **store `hot` once** and, for each new event, update:
+because $e^{-\lambda T}$ is common to every item at query time. So we **store `hot` once** and, for each new event, update:
 
-\[
+$$
 \mathrm{hot} \leftarrow \mathrm{logAddExp}\big(\mathrm{hot},\; \log w + \lambda\cdot \mathrm{days}(t)\big)
-\]
+$$
 
 (`Math::hotTerm` + `Math::logAddExp`). Every ~10 minutes `update-scores` reads only events since the watermark; `ORDER BY hot DESC LIMIT n` stays correct as time passes. No nightly full re-aggregation for trending.
 
 ### 3. Wilson quality (likes vs views)
 
-Raw like-rate \(p = \mathrm{pos}/n\) over-rewards tiny samples. We use the **95% Wilson lower bound** (same formula Reddit popularised):
+Raw like-rate $p = \mathrm{pos}/n$ over-rewards tiny samples. We use the **95% Wilson lower bound** (same formula Reddit popularised):
 
-\[
+$$
 \frac{p+\frac{z^2}{2n}-z\sqrt{\frac{p(1-p)+\frac{z^2}{4n}}{n}}}{1+\frac{z^2}{n}}
 \quad(z\approx 1.96)
-\]
+$$
 
 Then scale so the best candidate in the batch is `1.0`. One lucky like on one view cannot dominate a well-tested item.
 
