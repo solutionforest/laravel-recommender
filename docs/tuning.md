@@ -3,7 +3,7 @@
 Weights are **relative**. Bigger number = that signal counts more.  
 Exploration **interleaves** slots (`exploration_ratio`) — that is not the same as raising a source weight.
 
-Quick “events / sponsors” overview also on the [README](../README.md#how-to-adjust-the-ratio).
+Start with the generated defaults and change one setting at a time. [Getting started](getting-started.md) explains the terms.
 
 ## Event weights (any interaction type → trending)
 
@@ -19,7 +19,7 @@ Quick “events / sponsors” overview also on the [README](../README.md#how-to-
 'exposure_events' => ['view'],
 ```
 
-Used by `update-scores` when folding events into `hot`. Only keys in `events` with weight `> 0` count. Raise stronger actions if they should dominate trending; raise `view` if browse volume should matter more. Re-run `recommender:update-scores` after big changes.
+Used by `update-scores` when folding events into `hot`. Only keys in `events` with weight `> 0` count. Raise stronger actions if they should dominate trending; raise `view` if browse volume should matter more. The updater only processes events after its watermark: a rerun does not recalculate past events with new weights. For a historical rebuild, follow [operations](operations.md#historical-imports-and-score-rebuilds).
 
 For neighbours (`build-neighbours`), put the items you care about in `userHistories()` / `recentItems()` — usually strong actions, not every view.
 
@@ -69,13 +69,13 @@ See [`examples/blog`](../examples/blog).
 
 Raising freshness a lot makes **every cohort look the same**. Prefer recipe A for segment demos.
 
-**C. Cold start / guests** — built in: fall back to `trending_sources`. Keep at least one source that works with `$context->userId === null`.
+**C. Cold start / guests** — guests use `trending_sources`; an authenticated user can have trending candidates in a personal list. Keep a guest-compatible source and enough eligible scored items. Neither case guarantees a nonempty feed.
 
 ## How to tune
 
 1. Pick 2–3 real users with different signals.
 2. `php artisan recommender:explain {feed} {userId} --limit=12`.
-3. If you only see `Fresh*` / `Trending*`, personal sources are weak or empty.
+3. If you only see `Fresh*` / `Trending*`, personal sources may be weak or empty. `explain` builds a fresh pre-exploration, pre-diversity ranking; it does not inspect the cached page.
 4. Change **one** weight; forget user + trending cache; re-explain.
 5. Watch latency: `source_limit` / `feed_size` / heavy SQL dominate cold builds.
 
@@ -90,7 +90,7 @@ Recommender::forgetTrending('reviews');
 
 | Knob | Effect |
 |---|---|
-| `exploration_ratio` | Slots reserved for exploration pool |
+| `exploration_ratio` | Controls interleaving from configured exploration sources (empty by default) |
 | `half_life_days` | How fast trending forgets old events |
 | `history_days` / `neighbours_min_co_count` | Neighbour graph density |
 | `recent_items` | How many recent items seed co-interaction |
@@ -106,9 +106,9 @@ Recommender::forgetTrending('reviews');
 | Empty `CoInteractionSource` | Neighbours never built / history too short |
 | Huge journey payloads | Prefer recent ids; don’t load multi-thousand JSON to slice 20 |
 | Source SQL | Indexed `whereIn` + PHP cap, or bounded `UNION ALL` of per-id `LIMIT`s |
-| First paint for new users | Trending + exploration; page 1 never empty if scores exist |
+| First paint for new users | Trending can help; filtering, missing cards or sparse data can still yield an empty page |
 | Scroll is long, not infinite | App-level catalog tail after `hasMore` — see `InfiniteScrollFeed` |
 | Media | Map `.mp4` → poster in `CardTransformer` |
 | Sponsored shops | Source + Booster + diversity caps |
 
-Wishlist ideas (`recommender:bootstrap`, named presets, richer explain): see [operations](operations.md#roadmap).
+Wishlist ideas (`recommender:bootstrap`, named presets, richer explain): see [operations](operations.md#roadmap--wishlist).

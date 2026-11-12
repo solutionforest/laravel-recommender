@@ -58,7 +58,7 @@ Then scale so the best candidate in the batch is `1.0`.
 ## 4. Blend, explore, diversify
 
 - **Blend:** scores ÷ source max → `Σ weight · score`.
-- **Explore:** ~`exploration_ratio` slots from `exploration_sources`.
+- **Explore:** interleave according to `exploration_ratio` when `exploration_sources` are configured (none are configured by default).
 - **Diversify:** greedy cap per group; overflow to later pages.
 
 ## 5. Helpers for your custom sources (`Math`)

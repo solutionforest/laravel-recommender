@@ -81,11 +81,13 @@ return response()->json($result->toPaginatorArray(['path' => request()->url()]))
 
 `page()` returns `FeedPage` (seen-set / rebuild). It does **not** use SQL `OFFSET`; the paginator is a view over the cached ranked list.
 
+Cards and ranked lists are cached. Invalidate an edited card with `forgetCard`; changing a list or visibility rule may also require invalidating the user and trending lists. A build-time filter alone does not recheck every cached card on every request. Do not rely on it as the sole enforcement of immediate access revocation.
+
 Rules:
 
 - Page 1 reuses a fresh list (`feed_ttl`); rebuilds when stale or nearly fully seen.
-- Later pages skip the seen-set.
-- Personal list empty → continue with shared trending. Page 1 never empty.
+- Later personal pages skip IDs in the seen-set; page numbers are metadata, not stable offsets. Concurrent requests or another device for the same user share this state.
+- A short personal list is topped up from shared trending when possible. An empty candidate pool, filtering or missing cards can still yield an empty page.
 - Guests (`null`) get trending, offset-paginated.
 
 Other entry points:
@@ -93,7 +95,8 @@ Other entry points:
 ```php
 Recommender::warm('posts', $userId);
 Recommender::forgetCard('posts', $id);
-Recommender::forgetUser('posts', $userId);
+Recommender::forgetUser('posts', $userId); // also clears the seen-set
+Recommender::forgetTrending('posts');
 Recommender::trending('posts');
 Recommender::explain('posts', $userId);
 ```
@@ -106,18 +109,24 @@ Recommender::explain('posts', $userId);
 | Nightly | `recommender:build-neighbours` | Item–item graph |
 | Daily | `recommender:prune` | Idle score rows |
 
+In `routes/console.php`:
+
 ```php
-$schedule->command('recommender:update-scores')->everyTenMinutes()->withoutOverlapping()->onOneServer();
-$schedule->command('recommender:build-neighbours')->dailyAt('03:30')->withoutOverlapping(120)->onOneServer();
-$schedule->command('recommender:prune')->dailyAt('04:30')->withoutOverlapping(60)->onOneServer();
+use Illuminate\Support\Facades\Schedule;
+
+Schedule::command('recommender:update-scores')->everyTenMinutes()->withoutOverlapping()->onOneServer();
+Schedule::command('recommender:build-neighbours')->dailyAt('03:30')->withoutOverlapping(120)->onOneServer();
+Schedule::command('recommender:prune')->dailyAt('04:30')->withoutOverlapping(60)->onOneServer();
 ```
+
+Run Laravel's scheduler and use a shared lock-capable cache for `onOneServer()` across hosts. The maintenance commands run synchronously; the queue worker is needed when using `warm()` with an asynchronous queue.
 
 | Command | Reads | Writes | Cheap because |
 |---|---|---|---|
 | `update-scores` | events since watermark | `rec_item_scores` | time slices; one txn per slice |
 | `build-neighbours` | capped history | `rec_item_neighbours` | shards; versioned activate |
 | `prune` | scores | deletes | PK chunks |
-| `explain` | – | – | debug breakdown |
+| `explain` | sources and boosters | – | fresh pre-exploration / pre-diversity debug breakdown |
 | `status` | tables + state | – | watermark lag, counts, lock support |
 
 ```bash
@@ -156,7 +165,7 @@ Per feed (defaults, overridable in `feeds.*`):
 | `exploration_sources` / `exploration_ratio` | – / 0.15 | exploration |
 | `diversity` | – | `group => max per page` |
 | `events` | `view` 1, `like` 4 (any names OK) | trending weights per event type |
-| `positive_events` / `exposure_events` | e.g. like(+share) / view | quality (Wilson) |
+| `positive_events` / `exposure_events` | like / view | quality (Wilson) |
 | `half_life_days` | 7 | trending decay |
 | `scores_backfill_days` | 30 | first `update-scores` window |
 | `scores_slice_minutes` | 60 | score commit size |

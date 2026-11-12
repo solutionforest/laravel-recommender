@@ -41,7 +41,7 @@ vendor/bin/pest tests/Feature/BlogExampleTest.php
 1. Copy `src/*` → `app/Recommendation/Posts` (fix namespaces).
 2. Merge `config/recommender.php`.
 3. Add the route.
-4. Schedule jobs — [getting started](../../docs/getting-started.md#step-4--schedule-the-kitchen).
+4. Schedule jobs — [getting started](../../docs/tutorial.md#5-keep-it-updated).
 5. Run `update-scores` + `build-neighbours` once before go-live.
 
 ## Lab ideas

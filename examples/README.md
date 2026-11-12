@@ -1,6 +1,6 @@
 # Examples
 
-Copy-paste integrations covered by Pest so the docs cannot rot.
+These integrations are exercised by Pest. Adapt their schemas, namespaces, visibility rules and configuration before using them in your application.
 
 | Example | Shows | Test |
 |---|---|---|
