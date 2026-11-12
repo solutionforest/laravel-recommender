@@ -104,11 +104,12 @@ class MakeFeedCommand extends Command
 
         $this->newLine();
         $this->info("Feed [{$feed}] scaffolded.");
-        $this->line('Next:');
+        $this->line('Next (see docs/tutorial.md):');
         $this->line("  1. Adjust table/column names in {$dir}");
-        $this->line("  2. php artisan recommender:update-scores {$feed}");
-        $this->line("  3. php artisan recommender:build-neighbours {$feed}");
-        $this->line("  4. php artisan recommender:explain {$feed} {userId}");
+        $this->line('  2. Add a route that calls Recommender::page()');
+        $this->line("  3. php artisan recommender:update-scores {$feed}");
+        $this->line("  4. php artisan recommender:build-neighbours {$feed}");
+        $this->line("  5. php artisan recommender:explain {$feed} {userId}");
 
         return self::SUCCESS;
     }

@@ -7,6 +7,9 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- `docs/tutorial.md` — step-by-step scaffold checklist for easy onboarding
+
 ## [0.0.4] — 2026-11-12
 
 ### Added

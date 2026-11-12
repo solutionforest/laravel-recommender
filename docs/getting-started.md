@@ -1,5 +1,7 @@
 # Getting started (slow and clear)
 
+Want a numbered checklist instead? Use **[tutorial.md](tutorial.md)** (`make-feed` → edit → cook).
+
 Welcome. You do **not** need to understand maths or Redis on day one.
 
 This page teaches one idea at a time. When you finish, you will have a working “for you” feed.

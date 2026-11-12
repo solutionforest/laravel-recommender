@@ -136,11 +136,12 @@ Then `recommender:explain posts {userId}` to verify. More recipes: [Tuning](docs
 
 ## Start here
 
-👉 **[docs/getting-started.md](docs/getting-started.md)** — slow, plain walkthrough (3 classes → cook once → schedule).
+👉 **[docs/tutorial.md](docs/tutorial.md)** — step-by-step scaffold checklist (`make-feed` → edit → cook → schedule). Easiest 上手 path.
 
 | Doc | When |
 |---|---|
-| [Getting started](docs/getting-started.md) | First install |
+| [Scaffold tutorial](docs/tutorial.md) | First install — numbered checklist |
+| [Getting started](docs/getting-started.md) | Same story, slower / more analogy |
 | [How it works](docs/how-it-works.md) | Pipeline & request flow |
 | [How we score (maths)](docs/maths.md) | Formulas for CF, trending, Wilson quality |
 | [Tuning](docs/tuning.md) | Weights & recipes |
@@ -157,9 +158,9 @@ php artisan migrate
 php artisan recommender:make-feed posts
 ```
 
-`recommender:make-feed` publishes `config/recommender.php` if needed, scaffolds the three classes under `app/Recommendation/...`, and registers the feed. Adjust table/column names, then run scores + neighbours.
+`recommender:make-feed` publishes `config/recommender.php` if needed, scaffolds the three classes under `app/Recommendation/...`, and registers the feed.
 
-Or copy [`examples/blog`](examples/blog) by hand.
+Full walkthrough: **[Scaffold tutorial](docs/tutorial.md)**. Or copy [`examples/blog`](examples/blog) by hand.
 
 On [Packagist](https://packagist.org/packages/solutionforest/laravel-recommender). Current: **`^0.0.4`** (PHP 8.3+ / Laravel 11–13).
 
