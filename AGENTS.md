@@ -24,8 +24,8 @@ Human docs live under [`docs/`](docs/). Prefer linking there over pasting walls 
 1. `composer require solutionforest/laravel-recommender` → `php artisan recommender:bootstrap {feed}` (migrate + register + build + doctor), or `php artisan migrate` and continue below
 2. Simplest: config-only feed — `'model' => Post::class, 'interactions' => ['post_likes' => 'like', …]` (see `examples/simple`). `php artisan recommender:make-feed posts` writes it for you; `--classes` scaffolds InteractionSource / ItemFilter / CardTransformer for custom queries
 3. `recommender:doctor` → `update-scores` → `build-neighbours` → `explain {feed} {userId}`; watch `/recommender`; `Recommender::stats($feed, $item)` for per-item quality
-4. Serve with `recommendations('posts', $request->user())` (or `Recommender::page()`) — return it directly for paginator JSON
-5. Schedule scores / neighbours / prune; cache with locks (`redis` or `database`+`cache_locks`)
+4. Serve with `Post::recommendedFor($request->user())` (model with `use Recommendable`) or `recommendations('posts', $user)` — return it directly for paginator JSON
+5. Jobs schedule themselves (`schedule` config) — just run Laravel's scheduler; cache with locks (`redis` or `database`+`cache_locks`)
 
 Copy the Cursor skill into the app so agents auto-load it:
 

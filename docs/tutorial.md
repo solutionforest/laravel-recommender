@@ -127,7 +127,8 @@ Add to `routes/web.php` or an appropriate API routes file:
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/posts/recommended', fn (Request $request) => recommendations('posts', $request->user()));
+Route::get('/posts/recommended', fn (Request $request) => Post::recommendedFor($request->user()));
+// or, without the trait: recommendations('posts', $request->user())
 ```
 
 Visit `/posts/recommended`. The JSON is Laravel's paginator shape (`data`, `current_page`, `links`, …) plus `origin` (`personal` or `trending`) and `has_more`; `?page=` is read automatically. `Recommender::page('posts', $request->user())` does the same and returns a `FeedPage` you can also turn into `toPaginator()` for Blade. The exact cards depend on your transformer and data. A guest gets trending. An authenticated user's list can contain trending candidates even when its origin is `personal`.
@@ -136,15 +137,7 @@ Personal paging consumes a shared per-user seen set; page numbers are metadata r
 
 ## 5. Keep it updated
 
-In `routes/console.php` for Laravel 11–13:
-
-```php
-use Illuminate\Support\Facades\Schedule;
-
-Schedule::command('recommender:update-scores')->everyTenMinutes()->withoutOverlapping()->onOneServer();
-Schedule::command('recommender:build-neighbours')->dailyAt('03:30')->withoutOverlapping(120)->onOneServer();
-Schedule::command('recommender:prune')->dailyAt('04:30')->withoutOverlapping(60)->onOneServer();
-```
+Nothing to add: the package schedules `update-scores` (every 10 minutes), `build-neighbours` (nightly) and `prune` (daily) itself, with `withoutOverlapping()->onOneServer()`. Just run Laravel's scheduler on your server (`php artisan schedule:work`, or the usual cron entry). To change the times or schedule them yourself, see [reference → background jobs](reference.md#background-jobs).
 
 Run Laravel's scheduler on your server. `onOneServer()` requires a shared cache with atomic locks across scheduler hosts. The commands above run synchronously when scheduled; if you use `Recommender::warm()`, also run a queue worker for the configured connection and queue (default queue `recommender`), for example `php artisan queue:work --queue=recommender`.
 

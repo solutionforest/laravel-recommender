@@ -1,5 +1,11 @@
 # Upgrade guide
 
+## From 0.5.x to 0.6.0
+
+- **The package now schedules its own jobs.** If you added `Schedule::command('recommender:…')` lines yourself, delete them — or keep them and set `RECOMMENDER_SCHEDULE=false`. (Running both is harmless thanks to `withoutOverlapping()`, just wasteful.)
+- Optional: replace `recommendations('posts', $user)` with `Post::recommendedFor($user)` on models that use `Recommendable`.
+- Your published config keeps working; newly published configs are short.
+
 ## From 0.4.x to 0.5.0
 
 Nothing to change. Optional: replace hand-tuned `sources` / `boosters` / `events` with `'preset' => 'catalog' | 'social' | 'events'` and keep only the keys you really changed. `make-feed` now writes a `preset` line for the blog / products / events / reviews wizard presets.

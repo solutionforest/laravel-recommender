@@ -12,7 +12,7 @@ Go-live, storage, locks, FAQ, what is still open.
 | 4 | `recommender:update-scores {feed}` | Fill `hot` / quality |
 | 5 | `recommender:build-neighbours {feed}` | Fill graph |
 | 6 | `recommender:doctor` and `recommender:explain {feed} {userId}` | All checks pass; expect personal sources |
-| 7 | Schedule three jobs | See [reference](reference.md#background-jobs) |
+| 7 | Run Laravel's scheduler | The package schedules its three jobs itself ([reference](reference.md#background-jobs)) |
 | 8 | Cache with locks (`redis` or `database`+`cache_locks`) + `queue:work --queue=recommender` | Build locks + warm builds |
 | 9 | `Gate::define('viewRecommender', …)` | Dashboard at `/recommender` in production |
 

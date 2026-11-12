@@ -41,7 +41,7 @@ it('sets up a working feed in one command', function () {
     $this->artisan('recommender:bootstrap', bootstrapArgs())
         ->expectsOutputToContain('Registered feed [shop]')
         ->expectsOutputToContain('Feed [shop] is ready.')
-        ->expectsOutputToContain("recommendations('shop'")
+        ->expectsOutputToContain('Product::recommendedFor($r->user())')
         ->assertSuccessful();
 
     $feed = (require config_path('recommender.php'))['feeds']['shop'];

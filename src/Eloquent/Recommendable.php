@@ -5,13 +5,15 @@ namespace SolutionForest\Recommender\Eloquent;
 use SolutionForest\Recommender\Recommender;
 
 /**
- * Optional model trait: drops the cached card of every feed that uses this
- * model whenever an item is saved or deleted, so edits show up immediately.
+ * Model trait: the model serves its own feed, and edits show up at once
+ * (cached cards are dropped on save / delete).
  *
  *     class Post extends Model
  *     {
  *         use Recommendable;
  *     }
+ *
+ *     Route::get('/posts/for-you', fn (Request $r) => Post::recommendedFor($r->user()));
  */
 trait Recommendable
 {
@@ -23,6 +25,24 @@ trait Recommendable
 
         static::saved($forget);
         static::deleted($forget);
+    }
+
+    /**
+     * One page of this model's feed for $user (a model, an id, or null for
+     * guests). The feed is the one whose `model` is this class; pass $feed
+     * when several feeds use it. Reads `?page=` / `?cursor=` like paginate().
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    public static function recommendedFor(
+        \Illuminate\Contracts\Auth\Authenticatable|int|string|null $user = null,
+        ?string $feed = null,
+        ?int $perPage = null,
+        array $attributes = [],
+    ): \SolutionForest\Recommender\Support\FeedPage {
+        $recommender = app(Recommender::class);
+
+        return $recommender->page($feed ?? $recommender->feedFor(static::class), $user, null, $perPage, $attributes);
     }
 
     /**

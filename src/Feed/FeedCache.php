@@ -218,6 +218,14 @@ final class FeedCache
         return is_array($value) ? array_values($value) : null;
     }
 
+    /**
+     * True the first time per $ttl seconds (cache add), e.g. to rate-limit a log line.
+     */
+    public function once(FeedDefinition $feed, string $name, int $ttl): bool
+    {
+        return $this->store()->add($this->key($feed, $name), 1, $ttl);
+    }
+
     public function forgetTrending(FeedDefinition $feed): void
     {
         $this->store()->forget($this->key($feed, 'trending'));
