@@ -1,9 +1,9 @@
 ---
 name: laravel-recommender
 description: >-
-  Wire solutionforest/laravel-recommender into a Laravel app: scaffold feeds,
-  InteractionSource / ItemFilter / CardTransformer, config weights, scores /
-  neighbours jobs, FeedPage::toPaginator, cache locks. Use when adding a
+  Wire solutionforest/laravel-recommender into a Laravel app: config-only feeds
+  (model + interaction tables), recommendations() helper, config weights, scores /
+  neighbours jobs, recommender:doctor, the /recommender dashboard, item stats, cache locks. Use when adding a
   recommendation engine, for-you feed, personalised ranking, co-interaction /
   trending, inspiration or blog recommendations, or replacing RAND()/Personalize.
 ---
@@ -39,34 +39,21 @@ php artisan migrate
 
 Creates `rec_item_scores`, `rec_item_neighbours`, `rec_state`.
 
-2. **Scaffold a feed** (do not hand-roll the three classes from scratch)
+2. **Register a feed** — config only; prefer this
 
 ```bash
-# Interactive Laravel Prompts wizard (presets + optional 3rd event)
-php artisan recommender:make-feed
-
-# Non-interactive
+php artisan recommender:make-feed                       # interactive wizard (presets + optional 3rd event)
 php artisan recommender:make-feed posts -n
 php artisan recommender:make-feed products --preset=products -n
-php artisan recommender:make-feed events --preset=events -n
 php artisan recommender:make-feed reviews --model=App\\Models\\Comment --likes=user_fav_comments --views=user_clicks --item-column=comment_id -n
 ```
 
-Produces under `app/Recommendation/{Feed}/`:
+It writes `feeds.{name}` with `model` + `interactions` (`[table => event]`; `item_column` only if not `{model}_id`) and prints two optional model methods:
+`scopeRecommendable(Builder $q, Context $context)` (who may see an item) and `toRecommendationCard()` (JSON, no viewer-specific fields), plus `use Recommendable;` for card invalidation. Ids may be int / UUID / ULID. See `examples/simple`.
 
-- `*InteractionSource` — streams interactions from **app** tables (any event names: like / view / share / …)  
+   Custom queries (single events table, joins): `make-feed posts --classes` scaffolds `InteractionSource` / `ItemFilter` / `CardTransformer` under `app/Recommendation/{Feed}/`.
 
-- `*ItemFilter` / `Visible*` — who may see an item  
-- `*CardTransformer` — JSON/card shape (no viewer-specific fields)
-
-Registers `config/recommender.php` → `feeds.{name}`.
-
-3. **Edit the three classes** to match real table/column names (`TABLES`, `ITEM_COLUMN`, published rules, owner column).
-
-   **Simpler alternative (prefer when tables are `user_id` / `{model}_id` / `created_at`):** no classes at all —
-   `'posts' => ['model' => Post::class, 'interactions' => ['post_likes' => 'like', 'post_views' => 'view']]`,
-   plus optional `scopeRecommendable(Builder $q, Context $context)` and `toRecommendationCard()` on the model
-   and `use Recommendable;` for card invalidation. See `examples/simple`.
+3. **Check it**: `php artisan recommender:doctor {feed}` — tables, columns, event weights, classes; fix what it reports.
 
 4. **Cook once**
 

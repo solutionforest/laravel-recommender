@@ -24,13 +24,12 @@ class RebuildScoresCommand extends Command
         $days = is_numeric($daysOption) ? max(1, (int) $daysOption) : $feed->int('scores_backfill_days', 30);
         $plan = $rebuilder->plan($feed, $days);
 
-        $this->table(['', ''], [
-            ['feed', $plan['feed']],
-            ['score rows to delete', number_format($plan['rows'])],
-            ['current watermark', $plan['watermark'] ?? '—'],
-            ['replay window', "{$plan['from']} → {$plan['to']} ({$days} days)"],
-            ['previous rebuild', $plan['interrupted'] ? 'interrupted — this run finishes it' : '—'],
-        ]);
+        $this->components->twoColumnDetail('Feed', $plan['feed']);
+        $this->components->twoColumnDetail('Score rows to delete', number_format($plan['rows']));
+        $this->components->twoColumnDetail('Current watermark', $plan['watermark'] ?? '—');
+        $this->components->twoColumnDetail('Replay window', "{$plan['from']} → {$plan['to']} ({$days} days)");
+        $this->components->twoColumnDetail('Previous rebuild', $plan['interrupted'] ? 'interrupted — this run finishes it' : '—');
+        $this->newLine();
 
         if ($this->option('dry-run')) {
             $this->info('Dry run: nothing changed.');

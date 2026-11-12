@@ -7,11 +7,15 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-11-12
+
+Finishes the improvements list: safe score rebuilds, an explain that shows the real order, a config-only `make-feed`, per-item quality stats. Upgrading: see [UPGRADE.md](UPGRADE.md) (nothing to change in apps).
+
 ### Added
 - `recommender:rebuild-scores {feed} --days= --dry-run --force` — recompute one feed's scores over a window; confirmation, never double-counts, an interrupted rebuild blocks `update-scores` for that feed until rerun (shown by `doctor` / dashboard)
 - `explain()` rows include `final` (position after exploration and diversity), `cached` (position in the served list) and `exploration`; shown by `recommender:explain` and the dashboard
 - `Recommender::stats($feed, $items)` and `$model->recommendationStats($feed)`: positive / exposure counts, rate, confidence-adjusted `quality` (Wilson) and relative `popularity` per item; quality column in the dashboard's trending table
-- Docs: [hiding an item](docs/reference.md#hiding-an-item-visibility-changes) recipe, covered by a test
+- Docs: [hiding an item](docs/reference.md#hiding-an-item-visibility-changes) recipe, covered by a test; all guides, the agent skill and screenshots refreshed for 0.2
 
 ### Changed
 - `recommender:make-feed` registers a **config-only feed** (model + interaction tables) and prints the model methods to add; `--classes` generates the previous `InteractionSource` / `ItemFilter` / `CardTransformer` classes
@@ -185,7 +189,8 @@ First minor release: a feed is now **configuration only** — tell the package w
 [0.0.2]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.2
 [0.0.1]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.1
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/solutionforest/laravel-recommender/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.15...v0.1.0
 [0.0.15]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.14...v0.0.15

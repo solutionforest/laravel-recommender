@@ -16,7 +16,7 @@ https://your-app.test/recommender
 | Title & feed tabs | The feed's status (**Healthy / Warnings / Failing**) and, with several feeds, one tab per feed with its status dot and scored-item count. |
 | Pipeline | The four steps a feed goes through — **Interactions → Scores → Similar items → Serving** — so you see at a glance *where* it is broken. |
 | Cards | Checks passing, score lag against the 1-hour limit, scored items, and similar-items coverage (share of items that have neighbours). |
-| Trending now | Top 10 items by time-decayed popularity, with positive (e.g. likes) and exposure (e.g. views) counts and their rate. |
+| Trending now | Top 10 items by time-decayed popularity, with positive (e.g. likes) and exposure (e.g. views) counts, their rate, and **quality** (the rate adjusted for how much evidence there is, 0–100). |
 | Checks | Problems first, each with its fix; passing checks fold away. |
 | Explain a user | Enter a user id to see why each item is ranked, as a stacked bar of every source's share of the score. |
 
@@ -24,7 +24,7 @@ https://your-app.test/recommender
 
 ![Explain a user](../art/screenshots/dashboard-explain.png)
 
-Each bar is the item's score split by source (the parts add up to the score). **Final** is the item's position after exploration and diversity in this fresh build, and **Served** its position in the list the user gets right now — so you can tell a ranking question from a caching one. `CoInteractionSource` means “people who liked what this user liked also liked this”, and `TrendingSource` means “popular right now”. A user who only gets `TrendingSource` rows has too little history or no shared interactions yet. Explain runs a fresh build before exploration and diversity, so it can differ slightly from the cached page. Live refresh pauses while a user is explained, so the build does not repeat.
+Each bar is the item's score split by source (the parts add up to the score). **Final** is the item's position after exploration and diversity in this fresh build, and **Served** its position in the list the user gets right now — so you can tell a ranking question from a caching one. `CoInteractionSource` means “people who liked what this user liked also liked this”, and `TrendingSource` means “popular right now”. A user who only gets `TrendingSource` rows has too little history or no shared interactions yet. Exploration is shuffled on every build, so *Final* can move between runs. Live refresh pauses while a user is explained, so the build does not repeat.
 
 ### Checks
 

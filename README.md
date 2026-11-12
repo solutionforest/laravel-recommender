@@ -112,7 +112,7 @@ Gate::define('viewRecommender', fn ($user) => $user->is_admin);
 php artisan recommender:explain posts 123
 ```
 
-Replace `123` with a real user ID. This shows source and booster scores for a fresh build before exploration and diversity; it is a diagnostic, not a guarantee of the exact cached page. If the user has little history or few shared interactions, trending may be the only useful signal. See [tuning](docs/tuning.md) before changing weights.
+Replace `123` with a real user ID. Each row shows the score per source, the item's **final** position after exploration and diversity, and where it sits in the list the user is **served** right now. `Recommender::stats('posts', $post)` tells you how good one item is (rate, confidence-adjusted quality, popularity). If the user has little history or few shared interactions, trending may be the only useful signal. See [tuning](docs/tuning.md) before changing weights.
 
 ## For coding agents
 
