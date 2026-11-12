@@ -125,7 +125,7 @@ $schedule->command('recommender:prune')->dailyAt('04:30')->withoutOverlapping(60
 | Nightly | `build-neighbours` | Rebuild “liked together” graph |
 | Daily | `prune` | Throw away idle score rows |
 
-Production: use **Redis** for cache. Local lab: `array` / `file` / `database` is fine.
+Cache: set `RECOMMENDER_CACHE_STORE` (or `CACHE_STORE`) to `redis` (prod), `database` (with `cache_locks`), or `array`/`file` (local).
 
 ```bash
 php artisan queue:work --queue=recommender
@@ -141,7 +141,7 @@ php artisan queue:work --queue=recommender
 - [ ] `build-neighbours` ran  
 - [ ] `explain` looks personal for one real user  
 - [ ] Schedule + queue worker in place  
-- [ ] Redis in production  
+- [ ] Cache store with locks in production (`redis` or `database` + `cache_locks`) — check `recommender:status`  
 
 ---
 
@@ -153,7 +153,7 @@ php artisan queue:work --queue=recommender
 | `CoInteractionSource` missing in explain | Neighbours empty — rebuild; check user’s recent items exist in `rec_item_neighbours` |
 | Everyone sees the same cards | Freshness / trending weights too high — see [tuning](tuning.md) |
 | Imported years of old data, still tiny | Widen `scores_backfill_days` or reset watermark — see [operations](operations.md) |
-| Cache lock / weird rebuild races locally | Expected on some lab drivers; use Redis in prod |
+| Cache lock / weird rebuild races | Use a LockProvider store (`redis` or `database` + `cache_locks`); check `recommender:status` |
 
 Health snapshot:
 

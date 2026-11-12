@@ -26,7 +26,7 @@ Human docs live under [`docs/`](docs/). Prefer linking there over pasting walls 
 2. `recommender:make-feed {name}` (scaffolds 3 classes + config) — then adjust table/column names.
 3. `recommender:update-scores {feed}` then `recommender:build-neighbours {feed}`.
 4. `recommender:explain {feed} {activeUserId}` — personal sources should appear.
-5. Schedule scores / neighbours / prune; Redis + `recommender` queue in prod.
+5. Schedule scores / neighbours / prune; cache with locks (`redis` or `database`+`cache_locks`) + `recommender` queue in prod.
 
 Historical imports: widen `scores_backfill_days` or clear watermark + scores, then rebuild neighbours.
 

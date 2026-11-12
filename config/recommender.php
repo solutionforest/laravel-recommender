@@ -12,10 +12,26 @@ return [
     'enabled' => env('RECOMMENDER_ENABLED', true),
 
     /*
-    | Cache store used for feeds, seen-sets, cards, trending lists and locks.
-    | null = the application's default store. Use Redis in production.
+    |--------------------------------------------------------------------------
+    | Cache store
+    |--------------------------------------------------------------------------
+    | Store for ranked lists, seen-sets, cards, trending, and per-user build locks.
+    | null / empty = Laravel's default CACHE_STORE.
+    |
+    | Any store that implements LockProvider works for build locks, including:
+    |   - redis     (recommended in production — fast, atomic)
+    |   - database  (fine on Laravel 11–13 if cache + cache_locks tables exist)
+    |   - array/file (local / single-process; locks exist but are not multi-server)
+    |
+    | If the store cannot provide locks, the package falls back to building
+    | without a lock (last write wins). Check: php artisan recommender:status
+    |
+    | Examples:
+    |   RECOMMENDER_CACHE_STORE=redis
+    |   RECOMMENDER_CACHE_STORE=database
+    |   (omit) → use CACHE_STORE
     */
-    'cache_store' => env('RECOMMENDER_CACHE_STORE'),
+    'cache_store' => env('RECOMMENDER_CACHE_STORE') ?: null,
 
     /* Prefix for every cache key the package writes (easy to flush). */
     'prefix' => env('RECOMMENDER_PREFIX', 'rec'),

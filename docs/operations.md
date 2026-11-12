@@ -13,7 +13,7 @@ Go-live, storage, locks, FAQ, roadmap.
 | 5 | `recommender:build-neighbours {feed}` | Fill graph |
 | 6 | `recommender:explain {feed} {userId}` | Expect personal sources |
 | 7 | Schedule three jobs | See [reference](reference.md#background-jobs) |
-| 8 | Redis + `queue:work --queue=recommender` | Prod locks + warm builds |
+| 8 | Cache with locks (`redis` or `database`+`cache_locks`) + `queue:work --queue=recommender` | Build locks + warm builds |
 
 ### Historical imports
 
@@ -52,7 +52,7 @@ Package **never copies** likes/views. Three derived tables + cache:
 | `rec_item_scores` | `hot`, counters | recently active items | `prune` + retention |
 | `rec_item_neighbours` | top-N similar ids | items with neighbours | versioned rebuild |
 | `rec_state` | watermarks, versions | handful of keys | overwrite |
-| Redis | lists, seen, cards, locks | active users | TTLs |
+| Cache store (redis / database / …) | lists, seen, cards, locks | active users | TTLs |
 
 ~100 B/score row, ~400 B/neighbour row → 100k active items ≈ tens of MB. Redis ≈ 1.5 KB list + 1.5 KB seen per active user.
 
@@ -63,7 +63,7 @@ Package **never copies** likes/views. Three derived tables + cache:
 | Two score jobs | `withoutOverlapping()`; short per-slice transactions |
 | Score job vs live traffic | Hot path reads cache, not `rec_*` |
 | Neighbour mid-request | New version → activate → chunked delete of old |
-| Two builds same user | Cache lock when available; lab unlocked = last write wins |
+| Two builds same user | Cache lock when store supports `LockProvider`; otherwise unlocked fallback (last write wins) |
 | Warm pile-up | `BuildFeed` `ShouldBeUnique` |
 | App-table deadlocks | Jobs only **SELECT** your interaction tables |
 
@@ -88,7 +88,7 @@ Tight host: lower `history_*`, raise shards, shorten `scores_slice_minutes`.
 | Feed build | active users | more builds, same size each |
 | `update-scores` | events / 10 min | bigger slices |
 | `build-neighbours` | users × capped history | more shards |
-| Redis | active users | ~3 KB / active user |
+| Cache (lists + seen) | active users | ~3 KB / active user |
 
 Writes are always bulk (`write_chunk` / `delete_chunk`). Asserted in `tests/Feature/ScaleTest.php`.
 
@@ -111,7 +111,7 @@ Not as pure ML. For sparse likes/views, item–item + rules is a proven baseline
 Request path doesn’t rank in SQL. Jobs are windowed, bulk, memory-guarded.
 
 **Need Redis?**  
-Production: yes. Lab: array/file/database OK (unlocked fallback).
+No. Any `LockProvider` store works. **Redis** is the best production default; **database** works on Laravel 11–13 with `cache_locks`; **array/file** are fine locally. See [reference → Cache](reference.md#cache-store--locks).
 
 **Will jobs deadlock us?**  
 Unlikely for the usual fear case — see deadlocks table above.

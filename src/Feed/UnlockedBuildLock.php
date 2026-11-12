@@ -9,8 +9,8 @@ use Illuminate\Contracts\Cache\Lock;
  * (e.g. database without a lock table, some file setups).
  *
  * Tradeoff: two concurrent rebuilds for the same user may race; the last
- * write wins. Fine for local labs; use Redis (or any LockProvider store) in
- * production so {@see FeedCache::lock()} returns a real lock.
+ * write wins. Fine for local labs; use redis or database+cache_locks (any
+ * LockProvider store) in production so {@see FeedCache::lock()} returns a real lock.
  */
 final class UnlockedBuildLock implements Lock
 {

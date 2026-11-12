@@ -20,7 +20,7 @@ If your product already stores likes, views, or similar interactions, this packa
 |---|---|
 | Likes / views in **your** tables | Background jobs that learn “liked together” + trending |
 | A Laravel API or Livewire UI | `Recommender::page()` → cards / Laravel paginator JSON |
-| Redis (prod) + a queue worker | Fast cached lists, seen-set paging, explainable rankings |
+| Cache store + a queue worker | Fast cached lists, seen-set paging, explainable rankings |
 
 Built for real product feeds (blog posts, inspiration / reviews, shops).
 
@@ -189,7 +189,15 @@ php artisan recommender:status
 Schedule: scores ~every 10 min · neighbours nightly · prune daily.  
 Details: [getting started → schedule](docs/getting-started.md#step-4--schedule-the-kitchen).
 
-Production: **Redis** for cache locks. Local lab: `array` / `file` / `database` is fine.
+**Cache / locks** (configurable via `RECOMMENDER_CACHE_STORE` or `CACHE_STORE`):
+
+| Choice | When |
+|---|---|
+| **redis** | Production default — fastest hot path + atomic locks |
+| **database** | OK on Laravel 11–13 if you ran `php artisan cache:table` (includes `cache_locks`) |
+| **array** / **file** | Local / CI; fine for one process |
+
+`php artisan recommender:status` shows whether locks are available. Details: [reference → Cache](docs/reference.md#cache-store--locks).
 
 ---
 

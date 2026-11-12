@@ -135,12 +135,25 @@ Per feed (defaults, overridable in `feeds.*`):
 | `write_chunk` / `delete_chunk` | 500 / 5000 | bulk write sizes |
 | `interactions`, `filter`, `cards`, `groups` | – | your classes |
 
-## Cache (Redis vs lab)
+## Cache store & locks
 
-| Environment | Recommended |
-|---|---|
-| **Production** | Redis (`CACHE_STORE=redis` or `RECOMMENDER_CACHE_STORE=redis`) |
-| **Local / CI** | `array` / `file` / `database` — unlocked fallback if locks unavailable |
+Configured by `recommender.cache_store` / `RECOMMENDER_CACHE_STORE` (empty → app `CACHE_STORE`).
+
+Build locks need a store that implements Laravel’s `LockProvider`. Not Redis-only.
+
+| Store | Locks | Typical use |
+|---|---|---|
+| **redis** | Yes | Production default — fast lists + atomic locks |
+| **database** | Yes on Laravel **11–13** if `cache` + `cache_locks` tables exist (`php artisan cache:table`) | Small / mid prod without Redis |
+| **array** / **file** | Yes in recent Laravel (single process / local) | Local lab & CI |
+| Custom store without `LockProvider` | No | Package falls back to unlocked builds (last write wins) |
+
+```env
+RECOMMENDER_CACHE_STORE=redis
+# RECOMMENDER_CACHE_STORE=database
+```
+
+Verify: `php artisan recommender:status` (shows store name + locks yes/fallback).
 
 ## Testing the package
 

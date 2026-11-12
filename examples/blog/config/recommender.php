@@ -20,7 +20,8 @@ use SolutionForest\Recommender\Sources\TrendingSource;
  */
 return [
     'enabled' => env('RECOMMENDER_ENABLED', true),
-    'cache_store' => env('RECOMMENDER_CACHE_STORE'),   // redis in production
+    // empty → app CACHE_STORE. Prefer redis in prod; database OK with cache_locks (L11–13).
+    'cache_store' => env('RECOMMENDER_CACHE_STORE') ?: null,
 
     'feeds' => [
         'posts' => [

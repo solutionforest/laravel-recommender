@@ -13,7 +13,7 @@ use SolutionForest\Recommender\Support\Ids;
 
 /**
  * Every per-user / per-item value the package keeps lives here, in the cache
- * store (Redis in production). All keys share one prefix and have a TTL.
+ * store (redis recommended; database / array / file also work). All keys share one prefix and have a TTL.
  *
  *   {prefix}:{feed}:list:{user}  "built_at|id,id,..."          (2 x feed_ttl)
  *   {prefix}:{feed}:seen:{user}  "id,id,..." already served    (seen_ttl)
@@ -213,7 +213,7 @@ final class FeedCache
         }
 
         // Tradeoff: stores with no LockProvider still serve feeds; concurrent rebuilds
-        // for the same user may race (last write wins). Prefer Redis in production.
+        // for the same user may race (last write wins). Prefer redis or database+cache_locks.
         Log::debug('[recommender] cache store has no locks; building without a per-user lock', [
             'feed' => $feed->name,
             'user' => $userId,

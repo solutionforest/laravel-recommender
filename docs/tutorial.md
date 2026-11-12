@@ -138,7 +138,19 @@ $schedule->command('recommender:prune')->dailyAt('04:30')->withoutOverlapping(60
 php artisan queue:work --queue=recommender
 ```
 
-Production cache: **Redis** (`CACHE_STORE=redis` or `RECOMMENDER_CACHE_STORE=redis`).
+**Cache store** (lists + build locks) — pick one:
+
+```env
+# Recommended in production
+CACHE_STORE=redis
+# or only for this package:
+RECOMMENDER_CACHE_STORE=redis
+
+# Also OK: database (Laravel 11–13) after `php artisan cache:table`
+# RECOMMENDER_CACHE_STORE=database
+```
+
+Confirm locks with `php artisan recommender:status`.
 
 ---
 
