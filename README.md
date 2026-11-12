@@ -5,7 +5,7 @@
 It builds a ranked **"for you" list per user** from data your app already stores, such as likes, views and follows. Each user's list is cached, and the API serves pages by slicing that list. Each request costs a few cache reads and at most one primary-key query, with no external API call, no `ORDER BY RAND()` and no `COUNT(*)`.
 
 **Highlights:**
-- Works with Laravel 10, 11 and 12 on PHP 8.1+.
+- Works with Laravel 10, 11, 12 and 13 on PHP 8.1+.
 - Needs a cache store with locks (Redis in production) and a queue.
 - **Never copies your raw events.** It reads your existing tables. Its own 3 tables grow with the number of *recently active items*, never with traffic.
 - **Every write is bulk:** chunked upserts, inserts and deletes. Every read is either indexed and `LIMIT`ed, or a primary-key lookup.
@@ -500,7 +500,7 @@ RECOMMENDER_TEST_DB=mysql DB_HOST=127.0.0.1 DB_DATABASE=rec_test DB_USERNAME=roo
 | `tests/Feature/ScaleTest.php` | shard equivalence, memory guard, crash-resume without double counting, bulk-write statement counts, chunked prune, packed cache values |
 | `tests/Feature/BlogExampleTest.php` | the sample app end to end |
 
-CI (`.github/workflows/tests.yml`) runs PHP 8.1–8.4 × Laravel 10–12 on SQLite, plus Laravel 10 on MySQL 8.
+Run tests locally with `vendor/bin/pest` (PHP 8.1–8.4 × Laravel 10–13). GitHub Actions workflow is disabled for now to conserve private-repo minutes.
 
 ---
 

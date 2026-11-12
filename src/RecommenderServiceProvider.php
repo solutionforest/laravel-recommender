@@ -21,6 +21,14 @@ class RecommenderServiceProvider extends ServiceProvider
     {
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
 
+        // Register outside runningInConsole() so Artisan::call() from HTTP/Livewire works.
+        $this->commands([
+            Console\UpdateScoresCommand::class,
+            Console\BuildNeighboursCommand::class,
+            Console\ExplainCommand::class,
+            Console\PruneCommand::class,
+        ]);
+
         if ($this->app->runningInConsole()) {
             $this->publishes([
                 __DIR__.'/../config/recommender.php' => config_path('recommender.php'),
@@ -29,13 +37,6 @@ class RecommenderServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__.'/../database/migrations' => database_path('migrations'),
             ], 'recommender-migrations');
-
-            $this->commands([
-                Console\UpdateScoresCommand::class,
-                Console\BuildNeighboursCommand::class,
-                Console\ExplainCommand::class,
-                Console\PruneCommand::class,
-            ]);
         }
     }
 }
