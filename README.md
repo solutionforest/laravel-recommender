@@ -30,7 +30,29 @@ Built for real product feeds (blog posts, inspiration / reviews, shops). Laravel
 - **Tunable** — weights, exploration, diversity caps — not a black-box model.
 - **Runnable sample** — [`examples/blog`](examples/blog) (~200 lines), covered by tests.
 
-Not a deep-learning ranker. Classic item–item CF + time-decayed trending + your filters/boosters. Often enough for sparse first-party like/view data.
+---
+
+## How we recommend
+
+No neural net. We assemble a ranked list from a few clear signals, then serve it from cache.
+
+```text
+your likes/views  →  background jobs  →  personal ranked list  →  next page of cards
+                         (learn)              (in Redis)            (no repeats)
+```
+
+1. **Learn in the background** (not on every scroll)
+   - Every ~10 minutes: fold new likes/views into a **trending “hot”** score (recent events count more).
+   - Nightly: build **neighbours** — “people who liked *this* also liked *that*” (item–item collaborative filtering).
+2. **Build a personal list** when the user’s feed is missing or stale  
+   Mix weighted **sources** (co-liked items, trending, plus any rules you add — e.g. same pet type, related shops), run your **filter** (published / not blocked), optional **boosters** (quality), sprinkle a little **exploration** (fresh items), then **diversity** caps (e.g. max 1 author per page).
+3. **Serve pages from that list**  
+   `Recommender::page()` returns the next unseen cards. Guests / brand-new users get a shared **trending** list until they have history.
+4. **You can see why**  
+   `php artisan recommender:explain {feed} {userId}` prints each card’s source scores.
+
+Diagrams and request flow: [How it works](docs/how-it-works.md).  
+Formulas behind “hot”, neighbours, and quality: [How we score (maths)](docs/maths.md).
 
 ---
 
@@ -41,11 +63,11 @@ Not a deep-learning ranker. Classic item–item CF + time-decayed trending + you
 | Doc | When |
 |---|---|
 | [Getting started](docs/getting-started.md) | First install |
-| [How it works](docs/how-it-works.md) | Big picture |
+| [How it works](docs/how-it-works.md) | Pipeline & request flow |
+| [How we score (maths)](docs/maths.md) | Formulas for CF, trending, Wilson quality |
 | [Tuning](docs/tuning.md) | Weights & recipes |
 | [Reference](docs/reference.md) | API, jobs, config |
 | [Operations](docs/operations.md) | Go-live, FAQ, scale |
-| [Maths](docs/maths.md) | Formulas |
 
 ---
 

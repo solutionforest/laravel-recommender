@@ -47,4 +47,4 @@ vendor/bin/pest tests/Feature/BlogExampleTest.php
 - **Don’t optimise for “latest”** — high Fresh\* collapses cohorts: [tuning](../../docs/tuning.md).
 - **Video covers** — poster URL in the transformer, not `.mp4` in `<img>`.
 - **Sponsors** — Source + Booster + diversity caps.
-- **Maths for stakeholders** — [maths](../../docs/maths.md).
+- **How we score** — [How we score (maths)](../../docs/maths.md).

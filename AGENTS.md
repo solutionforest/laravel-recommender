@@ -9,7 +9,7 @@ Human docs live under [`docs/`](docs/). Prefer linking there over pasting walls 
 | [docs/tuning.md](docs/tuning.md) | Weights / lessons |
 | [docs/reference.md](docs/reference.md) | API / config / jobs |
 | [docs/operations.md](docs/operations.md) | Go-live / FAQ / scale |
-| [docs/maths.md](docs/maths.md) | Formulas |
+| [docs/maths.md](docs/maths.md) | How we score (formulas) |
 
 ## Mental model
 

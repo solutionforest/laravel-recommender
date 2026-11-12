@@ -164,7 +164,7 @@ php artisan recommender:status posts
 1. Read [how it works](how-it-works.md) (still plain language).  
 2. Change **one** weight at a time — [tuning](tuning.md).  
 3. Need infinite scroll until the catalog ends? Copy [`InfiniteScrollFeed`](../examples/blog/src/InfiniteScrollFeed.php).  
-4. Maths for stakeholders: [maths](maths.md).  
+4. How scoring works (formulas): [How we score (maths)](maths.md).  
 5. Full knobs: [reference](reference.md).
 
 You are done with “day one.” Go try the feed. Come back to the other docs when you are curious, not scared.

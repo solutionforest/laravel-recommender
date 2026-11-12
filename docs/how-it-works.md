@@ -82,4 +82,4 @@ flowchart LR
 - **Item–item CF** — nightly neighbours; at request time score from the user’s recent items.  
 - **Time-decayed `hot`** — stored in log space, updated with log-sum-exp so trending stays correct without replaying history.
 
-Full formulas: [maths.md](maths.md).
+Full formulas: [How we score (maths)](maths.md).
