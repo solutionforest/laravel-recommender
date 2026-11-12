@@ -10,6 +10,9 @@ use SolutionForest\Recommender\Support\Context;
  * Implementations must be cheap: one or two indexed queries with a LIMIT.
  * Scores only need to be comparable within the same source; the blender
  * normalises every source to 0..1 before weighting.
+ *
+ * `$context` is the ranking bag (viewer id, feed config, clock) — see
+ * {@see Context}. Guests have `$context->userId === null`.
  */
 interface CandidateSource
 {

@@ -113,7 +113,9 @@ Recommender::forgetTrending('posts');
 
 ## Custom sources (product rules)
 
-Implement `CandidateSource` / `Booster` / `DiversityGroups` when the product needs rules the package does not know (same pet type, related shops, sponsored ids). Keep queries indexed + `LIMIT`. Guests: `$context->userId` may be `null`.
+Implement `CandidateSource` / `Booster` / `DiversityGroups` when the product needs rules the package does not know (same pet type, related shops, sponsored ids). Keep queries indexed + `LIMIT`.
+
+**`Context`** (`Support\Context`) is the first argument to those methods — not the HTTP request. `$context->userId` comes from `Recommender::page($feed, $userId, …)` (`null` = guest). Optional model: `page(…, attributes: ['user' => $user])` → `$context->attribute('user')`. Docs: `docs/reference.md` → What is Context?
 
 Scoring helpers (`SolutionForest\Recommender\Scoring\Math`) — prefer these over hand-rolled `1/(1+$i)`:
 

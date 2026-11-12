@@ -154,7 +154,7 @@ Then `recommender:explain posts {userId}` to verify. More recipes: [Tuning](docs
 | [How it works](docs/how-it-works.md) | Pipeline & request flow |
 | [How we score (maths)](docs/maths.md) | Formulas for CF, trending, Wilson quality |
 | [Tuning](docs/tuning.md) | Weights & recipes |
-| [Reference](docs/reference.md) | API, jobs, config |
+| [Reference](docs/reference.md) | API, jobs, config · **What is `Context`?** |
 | [Operations](docs/operations.md) | Go-live, FAQ, scale |
 
 ---
@@ -162,7 +162,7 @@ Then `recommender:explain posts {userId}` to verify. More recipes: [Tuning](docs
 ## Install
 
 ```bash
-composer require solutionforest/laravel-recommender:^0.0.13
+composer require solutionforest/laravel-recommender:^0.0.14
 php artisan migrate
 php artisan recommender:make-feed
 ```
@@ -171,7 +171,7 @@ php artisan recommender:make-feed
 
 Full walkthrough: **[Scaffold tutorial](docs/tutorial.md)**. Or copy an example from [`examples/`](examples/) (`blog` · `products` · `events` · `events-advanced` · `reviews`).
 
-On [Packagist](https://packagist.org/packages/solutionforest/laravel-recommender). Current: **`^0.0.13`** (PHP 8.3+ / Laravel 11–13).
+On [Packagist](https://packagist.org/packages/solutionforest/laravel-recommender). Current: **`^0.0.14`** (PHP 8.3+ / Laravel 11–13).
 
 Changelog: [CHANGELOG.md](CHANGELOG.md) · Releases: [GitHub Releases](https://github.com/solutionforest/laravel-recommender/releases)
 

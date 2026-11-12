@@ -56,7 +56,7 @@ Historical imports: widen `scores_backfill_days` or clear watermark + scores, th
 
 ## Implementing sources (app or package examples)
 
-- Guests: `$context->userId` may be `null`.
+- `Context` = ranking bag for sources/filters/boosters (not HTTP). `$context->userId` from `page($feed, $userId)`; `null` = guest. See `docs/reference.md` § What is Context?
 - Indexed queries + `LIMIT`; avoid huge `IN (subquery)`.
 - Cards: no viewer-specific fields; poster/thumbnail for video URLs.
 

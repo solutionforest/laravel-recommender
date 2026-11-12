@@ -10,6 +10,16 @@ Copy-paste integrations covered by Pest so the docs cannot rot.
 | [`events-advanced/`](events-advanced/) | Full copy of `events/` + district, host party, type, comments; for simple view/like/join see `events/` | `EventsAdvancedExampleTest` |
 | [`reviews/`](reviews/) | Shop UGC + custom `PetTypeMatchSource` | `ReviewsExampleTest` |
 
+## `Context` in examples
+
+Sources / boosters / filters take `Context $context` as the first argument. That is the package’s ranking bag:
+
+- `$context->userId` — viewer from `Recommender::page(…, $userId)` (`null` = guest)
+- `$context->now()` — clock for date filters
+- `$context->feed` — feed config
+
+Not the HTTP request. Full guide: [docs/reference.md → What is Context?](../docs/reference.md#what-is-context).
+
 ## Folder layout (every example)
 
 ```

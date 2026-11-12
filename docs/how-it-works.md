@@ -24,6 +24,8 @@ flowchart LR
 | **~every 30 min per active user** | Rebuild that user’s list if stale |
 | **~10 min / nightly / daily** | Scores, neighbours, prune |
 
+During a list **build**, every custom source / booster / filter receives a **`Context`** (viewer id, feed config, clock) — not the HTTP request. See [reference.md → What is Context?](reference.md#what-is-context).
+
 ## A request, step by step
 
 ```mermaid

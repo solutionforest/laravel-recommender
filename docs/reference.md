@@ -2,6 +2,39 @@
 
 Contracts, serving API, jobs, and config knobs.
 
+## What is `Context`?
+
+`SolutionForest\Recommender\Support\Context` is the small bag every **source / booster / filter / groups** method receives. It is **not** Laravel’s HTTP request — it answers “who are we ranking for on this build?”
+
+```php
+public function candidates(Context $context, int $limit): array
+{
+    if (! $context->userId) {
+        return []; // guest → no personal rule; trending handles guests
+    }
+
+    // …
+}
+```
+
+| You write | Comes from |
+|---|---|
+| `$context->userId` | 2nd arg to `Recommender::page('posts', $user?->id, …)` (`null` = guest) |
+| `$context->feed` | Feed config for this name (`feeds.posts` in `config/recommender.php`) |
+| `$context->feed->get('sponsored_shop_ids')` | Custom keys you put on that feed |
+| `$context->seen` | Ids already served (usually ignore inside sources) |
+| `$context->attribute('user')` | `page(…, attributes: ['user' => $user])` — optional Eloquent model |
+| `$context->now()` | Clock for “last 7 days / upcoming” (injectable in tests) |
+| `$context->isGuest()` | Shortcut for `$context->userId === null` |
+
+Wire the user once at the edge:
+
+```php
+Recommender::page('posts', $user?->id, $page, attributes: ['user' => $user]);
+```
+
+Then sources read `$context->userId` (or `$context->attribute('user')` when they need the full model). Queued `warm()` has **no** `attributes` — only `userId`.
+
 ## Contracts
 
 All classes resolve from the container (constructor injection works).
@@ -17,9 +50,9 @@ All classes resolve from the container (constructor injection works).
 
 Rules that matter:
 
-- `$context->userId` is `null` for shared trending — handle guests.
+- `$context->userId` is `null` for shared trending — handle guests (see [What is Context?](#what-is-context)).
 - Cards are cached per item and shared. Merge “liked by me” in the controller.
-- `attributes` on `page()` → `$context->attribute('user')`. Queued `warm()` has no attributes.
+- Prefer `$context->attribute('user')` over re-querying the user when you passed it via `page()`.
 
 Built-ins:
 

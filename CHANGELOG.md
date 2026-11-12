@@ -7,6 +7,9 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Docs
+- Explain `Context` (ranking bag vs HTTP request) in [reference.md](docs/reference.md), getting-started, examples README, and class docblocks
+
 ## [0.0.14] — 2026-11-12
 
 ### Added

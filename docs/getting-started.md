@@ -60,6 +60,27 @@ Given ids, return the card arrays (`id`, `title`, image…).
 
 That is the whole integration. Everything else is config + schedule.
 
+### Optional later — custom sources and `Context`
+
+When you add a product rule (`CandidateSource` / `Booster`), the first argument is always a **`Context`**:
+
+```php
+use SolutionForest\Recommender\Support\Context;
+
+public function candidates(Context $context, int $limit): array
+{
+    if (! $context->userId) {
+        return []; // no logged-in viewer → skip personal rules
+    }
+
+    // $context->userId  → from Recommender::page('posts', $userId, …)
+    // $context->now()   → “current time” for date filters
+    // $context->feed    → this feed’s config
+}
+```
+
+`Context` is **not** the HTTP request. Full table: [reference.md → What is Context?](reference.md#what-is-context).
+
 ---
 
 ## Do this in order (do not skip)
@@ -67,7 +88,7 @@ That is the whole integration. Everything else is config + schedule.
 ### Step 0 — Install
 
 ```bash
-composer require solutionforest/laravel-recommender:^0.0.13
+composer require solutionforest/laravel-recommender:^0.0.14
 php artisan migrate
 php artisan recommender:make-feed posts
 ```
