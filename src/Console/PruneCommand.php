@@ -21,7 +21,8 @@ class PruneCommand extends Command
             $feed = $recommender->feed($name);
             $before = now()->subDays($feed->int('scores_retention_days', 180));
             $deleted = $scores->prune($name, $before, $feed->int('delete_chunk', 5000));
-            $this->info("[{$name}] pruned {$deleted} idle score rows (no event since {$before->toDateString()})");
+            $days = $scores->pruneDaily($name, $before, $feed->int('delete_chunk', 5000));
+            $this->info("[{$name}] pruned {$deleted} idle score rows and {$days} daily rows (nothing since {$before->toDateString()})");
         }
 
         return self::SUCCESS;

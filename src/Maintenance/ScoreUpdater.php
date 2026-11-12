@@ -66,12 +66,15 @@ final class ScoreUpdater
                 $sliceTo = $to;
             }
 
-            [$deltas, $count] = $this->aggregate($feed, $source, $sliceFrom, $sliceTo);
+            [$deltas, $count, $daily] = $this->aggregate($feed, $source, $sliceFrom, $sliceTo);
             $events += $count;
 
-            $this->scores->transaction(function () use ($feed, $deltas, $key, $sliceTo, &$items) {
+            $this->scores->transaction(function () use ($feed, $deltas, $daily, $key, $sliceTo, &$items) {
                 if ($deltas !== []) {
                     $items += $this->scores->merge($feed->name, $deltas, $feed->int('write_chunk', 500));
+                }
+                if ($daily !== []) {
+                    $this->scores->mergeDaily($feed->name, $daily, $feed->int('write_chunk', 500));
                 }
                 $this->state->put($key, (string) $sliceTo->getTimestamp());
             });
@@ -81,7 +84,7 @@ final class ScoreUpdater
     }
 
     /**
-     * @return array{0: array<string, array{hot: ?float, positive: int, exposure: int, last: ?\DateTimeInterface}>, 1: int}
+     * @return array{0: array<string, array{hot: ?float, positive: int, exposure: int, last: ?\DateTimeInterface}>, 1: int, 2: array<string, array<string, array{positive: int, exposure: int}>>}
      */
     private function aggregate(FeedDefinition $feed, InteractionSource $source, CarbonImmutable $from, CarbonImmutable $to): array
     {
@@ -91,6 +94,7 @@ final class ScoreUpdater
         $halfLife = $feed->float('half_life_days', 7);
 
         $deltas = [];
+        $daily = [];
         $events = 0;
 
         /** @var Interaction $interaction */
@@ -103,11 +107,19 @@ final class ScoreUpdater
             $id = (string) $interaction->itemId;
             $delta = $deltas[$id] ?? ['hot' => null, 'positive' => 0, 'exposure' => 0, 'last' => null];
             $delta['hot'] = Math::logAddExp($delta['hot'], Math::hotTerm($weight, $interaction->occurredAt, $halfLife));
-            if (isset($positive[$interaction->event])) {
+            $isPositive = isset($positive[$interaction->event]);
+            $isExposure = isset($exposure[$interaction->event]);
+            if ($isPositive) {
                 $delta['positive']++;
             }
-            if (isset($exposure[$interaction->event])) {
+            if ($isExposure) {
                 $delta['exposure']++;
+            }
+            if ($isPositive || $isExposure) {
+                $day = CarbonImmutable::instance($interaction->occurredAt)->toDateString();
+                $daily[$id][$day] ??= ['positive' => 0, 'exposure' => 0];
+                $daily[$id][$day]['positive'] += $isPositive ? 1 : 0;
+                $daily[$id][$day]['exposure'] += $isExposure ? 1 : 0;
             }
             if ($delta['last'] === null || $interaction->occurredAt > $delta['last']) {
                 $delta['last'] = $interaction->occurredAt;
@@ -115,6 +127,6 @@ final class ScoreUpdater
             $deltas[$id] = $delta;
         }
 
-        return [$deltas, $events];
+        return [$deltas, $events, $daily];
     }
 }

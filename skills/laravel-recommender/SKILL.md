@@ -37,7 +37,7 @@ composer require solutionforest/laravel-recommender
 php artisan migrate
 ```
 
-Creates `rec_item_scores`, `rec_item_neighbours`, `rec_state`.
+Creates `rec_item_scores`, `rec_item_daily`, `rec_item_neighbours`, `rec_state`.
 
 2. **Register a feed** — config only; prefer this
 

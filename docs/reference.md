@@ -144,19 +144,37 @@ With `?cursor=` the response uses Laravel's cursor-paginator shape. `FeedPage::n
 ### How good is an item?
 
 ```php
-Recommender::stats('products', [12, 15]);     // or a model: Recommender::stats('products', $product)
-$product->recommendationStats('products');    // with the Recommendable trait
-// [12 => ['positive' => 25, 'exposure' => 40, 'rate' => 0.625, 'quality' => 0.47, 'popularity' => 0.82, 'last_event_at' => '…'], …]
+Recommender::stats('products', [12, 15]);           // or a model: Recommender::stats('products', $product)
+Recommender::stats('products', $product, days: 7);  // last 7 days only
+$product->recommendationStats('products');          // with the Recommendable trait
+// [12 => ['positive' => 25, 'exposure' => 40, 'impressions' => 0, 'rate' => 0.625, 'quality' => 0.47, 'popularity' => 0.82, 'last_event_at' => '…'], …]
 ```
 
 | Key | Meaning |
 |---|---|
 | `positive` / `exposure` | counts of your `positive_events` (likes, joins, purchases, comments…) and `exposure_events` (views) |
-| `rate` | positive ÷ exposure, `null` without exposures |
+| `impressions` | times the item was served in a page (when `'impressions' => true`) |
+| `rate` | positive ÷ exposure — or ÷ impressions when impressions are on (capped at 1 when likes outnumber recorded views); `null` when the denominator is 0 |
 | `quality` | Wilson lower bound of the rate (0..1): a *confident* "how good". One like from one view (0.21) ranks below 25 from 40 (0.47) — the same score `QualityBooster` uses |
 | `popularity` | time-decayed activity (`half_life_days`) relative to the hottest item right now (0..1) |
 
-Works for anything you recommend — products, events, posts, or comments if comments are a feed's items. The dashboard's *Trending now* table shows the same quality. Values come from `update-scores`, so they lag by up to one run.
+With `days`, counts cover the last N days (today included) from daily counters, so you can see whether an item is getting better or worse; `popularity` and `last_event_at` stay lifetime values. The dashboard's *Trending now* table shows lifetime quality, the last 7 days and a ▲ / ▼ against the last 30.
+
+Works for anything you recommend — products, events, posts, or comments if comments are a feed's items. Event counts come from `update-scores`, so they lag by up to one run; impressions are live.
+
+#### Impressions (shown, not just viewed)
+
+Views your app records are only a proxy for "the user saw it". Turn on impressions and every item served in a page counts as shown:
+
+```php
+'posts' => [
+    'model' => Post::class,
+    'interactions' => [...],
+    'impressions' => true,   // + quality = positive ÷ impressions
+],
+```
+
+Each served page costs four small statements (insert missing rows, then atomic increments — safe under concurrent requests); a failure is logged and never breaks the page. `QualityBooster` and `stats()` then rate items by how often they were liked *when shown*. `rebuild-scores` keeps impressions (they cannot be replayed from your tables); `prune` keeps items that are still being shown.
 
 ### Hiding an item (visibility changes)
 
@@ -244,6 +262,7 @@ Per feed (defaults, overridable in `feeds.*`):
 | `trending_size` / `trending_ttl` | 200 / 600 | shared list |
 | `card_ttl` | 3600 | card cache |
 | `tail` / `tail_order` | `true` / created_at | catalog tail after ranked + trending items (feeds with a `model`) |
+| `impressions` | `false` | count served items; quality uses positive ÷ impressions |
 | `build_lock_seconds` / `build_lock_wait` | 10 / 2 | per-user build lock |
 | `sources` | `CoInteractionSource` 0.6, `TrendingSource` 0.4 | `class => weight` |
 | `boosters` | – | `class => weight` |

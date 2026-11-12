@@ -72,11 +72,12 @@ Source and build failures are logged and can fall back to trending. Other failur
 
 ## What is stored where
 
-Package **never copies** your interaction rows (likes / views / shares / …). Three derived tables + cache:
+Package **never copies** your interaction rows (likes / views / shares / …). Four derived tables + cache:
 
 | Store | Holds | Grows with | Bounded by |
 |---|---|---|---|
-| `rec_item_scores` | `hot`, counters | recently active items | `prune` + retention |
+| `rec_item_scores` | `hot`, counters, impressions | recently active / shown items | `prune` + retention |
+| `rec_item_daily` | per-day positive / exposure / impressions (quality over time) | active items × days | `prune` + retention |
 | `rec_item_neighbours` | top-N similar ids | items with neighbours | versioned rebuild |
 | `rec_state` | watermarks, versions | handful of keys | overwrite |
 | Cache store (redis / database / …) | lists, seen, cards, locks | active users | TTLs |
@@ -169,18 +170,16 @@ Yes for feeds with a `model`: ranked items, then trending, then the newest items
 
 ## Roadmap / wishlist
 
-Done in 0.1–0.3: catalog tail and cursor pagination (0.3); config-only feeds, dashboard + `doctor`, guided `rebuild-scores`, explain with final / cached positions, card invalidation on model save, ids with commas, a config-only `make-feed`, per-item `stats()` (quality / popularity).
+Done in 0.1–0.4: impressions and quality over time (0.4); catalog tail and cursor pagination (0.3); config-only feeds, dashboard + `doctor`, guided `rebuild-scores`, explain with final / cached positions, card invalidation on model save, ids with commas, a config-only `make-feed`, per-item `stats()` (quality / popularity).
 
 Next, in order:
 
 | Item | Plan |
 |---|---|
-| Impressions | Record "shown but not clicked": `page()` already marks served ids as seen; add an opt-in `impression` event written in bulk from the seen-set so `exposure_events` can use real exposures instead of views. |
 | `recommender:bootstrap` | One command for a new app: publish config → `make-feed` → migrate → first `update-scores` / `build-neighbours` → `doctor`. |
 | Named presets | `'preset' => 'catalog' / 'social' / 'events'` on a feed to set sensible weights, events and exploration in one key. |
 | User–user / embedding sources | Out of the box later; today add them as a `CandidateSource` with a weight. |
 
 ## Limitations
 
-- No impressions yet
 - Item-to-item collaborative filtering out of the box (add other models as sources)

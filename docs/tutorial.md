@@ -21,7 +21,7 @@ php artisan vendor:publish --tag=recommender-config
 php artisan migrate
 ```
 
-The migration creates `rec_item_scores`, `rec_item_neighbours` and `rec_state`.
+The migrations create `rec_item_scores`, `rec_item_daily`, `rec_item_neighbours` and `rec_state`.
 
 ### Option A — config only (recommended)
 

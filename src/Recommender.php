@@ -168,6 +168,7 @@ class Recommender
 
         [$cards, $servedIds, $consumed] = $this->render($feed, $unseen, $perPage);
         $this->cache->markSeen($feed, $userId, $consumed);
+        $this->recordImpressions($feed, $servedIds);
 
         $remaining = max(0, count($unseen) - count($consumed));
         if ($servedIds !== [] && $tail !== [] && array_diff(array_map('strval', $servedIds), array_keys($tail)) === []) {
@@ -254,12 +255,15 @@ class Recommender
      *    good", so 1 like out of 1 view does not beat 50 out of 100
      *  - popularity: time-decayed activity relative to the hottest item now, 0..1
      *
-     * Items without any scored interaction are returned with zeros.
+     * Items without any scored interaction are returned with zeros. With
+     * `impressions` on, rate and quality use positive ÷ impressions (items
+     * actually shown). Pass `$days` for the last N days only (today included);
+     * popularity and last_event_at stay lifetime values.
      *
      * @param  int|string|Model|list<int|string|Model>  $items
-     * @return array<int|string, array{positive: int, exposure: int, rate: ?float, quality: float, popularity: float, last_event_at: ?string}>
+     * @return array<int|string, array{positive: int, exposure: int, impressions: int, rate: ?float, quality: float, popularity: float, last_event_at: ?string}>
      */
-    public function stats(string $feedName, int|string|Model|array $items): array
+    public function stats(string $feedName, int|string|Model|array $items, ?int $days = null): array
     {
         $feed = $this->feed($feedName);
         $ids = array_map(
@@ -269,14 +273,20 @@ class Recommender
         $ids = Ids::normalizeAll(array_filter($ids, fn ($id) => is_int($id) || is_string($id)));
 
         $found = $this->scores->rows($feed->name, $ids);
+        $window = $days === null ? null : $this->scores->window($feed->name, $ids, $days, CarbonImmutable::now());
+        $basis = $feed->get('impressions') ? 'impressions' : 'exposure';
         $out = [];
         foreach ($ids as $id) {
-            $row = $found['rows'][$id] ?? ['hot' => null, 'positive' => 0, 'exposure' => 0, 'last_event_at' => null];
+            $row = $found['rows'][$id] ?? ['hot' => null, 'positive' => 0, 'exposure' => 0, 'impressions' => 0, 'last_event_at' => null];
+            $counts = $window === null ? $row : ($window[$id] ?? ['positive' => 0, 'exposure' => 0, 'impressions' => 0]);
             $out[$id] = [
-                'positive' => $row['positive'],
-                'exposure' => $row['exposure'],
-                'rate' => $row['exposure'] > 0 ? round($row['positive'] / $row['exposure'], 4) : null,
-                'quality' => round(Scoring\Math::wilson($row['positive'], $row['exposure']), 4),
+                'positive' => $counts['positive'],
+                'exposure' => $counts['exposure'],
+                'impressions' => $counts['impressions'],
+                // Same denominator as the Wilson score: never above 100% even
+                // when likes outnumber recorded views.
+                'rate' => $counts[$basis] > 0 ? round($counts['positive'] / max($counts[$basis], $counts['positive']), 4) : null,
+                'quality' => round(Scoring\Math::wilson($counts['positive'], $counts[$basis]), 4),
                 'popularity' => $row['hot'] === null || $found['max_hot'] === null ? 0.0 : round(exp($row['hot'] - $found['max_hot']), 4),
                 'last_event_at' => $row['last_event_at'],
             ];
@@ -443,6 +453,7 @@ class Recommender
         }
 
         [$cards, $servedIds, $consumed] = $this->render($feed, $window, $perPage);
+        $this->recordImpressions($feed, $servedIds);
         $remaining = max(0, count($window) - count($consumed));
 
         return new FeedPage(
@@ -607,6 +618,23 @@ class Recommender
             'weights' => $sourceWeights,
             'boost_weights' => $boostWeights,
         ];
+    }
+
+    /**
+     * @param  list<int|string>  $ids
+     */
+    private function recordImpressions(FeedDefinition $feed, array $ids): void
+    {
+        if ($ids === [] || ! $feed->get('impressions')) {
+            return;
+        }
+
+        try {
+            $this->scores->addImpressions($feed->name, $ids, CarbonImmutable::now());
+        } catch (Throwable $e) {
+            // Counting must never break serving.
+            $this->report($feed, 'impressions', $e);
+        }
     }
 
     /**

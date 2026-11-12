@@ -90,17 +90,34 @@ final class Health
     /**
      * Most popular items right now with their quality counters.
      *
-     * @return list<array{id: int|string, hot: float, positive: int, exposure: int, quality: float}>
+     * `quality_7d` / `trend` compare the last 7 days with the last 30.
+     *
+     * @return list<array{id: int|string, hot: float, positive: int, exposure: int, impressions: int, rate: ?float, quality: float, quality_7d: ?float, trend: ?string}>
      */
     public function trending(FeedDefinition $feed, int $limit = 10): array
     {
         $hot = $this->scores->hottest($feed->name, $limit);
-        $counts = $this->scores->counts($feed->name, array_keys($hot));
+        $ids = array_keys($hot);
+        $all = $this->recommender->stats($feed->name, $ids);
+        $week = $this->recommender->stats($feed->name, $ids, 7);
+        $month = $this->recommender->stats($feed->name, $ids, 30);
 
         $out = [];
         foreach ($hot as $id => $score) {
-            $c = $counts[$id] ?? ['positive' => 0, 'exposure' => 0];
-            $out[] = ['id' => $id, 'hot' => round($score, 4)] + $c + ['quality' => round(\SolutionForest\Recommender\Scoring\Math::wilson($c['positive'], $c['exposure']), 4)];
+            $s = $all[$id];
+            $q7 = $week[$id]['rate'] === null ? null : $week[$id]['quality'];
+            $q30 = $month[$id]['rate'] === null ? null : $month[$id]['quality'];
+            $out[] = [
+                'id' => $id,
+                'hot' => round($score, 4),
+                'positive' => $s['positive'],
+                'exposure' => $s['exposure'],
+                'impressions' => $s['impressions'],
+                'rate' => $s['rate'],
+                'quality' => $s['quality'],
+                'quality_7d' => $q7,
+                'trend' => $q7 === null || $q30 === null ? null : ($q7 - $q30 > 0.02 ? 'up' : ($q30 - $q7 > 0.02 ? 'down' : 'flat')),
+            ];
         }
 
         return $out;

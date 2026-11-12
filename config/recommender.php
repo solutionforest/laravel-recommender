@@ -114,6 +114,9 @@ return [
         'events' => ['view' => 1.0, 'like' => 4.0],
         'positive_events' => ['like'],
         'exposure_events' => ['view'],
+        // Count every item served in a page as an impression (one bulk write per
+        // page). Quality then uses positive ÷ impressions instead of ÷ exposure.
+        'impressions' => false,
         'half_life_days' => 7,
         // First run only walks this many days; widen for historical imports (README checklist).
         'scores_backfill_days' => 30,

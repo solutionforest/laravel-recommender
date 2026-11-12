@@ -25,7 +25,7 @@ class RebuildScoresCommand extends Command
         $plan = $rebuilder->plan($feed, $days);
 
         $this->components->twoColumnDetail('Feed', $plan['feed']);
-        $this->components->twoColumnDetail('Score rows to delete', number_format($plan['rows']));
+        $this->components->twoColumnDetail('Score rows to reset', number_format($plan['rows']));
         $this->components->twoColumnDetail('Current watermark', $plan['watermark'] ?? '—');
         $this->components->twoColumnDetail('Replay window', "{$plan['from']} → {$plan['to']} ({$days} days)");
         $this->components->twoColumnDetail('Previous rebuild', $plan['interrupted'] ? 'interrupted — this run finishes it' : '—');
@@ -37,7 +37,7 @@ class RebuildScoresCommand extends Command
             return self::SUCCESS;
         }
 
-        if (! $this->option('force') && ! $this->confirm("Delete [{$plan['feed']}] scores and replay {$days} days?", false)) {
+        if (! $this->option('force') && ! $this->confirm("Reset [{$plan['feed']}] scores and replay {$days} days?", false)) {
             $this->warn('Aborted: nothing changed. Use --force to skip this question.');
 
             return self::FAILURE;
@@ -48,7 +48,7 @@ class RebuildScoresCommand extends Command
         $recommender->forgetTrending($feed->name);
 
         $this->info(sprintf(
-            '[%s] deleted %d rows, replayed %d events -> %d row upserts (%s .. %s) in %.2fs',
+            '[%s] reset %d rows, replayed %d events -> %d row upserts (%s .. %s) in %.2fs',
             $feed->name, $result['deleted'], $result['events'], $result['items'], $result['from'], $result['to'], microtime(true) - $started,
         ));
         $this->line("Next: <comment>php artisan recommender:build-neighbours {$feed->name}</comment> if history_days changed. Cached user lists refresh within feed_ttl.");
