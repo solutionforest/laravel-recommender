@@ -110,6 +110,19 @@ $query->where('tenant_id', $context->attribute('tenant'));
 
 Background builds (`warm()`) have no attributes, only the user id — read anything you need from the user model there.
 
+**Cards that depend on an attribute** (translated titles, per-tenant prices): cards are cached and shared, so tell the cache which attributes they vary by:
+
+```php
+'posts' => [..., 'cards_vary_by' => ['locale']],   // 'locale' defaults to app()->getLocale()
+
+public function toRecommendationCard(?Context $context = null): array
+{
+    return ['id' => $this->id, 'title' => $this->getTranslation('title', $context?->attribute('locale'))];
+}
+```
+
+All variants of an item share one cache entry, so `forgetCard()` / the `Recommendable` trait refresh every language at once.
+
 ## Replacing a built-in piece with a class
 
 Each part a `model` provides can be replaced by a class; a class set on the feed always wins.
@@ -245,7 +258,7 @@ $page->nextCursor(); // token for ?cursor=
 
 return $page;                                    // paginator JSON (+ next_cursor)
 return $page->toCursorArray();                   // cursor-paginator JSON
-return PostResource::collection(Post::findMany($page->ids)->sortBy(fn ($p) => array_search($p->id, $page->ids)));
+return PostResource::collection($page->models());   // Eloquent models, ranked order, one query
 ```
 
 Blade / Livewire: `{{ $page->toPaginator()->links() }}`, or follow `nextCursor()` in a "load more" button. Viewer-specific fields (liked, saved) belong here, merged into the cards, never inside `toRecommendationCard()`.

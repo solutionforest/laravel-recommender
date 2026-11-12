@@ -3,8 +3,9 @@
 namespace SolutionForest\Recommender\Support;
 
 /**
- * Item ids are stored as strings in the package tables; numeric ids are
- * handed back to the app as integers.
+ * Item ids are stored as strings in the package tables; plain numeric ids
+ * are handed back to the app as integers. Strings that only look numeric
+ * ("007", "000123") stay strings, so zero-padded external ids survive.
  */
 final class Ids
 {
@@ -14,7 +15,9 @@ final class Ids
             return $id;
         }
 
-        return ctype_digit($id) && strlen($id) < 19 ? (int) $id : $id;
+        $plain = ctype_digit($id) && strlen($id) < 19 && ($id === '0' || $id[0] !== '0');
+
+        return $plain ? (int) $id : $id;
     }
 
     /**

@@ -1,5 +1,9 @@
 # Upgrade guide
 
+## From 0.6.0 / 0.6.1 to 0.6.2
+
+Nothing to change. If your item ids are zero-padded strings (`"000123"`), they now stay strings everywhere (before, they could become `123`); cached lists heal within `feed_ttl` (or change `RECOMMENDER_PREFIX` to start with a fresh cache).
+
 ## From 0.5.x to 0.6.0
 
 - **The package now schedules its own jobs.** If you added `Schedule::command('recommender:…')` lines yourself, delete them — or keep them and set `RECOMMENDER_SCHEDULE=false`. (Running both is harmless thanks to `withoutOverlapping()`, just wasteful.)

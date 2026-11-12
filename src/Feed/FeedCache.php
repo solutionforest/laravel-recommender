@@ -141,7 +141,7 @@ final class FeedCache
      * @param  callable(list<int|string>): array<int|string, array<string, mixed>>  $render
      * @return array<int|string, array<string, mixed>>
      */
-    public function cards(FeedDefinition $feed, array $ids, callable $render): array
+    public function cards(FeedDefinition $feed, array $ids, callable $render, ?string $variant = null): array
     {
         if ($ids === []) {
             return [];
@@ -156,8 +156,11 @@ final class FeedCache
         $found = [];
         $missing = [];
         foreach ($keys as $key => $id) {
-            if (is_array($cached[$key] ?? null)) {
-                $found[$id] = $cached[$key];
+            $value = $cached[$key] ?? null;
+            if ($variant === null && is_array($value) && ! isset($value['__variants'])) {
+                $found[$id] = $value;
+            } elseif ($variant !== null && is_array($value['__variants'][$variant] ?? null)) {
+                $found[$id] = $value['__variants'][$variant];
             } else {
                 $missing[] = $id;
             }
@@ -168,7 +171,17 @@ final class FeedCache
             $toCache = [];
             foreach ($rendered as $id => $card) {
                 $found[$id] = $card;
-                $toCache[$this->key($feed, "card:{$id}")] = $card;
+                $key = $this->key($feed, "card:{$id}");
+                if ($variant === null) {
+                    $toCache[$key] = $card;
+                } else {
+                    // All variants of an item share one key, so forgetCard()
+                    // drops every language / tenant at once.
+                    $existing = $cached[$key] ?? null;
+                    $variants = is_array($existing) && is_array($existing['__variants'] ?? null) ? $existing['__variants'] : [];
+                    $variants[$variant] = $card;
+                    $toCache[$key] = ['__variants' => $variants];
+                }
             }
             if ($toCache !== []) {
                 $this->store()->putMany($toCache, $feed->int('card_ttl', 3600));

@@ -7,6 +7,20 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.6.2] — 2026-11-12
+
+Small fixes and options from review.
+
+### Added
+- `FeedPage::models()` — the page as Eloquent models in ranked order (one query), e.g. `PostResource::collection(Post::recommendedFor($user)->models())`
+- `cards_vary_by` (e.g. `['locale']`): cards are cached per attribute value; `toRecommendationCard(?Context $context)` receives the attributes; all variants of an item are forgotten together
+
+### Changed
+- Cursors carry the feed name; a cursor from another feed is ignored. Docs state that a cursor is "the next page for this user", not a snapshot. Older cursors keep working
+
+### Fixed
+- Zero-padded string ids (`"007"`, `"000123"`) are no longer turned into integers
+
 ## [0.6.1] — 2026-11-12
 
 Docs and examples.
@@ -242,7 +256,8 @@ First minor release: a feed is now **configuration only** — tell the package w
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.6.2...HEAD
+[0.6.2]: https://github.com/solutionforest/laravel-recommender/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/solutionforest/laravel-recommender/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/solutionforest/laravel-recommender/compare/v0.5.0...v0.5.1

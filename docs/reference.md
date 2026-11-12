@@ -133,6 +133,10 @@ Recommender::explain('posts', $userId);    // see "Explain" below
 
 `php artisan vendor:publish --tag=recommender-config` (and `make-feed` / `bootstrap`) publish a **short** `config/recommender.php`: `enabled`, `cache_store` and `feeds`. Every other key keeps its package default until you add it; the full list is in [configuration](#configuration), or publish the full file with `--tag=recommender-config-full`.
 
+`$page->models()` returns the page as Eloquent models in ranked order (one query) when you prefer rendering models over cards.
+
+Item ids may be integers, UUIDs, ULIDs or any string (commas included). Plain numbers come back as integers; zero-padded strings such as `"000123"` stay strings.
+
 `Model::recommendedFor($user, ?$feed)` (from `Recommendable`) uses the one feed whose `model` is that class; pass `$feed` when several do. When a first page comes back empty, one log notice per feed per hour points at `recommender:doctor`.
 
 ### Presets
@@ -159,6 +163,8 @@ GET /posts/recommended?cursor=eyJwIjoyfQ → { data, path, per_page, next_cursor
 ```
 
 With `?cursor=` the response uses Laravel's cursor-paginator shape. `FeedPage::nextCursor()` / `toCursorArray()` give the same in PHP. Page numbers keep working.
+
+A cursor means **"the next page of this feed for this user"**, not a frozen snapshot: personal paging follows the user's seen-set, which all their devices share, so items never repeat across devices. Cursors carry the feed name; a cursor from another feed is ignored (page 1).
 
 ### How good is an item?
 
@@ -282,6 +288,7 @@ Per feed (defaults, overridable in `feeds.*`):
 | `trending_sources` | `[TrendingSource => 1]` | guest / fallback |
 | `trending_size` / `trending_ttl` | 200 / 600 | shared list |
 | `card_ttl` | 3600 | card cache |
+| `cards_vary_by` | `[]` | cache cards per attribute, e.g. `['locale']` (`locale` defaults to the app locale) |
 | `tail` / `tail_order` | `true` / created_at | catalog tail after ranked + trending items (feeds with a `model`) |
 | `impressions` | `false` | count served items; quality uses positive ÷ impressions |
 | `build_lock_seconds` / `build_lock_wait` | 10 / 2 | per-user build lock |
