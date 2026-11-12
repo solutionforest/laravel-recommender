@@ -90,7 +90,6 @@ The response is Laravel's paginator JSON plus `origin` and `has_more`; `?page=` 
 | Run, monitor or rebuild in production | [Operations](docs/operations.md) |
 | Explore the formulas | [Maths](docs/maths.md) (optional) |
 | Adapt an integration | [Examples](examples/) — blog, products, events and reviews |
-| Review proposed usability improvements | [Improvement proposals](docs/improvements.md) |
 
 ## Dashboard
 

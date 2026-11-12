@@ -110,5 +110,3 @@ Recommender::forgetTrending('reviews');
 | Scroll ends too early | Give the feed a `model` (catalog tail is on by default) and check `tail` is not `false` |
 | Media | Map `.mp4` → poster in `toRecommendationCard()` |
 | Sponsored shops | Source + Booster + diversity caps |
-
-Wishlist ideas (`recommender:bootstrap`, named presets, richer explain): see [operations](operations.md#roadmap--wishlist).
