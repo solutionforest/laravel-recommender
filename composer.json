@@ -2,7 +2,7 @@
     "name": "solutionforest/laravel-recommender",
     "description": "Self-hosted, low-overhead recommendation feeds for Laravel (co-interaction similarity, time-decayed trending, Redis-cached feeds).",
     "type": "library",
-    "license": "proprietary",
+    "license": "MIT",
     "keywords": [
         "laravel",
         "recommendation",

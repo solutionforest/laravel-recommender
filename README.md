@@ -1,5 +1,8 @@
 # Laravel Recommender
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![tests](https://github.com/solutionforest/laravel-recommender/actions/workflows/tests.yml/badge.svg)](https://github.com/solutionforest/laravel-recommender/actions/workflows/tests.yml)
+
 `solutionforest/laravel-recommender` is a self-hosted recommendation engine for Laravel. It doesn't depend on any outside service.
 
 It builds a ranked **"for you" list per user** from data your app already stores, such as likes, views and follows. Each user's list is cached, and the API serves pages by slicing that list. Each request costs a few cache reads and at most one primary-key query, with no external API call, no `ORDER BY RAND()` and no `COUNT(*)`.
