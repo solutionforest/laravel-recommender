@@ -136,7 +136,7 @@ Then `recommender:explain posts {userId}` to verify. More recipes: [Tuning](docs
 
 ## Start here
 
-👉 **[docs/tutorial.md](docs/tutorial.md)** — step-by-step scaffold checklist (`make-feed` → edit → cook → schedule). Easiest 上手 path.
+👉 **[docs/tutorial.md](docs/tutorial.md)** — step-by-step scaffold checklist (`make-feed` → edit → cook → schedule). Easiest path for a first install.
 
 | Doc | When |
 |---|---|

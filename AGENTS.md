@@ -4,7 +4,7 @@ Human docs live under [`docs/`](docs/). Prefer linking there over pasting walls 
 
 | Doc | Use for |
 |---|---|
-| [docs/tutorial.md](docs/tutorial.md) | Scaffold checklist (上手) |
+| [docs/tutorial.md](docs/tutorial.md) | Scaffold checklist |
 | [docs/getting-started.md](docs/getting-started.md) | First-time wiring (slower) |
 | [docs/how-it-works.md](docs/how-it-works.md) | Mental model |
 | [docs/tuning.md](docs/tuning.md) | Weights / lessons |

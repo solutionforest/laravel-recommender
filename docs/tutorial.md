@@ -1,4 +1,4 @@
-# Scaffold tutorial (上手 checklist)
+# Scaffold tutorial
 
 Follow this page **in order**. About 15–30 minutes if your likes/views tables already exist.
 
@@ -171,7 +171,7 @@ Then re-run `explain`.
 
 ## Done
 
-You are 上手. Next reads only when needed:
+You are set up. Next reads only when needed:
 
 - [How it works](how-it-works.md)  
 - [Tuning](tuning.md)  
