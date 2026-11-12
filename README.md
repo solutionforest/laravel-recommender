@@ -38,6 +38,8 @@ It builds a ranked **"for you" list per user** from data your app already stores
 15. [FAQ](#faq)
 16. [Limitations and roadmap](#limitations-and-roadmap)
 
+> **Ops TL;DR:** three small package tables + Redis lists. Jobs run every **10 min / nightly / daily**. Writes are short bulk transactions with `withoutOverlapping()` — designed so you do **not** deadlock the app DB or blow PHP memory. Details: [Performance, scale and storage](#performance-scale-and-storage).
+
 ---
 
 ## How it works
@@ -551,6 +553,23 @@ Recommender::explain('posts', $userId);    // per-source score breakdown
 
 ## Background jobs
 
+### How often to run them
+
+| Cadence | Command | Why this frequency |
+|---|---|---|
+| **Every ~10 minutes** | `recommender:update-scores` | Folds *new* likes/views into `hot` / quality counts. Only events since the last watermark are read — cost tracks traffic in that window, not total history. |
+| **Nightly (e.g. 03:30)** | `recommender:build-neighbours` | Rebuilds the item–item graph used by `CoInteractionSource`. Cheap enough daily; you do **not** need it on every request. |
+| **Daily (e.g. 04:30)** | `recommender:prune` | Deletes idle `rec_item_scores` rows older than `scores_retention_days` so the scores table stays bounded. |
+
+Always schedule with `withoutOverlapping()` (and `onOneServer()` if you have multiple schedulers) so a slow run cannot start a second copy:
+
+```php
+// app/Console/Kernel.php  (or routes/console.php schedule)
+$schedule->command('recommender:update-scores')->everyTenMinutes()->withoutOverlapping()->onOneServer();
+$schedule->command('recommender:build-neighbours')->dailyAt('03:30')->withoutOverlapping(120)->onOneServer();
+$schedule->command('recommender:prune')->dailyAt('04:30')->withoutOverlapping(60)->onOneServer();
+```
+
 ```mermaid
 gantt
   dateFormat  HH:mm
@@ -577,6 +596,7 @@ The warm-up job `Jobs\BuildFeed` runs on the `recommender` queue and is `ShouldB
 php artisan queue:work --queue=recommender
 ```
 
+**You do not need to rebuild on every request.** Live traffic only reads Redis (lists / seen / cards) plus at most one primary-key card fetch. Jobs keep the three package tables fresh in the background.
 ---
 
 ## Configuration reference
@@ -624,6 +644,48 @@ Per feed (`defaults`, overridable in `feeds.*`):
 ---
 
 ## Performance, scale and storage
+
+### What is stored where
+
+The package **never copies your likes/views tables**. It keeps three small derived tables (plus Redis for hot-path lists):
+
+| Store | Holds | Grows with | Cleared / bounded by |
+|---|---|---|---|
+| **`rec_item_scores`** | per-item `hot`, like/view counters, `last_event_at` | *recently active* items (not total traffic) | `recommender:prune` + `scores_retention_days` |
+| **`rec_item_neighbours`** | top-N similar item ids (JSON) per item | items that have neighbours | nightly rebuild writes a **new version**, then deletes the old one in chunks |
+| **`rec_state`** | watermarks (`scores:{feed}:watermark`), active neighbour version, shard count | a handful of keys | overwritten in place |
+| **Redis (or lock-capable cache)** | per-user ranked id list, seen-set, card payloads, build locks, shared trending list | *active* users | TTLs (`feed_ttl`, `seen_ttl`, `card_ttl`, `trending_ttl`) |
+
+Your app tables stay the source of truth. Jobs *read* them through your `InteractionSource`; they only *write* the three `rec_*` tables and cache keys under `RECOMMENDER_PREFIX`.
+
+Rough footprint: ~100 B per score row, ~400 B per neighbour row → **100k active items ≈ tens of MB**, not GB. Redis ≈ 1.5 KB list + 1.5 KB seen-set per active user.
+
+### Deadlocks, locks, and overlapping runs
+
+Designed so ops teams do not need to fear lock storms:
+
+| Concern | How the package handles it |
+|---|---|
+| **Two score jobs at once** | Schedule with `withoutOverlapping()`. Each slice is one short DB transaction (bulk upsert + watermark). No long open transaction across the whole backfill. |
+| **Score job vs live traffic** | Requests do **not** touch `rec_item_scores` / `rec_item_neighbours` on the hot path — they read Redis. Live users are not blocked by job upserts. |
+| **Neighbour rebuild mid-request** | New rows are written under a **new version**. Readers keep using the previous active version until activate flips the pointer; then old rows are deleted in `delete_chunk` batches (no giant multi-minute `DELETE`). |
+| **Two builds for the same user** | Per-user **cache lock** (`build_lock_seconds` / `build_lock_wait`). If the lock is busy, the other request serves the existing list (or waits briefly) instead of stacking duplicate builds. |
+| **Warm-up job pile-up** | `BuildFeed` is `ShouldBeUnique` per feed+user on the `recommender` queue. |
+| **App-table deadlocks** | Jobs only **SELECT** your interaction tables (via your source). They do not update likes/views. Deadlock risk on *your* write-heavy tables is unchanged by this package. |
+| **Long row locks** | Writes are chunked (`write_chunk` / `delete_chunk`). Prefer InnoDB; avoid running `build-neighbours` and a huge manual `DELETE` on the same table at once. |
+
+If a job crashes mid-slice, the watermark (scores) or version activation (neighbours) means the next run **resumes cleanly** — scores are not double-counted; a failed neighbour version is discarded and the previous graph stays live.
+
+### Memory bounds
+
+| Path | Memory behaviour |
+|---|---|
+| **HTTP `page()`** | O(page): a few cache reads + one card query. Does not load the neighbour graph or score table into PHP. |
+| **`update-scores`** | Aggregates **one time slice** at a time (`scores_slice_minutes`). Peak ≈ items touched in that slice, not “all events ever”. |
+| **`build-neighbours`** | Counts pairs in **shards** (1, then 2, 4, …). Only one shard’s co-occurrence map is in memory. If usage exceeds `neighbours_memory_limit_mb` (capped at 80% of PHP `memory_limit`), that attempt is **thrown away** and the job retries with more shards. The last good neighbour version stays served. |
+| **Prune** | Deletes by primary-key id lists of size `delete_chunk` — no loading the whole scores table. |
+
+Knobs when a host is tight: lower `history_per_user` / `history_days`, raise `neighbours_max_shards`, lower `neighbours_memory_limit_mb`, or shorten `scores_slice_minutes` so each score transaction is smaller.
 
 ### What happens at 100× data
 
@@ -712,6 +774,15 @@ As a pure ML model it isn't stronger. But for sparse like/view data, item-to-ite
 
 **Will it slow down the database when data grows?**
 The request path doesn't touch the database for ranking. Builds are bounded per active user. The jobs read only new or windowed data, write in bulk and are memory-guarded. See [What happens at 100× data](#what-happens-at-100-data).
+
+**Will the jobs deadlock our database?**
+Unlikely for the usual fear case. Live requests do not contend on `rec_*` tables; jobs use short chunked transactions and `withoutOverlapping()`; neighbour swaps are versioned so readers keep the previous graph. The package only *reads* your interaction tables. See [Deadlocks, locks, and overlapping runs](#deadlocks-locks-and-overlapping-runs).
+
+**Will `build-neighbours` blow PHP memory?**
+It shards pair counting and aborts/retries with more shards under `neighbours_memory_limit_mb`. The previous neighbour version stays live if a pass fails. See [Memory bounds](#memory-bounds).
+
+**How often must we update?**
+Scores about every **10 minutes**, neighbours **nightly**, prune **daily**. That is enough for “liked 10 minutes ago shows up in trending/personal.” You do not rebuild on every page view. See [How often to run them](#how-often-to-run-them).
 
 **Can I A/B test it?**
 Yes. Decide in the controller which users get `Recommender::page()` and which get the old code, then compare click and like rates.
