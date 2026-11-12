@@ -46,51 +46,31 @@ It builds a ranked **"for you" list per user** from data your app already stores
 
 ### The big picture
 
+Imagine a user scrolling your app.
+
+1. **They open a few posts** (views) and **heart a couple** (likes). Those rows already live in *your* tables — this package does not copy them.
+2. **Every ~10 minutes** a job glances at *new* likes/views and updates a small “how hot is this item?” score. Last night’s viral post still counts; last year’s does not.
+3. **Once a night** another job asks: “people who liked *this* also liked *what*?” and stores a short neighbour list per item (same idea as Amazon “customers also bought”).
+4. **When they open the “for you” feed**, the package builds a personal ranked list from those signals (plus trending / your own rules), remembers what they already saw, and serves the next page from cache. Scroll → next batch, no repeats.
+5. **Guests / brand-new users** get a shared trending list until they have enough history of their own.
+
+In one line: **what they looked at and liked → quiet background learning → a personal “next cards” list ready in Redis.**
+
 ```mermaid
 flowchart LR
-  subgraph App["Your app (unchanged tables)"]
-    E[(likes / views / follows)]
-    I[(items: posts, reviews...)]
-  end
-
-  subgraph Jobs["Background jobs — bounded, bulk writes"]
-    S["update-scores<br/>every 10 min"]
-    N["build-neighbours<br/>nightly"]
-    P["prune<br/>daily"]
-  end
-
-  subgraph Tables["Package tables (small)"]
-    T[(rec_item_scores<br/>1 row / active item)]
-    U[(rec_item_neighbours<br/>1 row / item, top-30 JSON)]
-  end
-
-  subgraph Cache["Cache (Redis)"]
-    L[[user list: 200 ranked ids]]
-    SE[[seen-set: 200 ids]]
-    C[[card per item]]
-    TR[[shared trending list]]
-  end
-
-  E -- "new events only" --> S --> T
-  E -- "90 days, capped per user" --> N --> U
-  P -- "chunked delete of idle rows" --> T
-  T --> B
-  U --> B
-  I --> B
-  B["Feed build<br/>≈ once / 30 min / active user"] --> L
-  L --> R["GET /feed?page=N<br/>3–4 cache calls"]
-  SE <--> R
-  C --> R
-  TR --> R
+  U[User views / likes<br/>in your tables] --> J[Background jobs<br/>~10 min + nightly]
+  J --> M[Small package tables<br/>hot scores + neighbours]
+  M --> F[Personal ranked list<br/>in Redis]
+  F --> P[Feed pages<br/>no repeats]
 ```
 
-There are three layers, and each one runs at a different frequency:
+Three speeds (you do **not** recompute the whole world on every scroll):
 
-| Layer | Runs | Cost |
+| When | What happens | Feels like |
 |---|---|---|
-| **Request** | every scroll | 3–4 cache calls, plus at most 1 primary-key query for uncached cards |
-| **Feed build** | about once per 30 min per *active* user, under a per-user lock | about 6 small `LIMIT`ed / primary-key queries |
-| **Background jobs** | every 10 min / nightly / daily | read only what's new, or a bounded window; write in bulk chunks |
+| **Every scroll** | Slice the cached list; mark those cards as seen | Instant |
+| **~every 30 min per active user** | Rebuild that user’s ranked list if it’s stale | Fresh “for you” |
+| **~10 min / nightly / daily** | Score new events, rebuild neighbours, prune idle rows | Learning catches up in the background |
 
 ### A request, step by step
 
