@@ -7,6 +7,11 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.1] — 2026-11-12
+
+### Added
+- `recordInteraction()` — `$post->recordInteraction($user, 'like', once: true)` or `Recommender::recordInteraction($feed, $item, $user, $event, …)` writes a row with the feed's own table and columns. Plain insert by default (every view kept; a missing or extra required column fails loudly); `once: true` is idempotent for like-style tables with a unique (user, item) index and returns `false` when it already exists; an event that maps to two tables throws unless you pass `table:`. The timestamp is set by the package; no events, no jobs. Unliking stays an app-side delete
+
 ## [0.7.0] — 2026-11-12
 
 Context isolation and honest paging.
@@ -278,7 +283,8 @@ First minor release: a feed is now **configuration only** — tell the package w
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/solutionforest/laravel-recommender/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.6.3...v0.7.0
 [0.6.3]: https://github.com/solutionforest/laravel-recommender/compare/v0.6.2...v0.6.3
 [0.6.2]: https://github.com/solutionforest/laravel-recommender/compare/v0.6.1...v0.6.2

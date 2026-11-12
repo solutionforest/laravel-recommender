@@ -189,6 +189,10 @@ Before writing a class, try config:
 
 Ids can be integers, UUIDs or ULIDs, and may contain commas. `php artisan recommender:doctor` checks every table and column.
 
+## Recording interactions
+
+If you do not want to hand-write the insert (and keep it in step with the config), let the feed write it. `$post->recordInteraction($user, 'like', once: true)` uses the table and columns the feed already declares. Use `once: true` only for like-style tables that have a unique index on (user, item); never for views. Unliking is your own delete (scores are decayed counters). Details and failure rules: [reference → recording interactions](reference.md#recording-interactions).
+
 ## Several feeds for one model
 
 Different surfaces often want different rankings over the same items — "for you" vs "more like this shop" vs "trending this week":

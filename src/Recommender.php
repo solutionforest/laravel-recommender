@@ -327,6 +327,34 @@ class Recommender
         return FeedCache::variant($names, $attributes);
     }
 
+    /**
+     * Record an interaction in the feed's own table, with its configured
+     * columns, e.g. `recordInteraction('posts', $post, $user, 'like', once: true)`.
+     * Plain insert; `once: true` makes it idempotent (needs a unique index on
+     * user + item) and returns false when it already existed. Unliking is
+     * your own delete: scores are decayed counters and do not go down.
+     * Fires no events and dispatches no jobs; scores update on the schedule.
+     *
+     * @param  ?string  $table  only when two tables share the event name
+     * @return bool true when a row was added
+     */
+    public function recordInteraction(string $feedName, Model|int|string $item, Authenticatable|int|string $user, string $event, bool $once = false, ?string $table = null, ?\DateTimeInterface $at = null): bool
+    {
+        $feed = $this->feed($feedName);
+        $source = $this->bindings->interactions($feed);
+        if (! $source instanceof Interactions\DatabaseInteractions) {
+            throw new \LogicException("Feed [{$feedName}] reads interactions from a class; record them where that class reads them, or switch to a table map ('interactions' => ['table' => 'event']).");
+        }
+
+        $userId = $this->viewer($user)[0] ?? throw new InvalidArgumentException('Cannot record an interaction for a user without an id.');
+        $itemId = $item instanceof Model ? $item->getKey() : $item;
+        if (! is_int($itemId) && ! is_string($itemId)) {
+            throw new InvalidArgumentException('Cannot record an interaction for an item without a key.');
+        }
+
+        return $source->record($userId, $itemId, $event, $once, $table, $at);
+    }
+
     /** Drop a cached card, e.g. after the item was edited or hidden. */
     public function forgetCard(string $feedName, int|string $id): void
     {
