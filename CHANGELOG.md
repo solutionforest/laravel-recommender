@@ -7,8 +7,15 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.0.3] — 2026-11-12
+
 ### Added
+- README: **How to adjust the ratio** (views / likes / sponsors)
+- README: PHP 8.3+ and Laravel 11–13 badges under the logo
 - Tests: event weights flip trending order; SponsoredShop source+booster; UnlockedBuildLock when cache has no LockProvider
+
+### Note
+- Prefer Composer constraint `^0.0.3`. An older `v0.1.0` git tag is obsolete — do not require it.
 
 ## [0.0.2] — 2026-11-12
 
@@ -26,9 +33,7 @@ This project uses [Semantic Versioning](https://semver.org/).
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-### Note
-- Prefer Composer constraint `^0.0.2`. An older `v0.1.0` git tag is obsolete — do not require it.
-
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.2...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.3...HEAD
+[0.0.3]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.3
 [0.0.2]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.2
 [0.0.1]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.1
