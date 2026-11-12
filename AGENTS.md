@@ -1,53 +1,59 @@
 # Agent guidelines — solutionforest/laravel-recommender
 
-Use this when changing the package or helping an app integrate it. Full detail: [README.md](README.md).
+Human docs live under [`docs/`](docs/). Prefer linking there over pasting walls of text into chat.
+
+| Doc | Use for |
+|---|---|
+| [docs/getting-started.md](docs/getting-started.md) | First-time wiring |
+| [docs/how-it-works.md](docs/how-it-works.md) | Mental model |
+| [docs/tuning.md](docs/tuning.md) | Weights / lessons |
+| [docs/reference.md](docs/reference.md) | API / config / jobs |
+| [docs/operations.md](docs/operations.md) | Go-live / FAQ / scale |
+| [docs/maths.md](docs/maths.md) | Formulas |
 
 ## Mental model
 
-- Package **never copies** raw events; it reads app tables via `InteractionSource`.
+- Never copies raw events; reads app tables via `InteractionSource`.
 - Own tables: `rec_item_scores`, `rec_item_neighbours`, `rec_state` only.
-- Hot path: cache list + seen-set + cards. Ranking rebuild is bounded (`source_limit`, `feed_size`).
-- Core maths (document, don’t hand-wave): item–item cosine CF, exponential half-life `hot` via log-sum-exp, Wilson lower bound, weighted blend + exploration interleave. See README **Ideas & maths**.
-- Lab patterns in `examples/blog/`: `InfiniteScrollFeed` (ranked → catalog tail), sponsored shop source+booster, media poster note on cards. Prefer personalisation over latest-first.
+- Hot path: cache list + seen-set + cards.
+- Maths: item–item cosine CF, half-life `hot` via log-sum-exp, Wilson, blend + exploration.
+- Lab patterns: `examples/blog/` (`InfiniteScrollFeed`, sponsored source+booster, poster URLs). Prefer personalisation over latest-first.
 
 ## First-time setup (do not skip)
 
-1. Migrate package tables.
+1. Migrate.
 2. `recommender:update-scores {feed}` then `recommender:build-neighbours {feed}`.
 3. `recommender:explain {feed} {activeUserId}` — personal sources should appear.
-4. Schedule update-scores / build-neighbours / prune; Redis + `recommender` queue in prod.
+4. Schedule scores / neighbours / prune; Redis + `recommender` queue in prod.
 
-Historical imports: widen `scores_backfill_days` + `scores_slice_minutes`, or clear watermark + scores, then rebuild neighbours.
+Historical imports: widen `scores_backfill_days` or clear watermark + scores, then rebuild neighbours.
 
 ## Fine-tuning
 
-- Weights are relative; `exploration_ratio` is separate (slot interleave).
-- **Inspiration / segments:** personal sources high, Fresh\* / FreshnessBooster low (~0.05–0.10).
-- **Latest-first:** raises Fresh\* — makes cohorts look alike; avoid for pet/segment demos.
-- After weight changes: `forgetUser` / `forgetTrending` (or flush `rec:*`).
+- Weights relative; `exploration_ratio` is slot interleave.
+- Segments: personal high, Fresh\* low (~0.05–0.10).
+- After weight changes: `forgetUser` / `forgetTrending`.
 - Tune with 2–3 real users + `explain`, one knob at a time.
 
-## Implementing sources (app code)
+## Implementing sources
 
-- Guests: `$context->userId` may be `null` — trending path must still work.
-- One/two indexed queries + `LIMIT`; avoid huge `WHERE user_id IN (subquery of tens of thousands)`.
-- Prefer bounded per-key `LIMIT` / PHP cap-per-group over sorting all rows for a large `IN` list.
-- Do not load multi-thousand JSON “related id” blobs unless sliced in SQL/app first.
-- Cards: poster/thumb for video URLs; no viewer-specific fields in cached cards.
+- Guests: `$context->userId` may be `null`.
+- Indexed queries + `LIMIT`; avoid huge `IN (subquery)`.
+- Cards: no viewer-specific fields; poster for video URLs.
 
 ## Package code rules
 
 - Bulk writes only (`write_chunk` / `delete_chunk`).
-- Console commands stay registered outside `runningInConsole` (Livewire / HTTP Artisan::call).
-- Support Illuminate ^10–^13; widen testbench/pest when bumping.
-- Prefer README + tests over new markdown files unless asked.
+- Console commands registered outside CLI (Livewire Artisan::call).
+- Support Illuminate ^10–^13.
+- Keep **README.md thin**; put depth in `docs/`.
 
 ## Common failures
 
 | Symptom | Check |
 |---|---|
-| Empty / only trending | Jobs never run; watermark/backfill too short |
-| No CoInteraction in explain | Neighbours empty or user’s items not in graph |
-| Slow cold build | `source_limit`/`feed_size` too high; bad source SQL; SQLite |
-| Same feed for all cohorts | Freshness weights too high |
-| Livewire Ops / rebuild slow | Debounce live inputs; avoid rebuild every keystroke |
+| Empty / only trending | Jobs never run; backfill too short |
+| No CoInteraction in explain | Neighbours empty |
+| Slow cold build | `source_limit` / bad SQL / SQLite |
+| Same feed for all cohorts | Freshness too high |
+| Livewire Ops slow | Debounce live inputs |
