@@ -65,7 +65,7 @@ Historical imports: widen `scores_backfill_days` or clear watermark + scores, th
 - Bulk writes only (`write_chunk` / `delete_chunk`).
 - Console commands registered outside CLI (Livewire `Artisan::call`).
 - Support PHP ^8.3 and Illuminate ^11–^13.
-- Keep **README.md thin**; put depth in `docs/`. Update [CHANGELOG.md](CHANGELOG.md) on release.
+- Keep **README.md thin**; put depth in `docs/`. Update [CHANGELOG.md](CHANGELOG.md) on release (`## [x.y.z]`), then `git tag -a vX.Y.Z` + `git push origin vX.Y.Z` — [release.yml](.github/workflows/release.yml) publishes the GitHub Release from that changelog section.
 
 ## Common failures
 

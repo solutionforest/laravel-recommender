@@ -174,7 +174,7 @@ Full walkthrough: **[Scaffold tutorial](docs/tutorial.md)**. Or copy an example 
 
 On [Packagist](https://packagist.org/packages/solutionforest/laravel-recommender). Current: **`^0.0.15`** (PHP 8.3+ / Laravel 11–13).
 
-Changelog: [CHANGELOG.md](CHANGELOG.md) · Releases: [GitHub Releases](https://github.com/solutionforest/laravel-recommender/releases)
+Changelog: [CHANGELOG.md](CHANGELOG.md) · Releases: [GitHub Releases](https://github.com/solutionforest/laravel-recommender/releases) (auto on `v*.*.*` tag — see [Publishing a package release](docs/operations.md#publishing-a-package-release))
 
 ---
 

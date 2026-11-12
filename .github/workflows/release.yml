@@ -1,0 +1,88 @@
+name: release
+
+# Push a version tag → GitHub Release with notes from CHANGELOG.md
+# Example:
+#   # move Unreleased notes into ## [0.0.16] — YYYY-MM-DD in CHANGELOG.md, commit, then:
+#   git tag -a v0.0.16 -m "v0.0.16"
+#   git push origin main && git push origin v0.0.16
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to (re)publish (e.g. v0.0.15)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    name: GitHub Release
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+          fi
+          case "$TAG" in
+            v[0-9]*.[0-9]*.[0-9]*) ;;
+            *)
+              echo "Tag must look like v1.2.3 (got: $TAG)" >&2
+              exit 1
+              ;;
+          esac
+          VERSION="${TAG#v}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Extract CHANGELOG section
+        id: notes
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.tag.outputs.version }}"
+          TAG="${{ steps.tag.outputs.tag }}"
+          OUT=release-notes.md
+
+          awk -v ver="$VERSION" '
+            $0 ~ "^## \\[" ver "\\]" { capture = 1; print; next }
+            capture && /^## \[/ { exit }
+            capture { print }
+          ' CHANGELOG.md > "$OUT"
+
+          if [ ! -s "$OUT" ]; then
+            {
+              echo "### Changes"
+              echo
+              echo "- No \`## [${VERSION}]\` section found in CHANGELOG.md."
+              echo "- See the [compare view](https://github.com/${{ github.repository }}/releases/tag/${TAG}) and git history."
+            } > "$OUT"
+          fi
+
+          echo "----- release notes -----"
+          cat "$OUT"
+          echo "path=$OUT" >> "$GITHUB_OUTPUT"
+
+      - name: Create / update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: ${{ steps.tag.outputs.tag }}
+          body_path: ${{ steps.notes.outputs.path }}
+          draft: false
+          prerelease: false
+          make_latest: true
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
