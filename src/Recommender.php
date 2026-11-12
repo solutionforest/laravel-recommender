@@ -33,6 +33,7 @@ class Recommender
         private readonly Container $container,
         private readonly FeedCache $cache,
         private readonly Bindings $bindings,
+        private readonly Storage\ScoreStore $scores,
         private readonly Blender $blender = new Blender(),
         private readonly Explorer $explorer = new Explorer(),
         private readonly Diversifier $diversifier = new Diversifier(),
@@ -232,6 +233,46 @@ class Recommender
     public function forgetCard(string $feedName, int|string $id): void
     {
         $this->cache->forgetCard($this->feed($feedName), $id);
+    }
+
+    /**
+     * How an item is doing, from the scores update-scores keeps:
+     *
+     *  - positive / exposure: e.g. likes / views (per `positive_events` / `exposure_events`)
+     *  - rate: positive ÷ exposure (null without exposures)
+     *  - quality: Wilson lower bound of that rate, 0..1 — a confident "how
+     *    good", so 1 like out of 1 view does not beat 50 out of 100
+     *  - popularity: time-decayed activity relative to the hottest item now, 0..1
+     *
+     * Items without any scored interaction are returned with zeros.
+     *
+     * @param  int|string|Model|list<int|string|Model>  $items
+     * @return array<int|string, array{positive: int, exposure: int, rate: ?float, quality: float, popularity: float, last_event_at: ?string}>
+     */
+    public function stats(string $feedName, int|string|Model|array $items): array
+    {
+        $feed = $this->feed($feedName);
+        $ids = array_map(
+            fn ($item) => $item instanceof Model ? $item->getKey() : $item,
+            is_array($items) ? $items : [$items],
+        );
+        $ids = Ids::normalizeAll(array_filter($ids, fn ($id) => is_int($id) || is_string($id)));
+
+        $found = $this->scores->rows($feed->name, $ids);
+        $out = [];
+        foreach ($ids as $id) {
+            $row = $found['rows'][$id] ?? ['hot' => null, 'positive' => 0, 'exposure' => 0, 'last_event_at' => null];
+            $out[$id] = [
+                'positive' => $row['positive'],
+                'exposure' => $row['exposure'],
+                'rate' => $row['exposure'] > 0 ? round($row['positive'] / $row['exposure'], 4) : null,
+                'quality' => round(Scoring\Math::wilson($row['positive'], $row['exposure']), 4),
+                'popularity' => $row['hot'] === null || $found['max_hot'] === null ? 0.0 : round(exp($row['hot'] - $found['max_hot']), 4),
+                'last_event_at' => $row['last_event_at'],
+            ];
+        }
+
+        return $out;
     }
 
     /**

@@ -265,7 +265,7 @@
                         <div class="empty">Nothing scored yet.</div>
                     @else
                         <table>
-                            <thead><tr><th>#</th><th>Item</th><th style="width:40%">Hot</th><th class="num">Positive</th><th class="num">Exposure</th><th class="num">Rate</th></tr></thead>
+                            <thead><tr><th>#</th><th>Item</th><th style="width:40%">Hot</th><th class="num">Positive</th><th class="num">Exposure</th><th class="num">Rate</th><th class="num" title="Confidence-adjusted rate (Wilson lower bound)">Quality</th></tr></thead>
                             <tbody>
                             @foreach ($current['trending'] as $i => $row)
                                 <tr>
@@ -275,6 +275,7 @@
                                     <td class="num">{{ number_format($row['positive']) }}</td>
                                     <td class="num">{{ number_format($row['exposure']) }}</td>
                                     <td class="num"><span class="rate">{{ $row['exposure'] > 0 ? round($row['positive'] / $row['exposure'] * 100) : 0 }}%</span></td>
+                                    <td class="num">{{ round($row['quality'] * 100) }}</td>
                                 </tr>
                             @endforeach
                             </tbody>

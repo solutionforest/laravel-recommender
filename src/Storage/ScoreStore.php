@@ -130,6 +130,35 @@ final class ScoreStore
         return $deleted;
     }
 
+    /**
+     * Raw score rows for some items plus the feed's highest `hot`.
+     *
+     * @param  list<int|string>  $ids
+     * @return array{rows: array<int|string, array{hot: ?float, positive: int, exposure: int, last_event_at: ?string}>, max_hot: ?float}
+     */
+    public function rows(string $feed, array $ids): array
+    {
+        $rows = [];
+        foreach (array_chunk($ids, 1000) as $part) {
+            $found = $this->connection()->table('rec_item_scores')
+                ->where('feed', $feed)
+                ->whereIn('item_id', array_map('strval', $part))
+                ->get(['item_id', 'hot', 'positive', 'exposure', 'last_event_at']);
+            foreach ($found as $row) {
+                $rows[Ids::normalize((string) $row->item_id)] = [
+                    'hot' => $row->hot === null ? null : (float) $row->hot,
+                    'positive' => (int) $row->positive,
+                    'exposure' => (int) $row->exposure,
+                    'last_event_at' => $row->last_event_at === null ? null : (string) $row->last_event_at,
+                ];
+            }
+        }
+
+        $max = $this->connection()->table('rec_item_scores')->where('feed', $feed)->max('hot');
+
+        return ['rows' => $rows, 'max_hot' => $max === null ? null : (float) $max];
+    }
+
     public function count(string $feed): int
     {
         return (int) $this->connection()->table('rec_item_scores')->where('feed', $feed)->count();

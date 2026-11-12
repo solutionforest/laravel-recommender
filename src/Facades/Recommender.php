@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static list<int|string> trending(string $feed, array<string, mixed> $attributes = [])
  * @method static void warm(string $feed, \Illuminate\Contracts\Auth\Authenticatable|int|string $user)
  * @method static void forgetCard(string $feed, int|string $id)
+ * @method static array<int|string, array{positive: int, exposure: int, rate: ?float, quality: float, popularity: float, last_event_at: ?string}> stats(string $feed, int|string|\Illuminate\Database\Eloquent\Model|list<int|string|\Illuminate\Database\Eloquent\Model> $items)
  * @method static void forgetModel(\Illuminate\Database\Eloquent\Model $model)
  * @method static void forgetUser(string $feed, \Illuminate\Contracts\Auth\Authenticatable|int|string $user)
  * @method static void forgetTrending(string $feed)

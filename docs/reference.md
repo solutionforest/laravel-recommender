@@ -128,6 +128,23 @@ Recommender::trending('posts');
 Recommender::explain('posts', $userId);    // see "Explain" below
 ```
 
+### How good is an item?
+
+```php
+Recommender::stats('products', [12, 15]);     // or a model: Recommender::stats('products', $product)
+$product->recommendationStats('products');    // with the Recommendable trait
+// [12 => ['positive' => 25, 'exposure' => 40, 'rate' => 0.625, 'quality' => 0.47, 'popularity' => 0.82, 'last_event_at' => '…'], …]
+```
+
+| Key | Meaning |
+|---|---|
+| `positive` / `exposure` | counts of your `positive_events` (likes, joins, purchases, comments…) and `exposure_events` (views) |
+| `rate` | positive ÷ exposure, `null` without exposures |
+| `quality` | Wilson lower bound of the rate (0..1): a *confident* "how good". One like from one view (0.21) ranks below 25 from 40 (0.47) — the same score `QualityBooster` uses |
+| `popularity` | time-decayed activity (`half_life_days`) relative to the hottest item right now (0..1) |
+
+Works for anything you recommend — products, events, posts, or comments if comments are a feed's items. The dashboard's *Trending now* table shows the same quality. Values come from `update-scores`, so they lag by up to one run.
+
 ### Hiding an item (visibility changes)
 
 Lists are filtered when they are built, but **every page re-renders cards**, and an item without a card is skipped (the page is still filled from the next items). So hiding an item takes effect on the next request as long as its cached card is dropped:

@@ -24,4 +24,17 @@ trait Recommendable
         static::saved($forget);
         static::deleted($forget);
     }
+
+    /**
+     * How this item is doing in a feed: positive / exposure counts, rate,
+     * quality (0..1, confidence-adjusted) and popularity (0..1).
+     *
+     * @return array{positive: int, exposure: int, rate: ?float, quality: float, popularity: float, last_event_at: ?string}
+     */
+    public function recommendationStats(string $feed): array
+    {
+        $stats = app(Recommender::class)->stats($feed, $this);
+
+        return reset($stats) ?: ['positive' => 0, 'exposure' => 0, 'rate' => null, 'quality' => 0.0, 'popularity' => 0.0, 'last_event_at' => null];
+    }
 }

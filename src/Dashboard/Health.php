@@ -90,7 +90,7 @@ final class Health
     /**
      * Most popular items right now with their quality counters.
      *
-     * @return list<array{id: int|string, hot: float, positive: int, exposure: int}>
+     * @return list<array{id: int|string, hot: float, positive: int, exposure: int, quality: float}>
      */
     public function trending(FeedDefinition $feed, int $limit = 10): array
     {
@@ -99,7 +99,8 @@ final class Health
 
         $out = [];
         foreach ($hot as $id => $score) {
-            $out[] = ['id' => $id, 'hot' => round($score, 4)] + ($counts[$id] ?? ['positive' => 0, 'exposure' => 0]);
+            $c = $counts[$id] ?? ['positive' => 0, 'exposure' => 0];
+            $out[] = ['id' => $id, 'hot' => round($score, 4)] + $c + ['quality' => round(\SolutionForest\Recommender\Scoring\Math::wilson($c['positive'], $c['exposure']), 4)];
         }
 
         return $out;
