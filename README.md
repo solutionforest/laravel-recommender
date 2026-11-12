@@ -38,7 +38,23 @@ php artisan migrate
 php artisan recommender:make-feed posts
 ```
 
-The wizard creates three classes and registers a feed. **Edit the generated classes to match your schema**, then build scores and neighbours:
+The wizard creates three classes and registers a feed. **Edit the generated classes to match your schema**.
+
+Or skip the classes. If each interaction table has `user_id`, `post_id` and `created_at`, this is the whole feed:
+
+```php
+// config/recommender.php
+'feeds' => [
+    'posts' => [
+        'model' => App\Models\Post::class,
+        'interactions' => ['post_likes' => 'like', 'post_views' => 'view'],
+    ],
+],
+```
+
+Add an optional `scopeRecommendable()` and `toRecommendationCard()` to the model for visibility and the JSON shape. See [`examples/simple`](examples/simple/).
+
+Then build scores and neighbours:
 
 ```bash
 php artisan recommender:update-scores posts
@@ -51,14 +67,11 @@ Expose the feed from a route:
 ```php
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use SolutionForest\Recommender\Facades\Recommender;
 
-Route::get('/posts/recommended', function (Request $request) {
-    $feed = Recommender::page('posts', $request->user()?->id, (int) $request->query('page', 1));
-
-    return response()->json($feed->toPaginatorArray(['path' => $request->url()]));
-});
+Route::get('/posts/recommended', fn (Request $request) => recommendations('posts', $request->user()));
 ```
+
+The response is Laravel's paginator JSON plus `origin` and `has_more`; `?page=` is read automatically. `Recommender::page('posts', $user)` does the same.
 
 **[Follow the first-feed tutorial →](docs/tutorial.md)** for the required table shape, checks, scheduler and troubleshooting. Run the maintenance commands after your app has recorded interactions; the first score run excludes the most recent minute.
 

@@ -63,6 +63,11 @@ Registers `config/recommender.php` → `feeds.{name}`.
 
 3. **Edit the three classes** to match real table/column names (`TABLES`, `ITEM_COLUMN`, published rules, owner column).
 
+   **Simpler alternative (prefer when tables are `user_id` / `{model}_id` / `created_at`):** no classes at all —
+   `'posts' => ['model' => Post::class, 'interactions' => ['post_likes' => 'like', 'post_views' => 'view']]`,
+   plus optional `scopeRecommendable(Builder $q, Context $context)` and `toRecommendationCard()` on the model
+   and `use Recommendable;` for card invalidation. See `examples/simple`.
+
 4. **Cook once**
 
 ```bash
@@ -79,10 +84,11 @@ Historical imports: set `scores_backfill_days` before the first run. For a later
 ```php
 use SolutionForest\Recommender\Facades\Recommender;
 
-$page = Recommender::page('posts', $user?->id, (int) $request->query('page', 1));
+// Returns paginator JSON; reads ?page= automatically. Accepts the user model, an id, or null.
+Route::get('/posts/for-you', fn (Request $request) => recommendations('posts', $request->user()));
 
-return response()->json($page->toPaginatorArray(['path' => $request->url()]));
-// Livewire: $page->toPaginator()
+// Same thing: Recommender::page('posts', $request->user())
+// Livewire: Recommender::page('posts', $user)->toPaginator()
 ```
 
 6. **Schedule** (prod): scores ~every 10 min · neighbours nightly · prune daily. Queue `recommender`. Cache store with locks: **redis** (preferred) or **database** + `cache_locks` (L11–13). Override: `RECOMMENDER_CACHE_STORE`.

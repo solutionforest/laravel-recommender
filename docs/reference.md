@@ -39,6 +39,24 @@ Then sources read `$context->userId` (or `$context->attribute('user')` when they
 
 All classes resolve from the container (constructor injection works).
 
+**Most feeds need none of them.** Give the feed a `model` and an `interactions` table map and the package supplies the interaction reader, filter, cards and diversity groups:
+
+```php
+'posts' => [
+    'model' => \App\Models\Post::class,
+    'interactions' => ['post_likes' => 'like', 'post_views' => 'view'],
+],
+```
+
+| Instead of | Use |
+|---|---|
+| `InteractionSource` | `'interactions' => [table => event]`. Each table has `user_id`, `{model}_id`, `created_at`, `id`. Override with `user_column` / `item_column` / `timestamp_column`, or per table: `'bookmarks' => ['event' => 'like', 'item' => 'bookmarkable_id', 'user' => …, 'timestamp' => …, 'key' => …]`. Neighbours use `history_events` (default `positive_events`). Ids are passed through: integers, UUIDs, ULIDs. |
+| `ItemFilter` | the model's optional `scopeRecommendable(Builder $query, Context $context)` — one `whereKey($ids)` query |
+| `CardTransformer` | the model's optional `toRecommendationCard(): array`, else `toArray()`. The scope runs as a guest here because cards are shared. |
+| `DiversityGroups` | `diversity` keys are read as model attributes: `'diversity' => ['author_id' => 2]` |
+
+Add `use SolutionForest\Recommender\Eloquent\Recommendable;` to the model to drop cached cards on save / delete. A class set in `interactions` / `filter` / `cards` / `groups` always wins.
+
 | Contract | Required | Called by | Must be |
 |---|---|---|---|
 | `InteractionSource` | for jobs | `update-scores`, `build-neighbours`, `CoInteractionSource` | streaming bulk reads |
@@ -64,10 +82,18 @@ Built-ins:
 
 ## Serving a feed
 
+The shortest route returns the page; it renders as paginator JSON and reads `?page=` itself:
+
+```php
+Route::get('/posts/for-you', fn (Request $request) => recommendations('posts', $request->user()));
+```
+
+`recommendations($feed, $user, $page = null, $perPage = null, $attributes = [])` is the same as `Recommender::page()`. Pass the user model (it becomes `$context->attribute('user')`), an id, or `null` for guests.
+
 ```php
 use SolutionForest\Recommender\Facades\Recommender;
 
-$result = Recommender::page('posts', $user?->id, page: $page, perPage: 10, attributes: ['user' => $user]);
+$result = Recommender::page('posts', $user, perPage: 10);
 
 $result->items;     // cards
 $result->ids;
@@ -93,9 +119,10 @@ Rules:
 Other entry points:
 
 ```php
-Recommender::warm('posts', $userId);
+Recommender::warm('posts', $user);          // model or id
 Recommender::forgetCard('posts', $id);
-Recommender::forgetUser('posts', $userId); // also clears the seen-set
+Recommender::forgetModel($post);             // every feed whose 'model' is Post
+Recommender::forgetUser('posts', $user);     // also clears the seen-set
 Recommender::forgetTrending('posts');
 Recommender::trending('posts');
 Recommender::explain('posts', $userId);
@@ -161,7 +188,8 @@ Per feed (defaults, overridable in `feeds.*`):
 | `trending_size` / `trending_ttl` | 200 / 600 | shared list |
 | `card_ttl` | 3600 | card cache |
 | `build_lock_seconds` / `build_lock_wait` | 10 / 2 | per-user build lock |
-| `sources` / `boosters` | – | `class => weight` |
+| `sources` | `CoInteractionSource` 0.6, `TrendingSource` 0.4 | `class => weight` |
+| `boosters` | – | `class => weight` |
 | `exploration_sources` / `exploration_ratio` | – / 0.15 | exploration |
 | `diversity` | – | `group => max per page` |
 | `events` | `view` 1, `like` 4 (any names OK) | trending weights per event type |
@@ -175,7 +203,12 @@ Per feed (defaults, overridable in `feeds.*`):
 | `neighbours_max` / `neighbours_min_co_count` | 30 / 2 | neighbour output |
 | `neighbours_memory_limit_mb` / `neighbours_max_shards` | 512 / 64 | memory guard |
 | `write_chunk` / `delete_chunk` | 500 / 5000 | bulk write sizes |
-| `interactions`, `filter`, `cards`, `groups` | – | your classes |
+| `model` | – | Eloquent model the feed recommends (enables default filter / cards / groups) |
+| `interactions` | – | `[table => event]` map, or an `InteractionSource` class |
+| `item_column` / `user_column` / `timestamp_column` | `{model}_id` / `user_id` / `created_at` | interaction table columns |
+| `history_events` | `positive_events` | events used for neighbours and recent items |
+| `interactions_connection` | default | DB connection of the interaction tables |
+| `filter`, `cards`, `groups` | – | optional classes; override the model defaults |
 
 ## Cache store & locks
 
