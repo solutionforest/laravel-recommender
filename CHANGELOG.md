@@ -7,6 +7,19 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- `recommender:rebuild-scores {feed} --days= --dry-run --force` — recompute one feed's scores over a window; confirmation, never double-counts, an interrupted rebuild blocks `update-scores` for that feed until rerun (shown by `doctor` / dashboard)
+- `explain()` rows include `final` (position after exploration and diversity), `cached` (position in the served list) and `exploration`; shown by `recommender:explain` and the dashboard
+- `Recommender::stats($feed, $items)` and `$model->recommendationStats($feed)`: positive / exposure counts, rate, confidence-adjusted `quality` (Wilson) and relative `popularity` per item; quality column in the dashboard's trending table
+- Docs: [hiding an item](docs/reference.md#hiding-an-item-visibility-changes) recipe, covered by a test
+
+### Changed
+- `recommender:make-feed` registers a **config-only feed** (model + interaction tables) and prints the model methods to add; `--classes` generates the previous `InteractionSource` / `ItemFilter` / `CardTransformer` classes
+- `update-scores` reports a failing feed and continues with the others (exit code 1)
+
+### Fixed
+- Item ids may contain commas: packed cache lists percent-encode `,` and `%` inside ids (plain ids keep the compact format)
+
 ## [0.1.1] — 2026-11-12
 
 Examples now use the 0.1.0 config-only API. No package code changes.

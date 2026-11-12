@@ -121,12 +121,53 @@ Other entry points:
 ```php
 Recommender::warm('posts', $user);          // model or id
 Recommender::forgetCard('posts', $id);
-Recommender::forgetModel($post);             // every feed whose 'model' is Post
+Recommender::forgetModel($post);             // every feed whose 'model' is Post (the Recommendable trait does this on save / delete)
 Recommender::forgetUser('posts', $user);     // also clears the seen-set
 Recommender::forgetTrending('posts');
 Recommender::trending('posts');
-Recommender::explain('posts', $userId);
+Recommender::explain('posts', $userId);    // see "Explain" below
 ```
+
+### How good is an item?
+
+```php
+Recommender::stats('products', [12, 15]);     // or a model: Recommender::stats('products', $product)
+$product->recommendationStats('products');    // with the Recommendable trait
+// [12 => ['positive' => 25, 'exposure' => 40, 'rate' => 0.625, 'quality' => 0.47, 'popularity' => 0.82, 'last_event_at' => '…'], …]
+```
+
+| Key | Meaning |
+|---|---|
+| `positive` / `exposure` | counts of your `positive_events` (likes, joins, purchases, comments…) and `exposure_events` (views) |
+| `rate` | positive ÷ exposure, `null` without exposures |
+| `quality` | Wilson lower bound of the rate (0..1): a *confident* "how good". One like from one view (0.21) ranks below 25 from 40 (0.47) — the same score `QualityBooster` uses |
+| `popularity` | time-decayed activity (`half_life_days`) relative to the hottest item right now (0..1) |
+
+Works for anything you recommend — products, events, posts, or comments if comments are a feed's items. The dashboard's *Trending now* table shows the same quality. Values come from `update-scores`, so they lag by up to one run.
+
+### Hiding an item (visibility changes)
+
+Lists are filtered when they are built, but **every page re-renders cards**, and an item without a card is skipped (the page is still filled from the next items). So hiding an item takes effect on the next request as long as its cached card is dropped:
+
+| Feed setup | When an item is unpublished / deleted |
+|---|---|
+| `model` + `use Recommendable;` | nothing to do — saving or deleting the model forgets its card; the `recommendable` scope then hides it |
+| `cards` class | call `Recommender::forgetCard('posts', $id)` (or `forgetModel($post)`), and make the transformer skip hidden items |
+
+Viewer-specific rules (blocking a user) are applied by the filter at build time; call `Recommender::forgetUser('posts', $viewer)` to apply them at once.
+
+### Explain
+
+`Recommender::explain($feed, $user, $limit)` / `recommender:explain` / *Explain a user* in the dashboard run a fresh build without storing it. Each row:
+
+| Key | Meaning |
+|---|---|
+| `score`, `sources`, `contributions` | blended score, each source's raw score, and each source / booster's share (they add up to `score`) |
+| `final` | position after exploration and diversity in this fresh build (exploration is shuffled, so it can vary) |
+| `cached` | position in the list the user is served right now; `null` = not in it or nothing cached |
+| `exploration` | `true` for exploration-only items that reached the final top `$limit` (score 0) |
+
+Rows are in blended-score order.
 
 ## Background jobs
 
@@ -153,7 +194,9 @@ Run Laravel's scheduler and use a shared lock-capable cache for `onOneServer()` 
 | `update-scores` | events since watermark | `rec_item_scores` | time slices; one txn per slice |
 | `build-neighbours` | capped history | `rec_item_neighbours` | shards; versioned activate |
 | `prune` | scores | deletes | PK chunks |
-| `explain` | sources and boosters | – | fresh pre-exploration / pre-diversity debug breakdown |
+| `explain` | sources and boosters | – | fresh build: score breakdown, final position, cached position |
+| `rebuild-scores {feed}` | events in `--days` window | `rec_item_scores` (one feed) | replays slices; `--dry-run`, confirmation, interruption-safe |
+| `doctor` | config, schema, state | – | checks with fixes; non-zero exit on failure |
 | `status` | tables + state | – | watermark lag, counts, lock support |
 
 ```bash

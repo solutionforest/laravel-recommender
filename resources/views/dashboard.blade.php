@@ -265,7 +265,7 @@
                         <div class="empty">Nothing scored yet.</div>
                     @else
                         <table>
-                            <thead><tr><th>#</th><th>Item</th><th style="width:40%">Hot</th><th class="num">Positive</th><th class="num">Exposure</th><th class="num">Rate</th></tr></thead>
+                            <thead><tr><th>#</th><th>Item</th><th style="width:40%">Hot</th><th class="num">Positive</th><th class="num">Exposure</th><th class="num">Rate</th><th class="num" title="Confidence-adjusted rate (Wilson lower bound)">Quality</th></tr></thead>
                             <tbody>
                             @foreach ($current['trending'] as $i => $row)
                                 <tr>
@@ -275,6 +275,7 @@
                                     <td class="num">{{ number_format($row['positive']) }}</td>
                                     <td class="num">{{ number_format($row['exposure']) }}</td>
                                     <td class="num"><span class="rate">{{ $row['exposure'] > 0 ? round($row['positive'] / $row['exposure'] * 100) : 0 }}%</span></td>
+                                    <td class="num">{{ round($row['quality'] * 100) }}</td>
                                 </tr>
                             @endforeach
                             </tbody>
@@ -329,11 +330,11 @@
                     <div class="empty">No candidates for user {{ $explain['user'] }} — they would see trending.</div>
                 @else
                     <table>
-                        <thead><tr><th>#</th><th>Item</th><th style="width:45%">Score breakdown</th><th class="num">Score</th><th>Sources</th></tr></thead>
+                        <thead><tr><th>#</th><th>Item</th><th style="width:40%">Score breakdown</th><th class="num">Score</th><th class="num" title="Position after exploration and diversity">Final</th><th class="num" title="Position in the list served now">Served</th><th>Sources</th></tr></thead>
                         <tbody>
                         @foreach ($explain['rows'] as $i => $row)
                             <tr>
-                                <td class="rank">{{ $i + 1 }}</td>
+                                <td class="rank">{{ $row['exploration'] ? '—' : $i + 1 }}</td>
                                 <td class="item">{{ $row['id'] }}</td>
                                 <td>
                                     <div class="stack" style="width: {{ max(8, round($row['score'] / $maxScore * 100)) }}%">
@@ -343,7 +344,9 @@
                                     </div>
                                 </td>
                                 <td class="num">{{ $row['score'] }}</td>
-                                <td class="why">@foreach ($row['sources'] as $source => $value){{ $source }} <span class="mono">{{ $value }}</span>@if (! $loop->last) · @endif @endforeach</td>
+                                <td class="num">{{ $row['final'] ?? '—' }}</td>
+                                <td class="num">{{ $row['cached'] ?? '—' }}</td>
+                                <td class="why">@if ($row['exploration'])<span class="rate">exploration</span>@endif @foreach ($row['sources'] as $source => $value){{ $source }} <span class="mono">{{ $value }}</span>@if (! $loop->last) · @endif @endforeach</td>
                             </tr>
                         @endforeach
                         </tbody>
@@ -352,7 +355,7 @@
                         @foreach ($legend as $source => $color)
                             <span><i class="c{{ $color }}"></i>{{ $source }}</span>
                         @endforeach
-                        <span style="margin-left:auto">Fresh build before exploration and diversity; may differ slightly from the cached page.</span>
+                        <span style="margin-left:auto"># = score order · Final = after exploration and diversity (fresh build) · Served = position in the user's cached list</span>
                     </div>
                 @endif
             </div>

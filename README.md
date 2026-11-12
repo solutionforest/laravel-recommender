@@ -38,9 +38,7 @@ php artisan migrate
 php artisan recommender:make-feed posts
 ```
 
-The wizard creates three classes and registers a feed. **Edit the generated classes to match your schema**.
-
-Or skip the classes. If each interaction table has `user_id`, `post_id` and `created_at`, this is the whole feed:
+The wizard asks for your model and interaction tables, registers a config-only feed and prints two optional model methods to paste. (Prefer classes for custom queries? Add `--classes`.) If each interaction table has `user_id`, `post_id` and `created_at`, this is the whole feed it writes:
 
 ```php
 // config/recommender.php

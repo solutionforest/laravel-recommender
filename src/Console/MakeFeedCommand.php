@@ -29,9 +29,10 @@ class MakeFeedCommand extends Command
         {--owner-column= : Owner column on the item model (default author_id / user_id / seller_id by preset)}
         {--published-column= : Published / visibility column on the item (default: published)}
         {--title-column= : Title column for cards (default: title)}
+        {--classes : Generate InteractionSource / ItemFilter / CardTransformer classes instead of a config-only feed}
         {--force : Overwrite existing class files}';
 
-    protected $description = 'Interactively scaffold InteractionSource, ItemFilter, CardTransformer and register a feed (Laravel Prompts; use -n for CI)';
+    protected $description = 'Interactively register a config-only feed (model + interaction tables), or scaffold classes with --classes (Laravel Prompts; use -n for CI)';
 
     public function __construct(private readonly Filesystem $files)
     {
@@ -113,15 +114,24 @@ class MakeFeedCommand extends Command
                     ))],
                     ['item column', $itemColumn],
                     ['owner / published / title', "{$ownerColumn} / {$publishedColumn} / {$titleColumn}"],
-                    ['classes dir', $dir],
+                    $this->option('classes') ? ['classes dir', $dir] : ['setup', 'config only (model + interactions)'],
                 ],
             );
 
-            if (! confirm('Create these files and register the feed?', default: true)) {
+            $question = $this->option('classes') ? 'Create these files and register the feed?' : 'Register the feed in config/recommender.php?';
+            if (! confirm($question, default: true)) {
                 warning('Aborted — no files written.');
 
                 return self::SUCCESS;
             }
+        }
+
+        if (! $this->option('classes')) {
+            $this->ensureConfigPublished();
+            $this->registerFeed($feed, $this->configOnlyBindings($modelFqcn, $tables, $itemColumn), $eventsConfig, $positive);
+            $this->printModelSnippet($feed, $modelFqcn, $ownerColumn, $publishedColumn, $titleColumn);
+
+            return self::SUCCESS;
         }
 
         $classes = [
@@ -167,7 +177,7 @@ class MakeFeedCommand extends Command
         $cards = "{$namespace}\\{$studlySingular}CardTransformer";
 
         $this->ensureConfigPublished();
-        $this->registerFeed($feed, $interaction, $filter, $cards, $eventsConfig, $positive);
+        $this->registerFeed($feed, "            'interactions' => \\{$interaction}::class,\n            'filter' => \\{$filter}::class,\n            'cards' => \\{$cards}::class,", $eventsConfig, $positive);
 
         if ($interactive) {
             outro("Feed [{$feed}] ready — see docs/tutorial.md for cook + schedule steps.");
@@ -178,7 +188,7 @@ class MakeFeedCommand extends Command
 
         $this->line('Next:');
         $this->line("  1. Adjust table/column names in {$dir} if needed");
-        $this->line('  2. Add a route / Livewire that calls Recommender::page()');
+        $this->line("  2. Add a route: Route::get('/{$feed}/recommended', fn (Request \$r) => recommendations('{$feed}', \$r->user()));");
         $this->line("  3. php artisan recommender:update-scores {$feed}");
         $this->line("  4. php artisan recommender:build-neighbours {$feed}");
         $this->line("  5. php artisan recommender:explain {$feed} {userId}");
@@ -451,9 +461,7 @@ class MakeFeedCommand extends Command
      */
     private function registerFeed(
         string $feed,
-        string $interactions,
-        string $filter,
-        string $cards,
+        string $bindings,
         array $events,
         array $positive,
     ): void {
@@ -483,9 +491,7 @@ class MakeFeedCommand extends Command
             'events' => {$eventsExport},
             'positive_events' => {$positiveExport},
             'exposure_events' => ['view'],
-            'interactions' => \\{$interactions}::class,
-            'filter' => \\{$filter}::class,
-            'cards' => \\{$cards}::class,
+{$bindings}
         ],
 PHP;
 
@@ -515,5 +521,55 @@ PHP;
 
         $this->files->put($path, $updated);
         $this->components->info("Registered feed [{$feed}] in config/recommender.php");
+    }
+
+    /**
+     * Feed config lines for a config-only feed.
+     *
+     * @param  array<string, string>  $tables  table => event
+     */
+    private function configOnlyBindings(string $modelFqcn, array $tables, string $itemColumn): string
+    {
+        $lines = ["            'model' => \\{$modelFqcn}::class,", "            'interactions' => ["];
+        foreach ($tables as $table => $event) {
+            $lines[] = "                '{$table}' => '{$event}',";
+        }
+        $lines[] = '            ],';
+
+        // Only when it differs from the default {model}_id.
+        if ($itemColumn !== Str::snake(class_basename($modelFqcn)).'_id') {
+            $lines[] = "            'item_column' => '{$itemColumn}',";
+        }
+
+        return implode("\n", $lines);
+    }
+
+    private function printModelSnippet(string $feed, string $modelFqcn, string $owner, string $published, string $title): void
+    {
+        $model = class_basename($modelFqcn);
+
+        $this->newLine();
+        $this->info("Feed [{$feed}] registered — no classes needed. Add this to {$modelFqcn} (both methods optional):");
+        $this->line(<<<PHP
+
+    use \\SolutionForest\\Recommender\\Eloquent\\Recommendable; // refresh cached cards on save / delete
+
+    public function scopeRecommendable(\\Illuminate\\Database\\Eloquent\\Builder \$query, \\SolutionForest\\Recommender\\Support\\Context \$context): void
+    {
+        \$query->where('{$published}', true)
+            ->when(\$context->userId, fn (\$q, \$id) => \$q->where('{$owner}', '<>', \$id));
+    }
+
+    public function toRecommendationCard(): array
+    {
+        return ['id' => \$this->id, 'title' => \$this->{$title}];
+    }
+
+PHP);
+        $this->line('Next:');
+        $this->line("  1. php artisan recommender:doctor {$feed}       # checks tables / columns");
+        $this->line("  2. Route::get('/{$feed}/recommended', fn (Request \$r) => recommendations('{$feed}', \$r->user()));");
+        $this->line("  3. php artisan recommender:update-scores {$feed} && php artisan recommender:build-neighbours {$feed}");
+        $this->line("  4. Open /recommender to watch it  ({$model} items, scheduled jobs: docs/tutorial.md)");
     }
 }

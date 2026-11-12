@@ -17,9 +17,18 @@ class UpdateScoresCommand extends Command
 
     public function handle(Recommender $recommender, ScoreUpdater $updater): int
     {
+        $failed = false;
         foreach ($this->feedNames($recommender) as $name) {
             $started = microtime(true);
-            $result = $updater->run($recommender->feed($name));
+            try {
+                $result = $updater->run($recommender->feed($name));
+            } catch (\RuntimeException $e) {
+                // One feed (e.g. an unfinished rebuild) must not stop the others.
+                $this->error("[{$name}] {$e->getMessage()}");
+                $failed = true;
+
+                continue;
+            }
             $recommender->forgetTrending($name);
             $this->info(sprintf(
                 '[%s] %d events -> %d row upserts (%s .. %s) in %.2fs',
@@ -27,6 +36,6 @@ class UpdateScoresCommand extends Command
             ));
         }
 
-        return self::SUCCESS;
+        return $failed ? self::FAILURE : self::SUCCESS;
     }
 }

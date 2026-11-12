@@ -77,7 +77,7 @@ php artisan recommender:explain {feed} {userId}
 php artisan recommender:status
 ```
 
-Historical imports: set `scores_backfill_days` before the first run. For a later rebuild, follow the feed-scoped procedure in `docs/operations.md`; do not replay over existing scores.
+Historical imports: set `scores_backfill_days` before the first run. For a later rebuild run `php artisan recommender:rebuild-scores {feed} --days=… --dry-run`, then without `--dry-run`; never replay over existing scores by hand.
 
 5. **Serve**
 

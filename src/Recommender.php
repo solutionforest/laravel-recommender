@@ -33,6 +33,7 @@ class Recommender
         private readonly Container $container,
         private readonly FeedCache $cache,
         private readonly Bindings $bindings,
+        private readonly Storage\ScoreStore $scores,
         private readonly Blender $blender = new Blender(),
         private readonly Explorer $explorer = new Explorer(),
         private readonly Diversifier $diversifier = new Diversifier(),
@@ -235,6 +236,46 @@ class Recommender
     }
 
     /**
+     * How an item is doing, from the scores update-scores keeps:
+     *
+     *  - positive / exposure: e.g. likes / views (per `positive_events` / `exposure_events`)
+     *  - rate: positive ÷ exposure (null without exposures)
+     *  - quality: Wilson lower bound of that rate, 0..1 — a confident "how
+     *    good", so 1 like out of 1 view does not beat 50 out of 100
+     *  - popularity: time-decayed activity relative to the hottest item now, 0..1
+     *
+     * Items without any scored interaction are returned with zeros.
+     *
+     * @param  int|string|Model|list<int|string|Model>  $items
+     * @return array<int|string, array{positive: int, exposure: int, rate: ?float, quality: float, popularity: float, last_event_at: ?string}>
+     */
+    public function stats(string $feedName, int|string|Model|array $items): array
+    {
+        $feed = $this->feed($feedName);
+        $ids = array_map(
+            fn ($item) => $item instanceof Model ? $item->getKey() : $item,
+            is_array($items) ? $items : [$items],
+        );
+        $ids = Ids::normalizeAll(array_filter($ids, fn ($id) => is_int($id) || is_string($id)));
+
+        $found = $this->scores->rows($feed->name, $ids);
+        $out = [];
+        foreach ($ids as $id) {
+            $row = $found['rows'][$id] ?? ['hot' => null, 'positive' => 0, 'exposure' => 0, 'last_event_at' => null];
+            $out[$id] = [
+                'positive' => $row['positive'],
+                'exposure' => $row['exposure'],
+                'rate' => $row['exposure'] > 0 ? round($row['positive'] / $row['exposure'], 4) : null,
+                'quality' => round(Scoring\Math::wilson($row['positive'], $row['exposure']), 4),
+                'popularity' => $row['hot'] === null || $found['max_hot'] === null ? 0.0 : round(exp($row['hot'] - $found['max_hot']), 4),
+                'last_event_at' => $row['last_event_at'],
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
      * Drop the cached card of $model in every feed whose `model` is its class
      * (used by the Recommendable trait on save / delete).
      */
@@ -265,10 +306,17 @@ class Recommender
      * Explain a user's ranking: per-source contributions of the top items.
      * For debugging / admin only — runs a full build without storing it.
      *
+     * Rows are in blended-score order (before exploration and diversity).
      * `sources` are each source's raw score; `contributions` are the parts of
      * `score` (weight × normalised value), so they sum to `score`.
+     * `final` is the 1-based position after exploration and diversity in this
+     * fresh build (exploration is shuffled, so it can vary between runs);
+     * `cached` is the position in the list the user is served right now
+     * (null when not in it, or when nothing is cached). Exploration-only
+     * items that reach the final top `$limit` are appended with
+     * `exploration: true` and a zero score.
      *
-     * @return list<array{id: int|string, score: float, sources: array<string, float>, contributions: array<string, float>}>
+     * @return list<array{id: int|string, score: float, sources: array<string, float>, contributions: array<string, float>, final: ?int, cached: ?int, exploration: bool}>
      */
     public function explain(string $feedName, Authenticatable|int|string|null $user, int $limit = 20): array
     {
@@ -276,6 +324,12 @@ class Recommender
         $feed = $this->feed($feedName);
         $context = new Context($feed, $userId, [], [], CarbonImmutable::now());
         $parts = $this->collect($context, $feed->int('source_limit', 200), $userId === null);
+
+        $final = array_flip(array_map('strval', $this->order($context, $parts, $feed->int('feed_size', 200), $userId === null)));
+        $cachedList = $userId === null
+            ? $this->cache->peekTrending($feed)
+            : ($this->cache->list($feed, $userId)['ids'] ?? null);
+        $cached = $cachedList === null ? [] : array_flip(array_map('strval', $cachedList));
 
         $max = [];
         foreach ($parts['sources'] as $class => $scores) {
@@ -303,7 +357,31 @@ class Recommender
                     }
                 }
             }
-            $out[] = ['id' => $id, 'score' => round($score, 4), 'sources' => $sources, 'contributions' => $contributions];
+            $out[] = [
+                'id' => $id,
+                'score' => round($score, 4),
+                'sources' => $sources,
+                'contributions' => $contributions,
+                'final' => self::position($final, $id),
+                'cached' => self::position($cached, $id),
+                'exploration' => false,
+            ];
+        }
+
+        // Exploration-only items that made it into the final top $limit.
+        $listed = array_flip(array_map(fn ($row) => (string) $row['id'], $out));
+        foreach (array_slice(array_keys($final), 0, $limit) as $id) {
+            if (! isset($listed[(string) $id]) && ! isset($parts['blended'][$id])) {
+                $out[] = [
+                    'id' => Ids::normalize((string) $id),
+                    'score' => 0.0,
+                    'sources' => [],
+                    'contributions' => [],
+                    'final' => self::position($final, $id),
+                    'cached' => self::position($cached, $id),
+                    'exploration' => true,
+                ];
+            }
         }
 
         return $out;
@@ -394,9 +472,20 @@ class Recommender
      */
     private function rank(Context $context, int $size, bool $trendingOnly = false): array
     {
-        $feed = $context->feed;
-        $parts = $this->collect($context, $feed->int('source_limit', 200), $trendingOnly);
+        $parts = $this->collect($context, $context->feed->int('source_limit', 200), $trendingOnly);
 
+        return $this->order($context, $parts, $size, $trendingOnly);
+    }
+
+    /**
+     * Blended order → exploration interleave → diversity.
+     *
+     * @param  array{blended: array<int|string, float>, exploration: list<int|string>}  $parts
+     * @return list<int|string>
+     */
+    private function order(Context $context, array $parts, int $size, bool $trendingOnly): array
+    {
+        $feed = $context->feed;
         $ranked = array_keys($parts['blended']);
 
         $explore = [];
@@ -576,6 +665,14 @@ class Recommender
         }
 
         return [$user, $attributes];
+    }
+
+    /**
+     * @param  array<string, int>  $map  id => 0-based index
+     */
+    private static function position(array $map, int|string $id): ?int
+    {
+        return isset($map[(string) $id]) ? $map[(string) $id] + 1 : null;
     }
 
     private function report(FeedDefinition $feed, string $stage, Throwable $e): void

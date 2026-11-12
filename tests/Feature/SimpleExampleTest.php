@@ -111,3 +111,46 @@ it('refreshes a cached card when the model is saved', function () {
 it('passes recommender:doctor with the config-only feed', function () {
     $this->artisan('recommender:doctor', ['feed' => 'articles'])->assertSuccessful();
 });
+
+it('drops an item from already-cached lists as soon as it is unpublished', function () {
+    $user = new GenericUser(['id' => 1]);
+    config(['recommender.feeds.articles.page_size' => 1]);
+    $this->app->forgetInstance(\SolutionForest\Recommender\Recommender::class);
+
+    expect(Recommender::page('articles', $user, 1)->ids)->toBe([2]); // list + card for 2 now cached
+    Recommender::forgetUser('articles', $user);                       // forget seen: 2 would be served again
+    Recommender::build('articles', $user);                            // cached list still starts with 2
+
+    // Unpublish while the list (and the card) are cached. The Recommendable
+    // trait forgets the card, so the next render re-checks the scope.
+    Article::find(2)->update(['published' => false]);
+
+    $ids = collect(range(1, 5))->flatMap(fn ($p) => Recommender::page('articles', $user, $p)->ids);
+    expect($ids)->not->toContain(2)
+        ->and(Recommender::page('articles', null)->ids)->not->toContain(2); // trending too
+});
+
+it('reports how good an item is, confidence-adjusted', function () {
+    // Article 1: 25 likes from 40 views. Article 9: 1 like from 1 view.
+    Article::create(['id' => 9, 'author_id' => 900, 'title' => 'Lucky']);
+    $at = now()->subHours(2);
+    $views = [['user_id' => 50, 'article_id' => 9, 'created_at' => $at]];
+    $likes = [['user_id' => 50, 'article_id' => 9, 'created_at' => $at]];
+    foreach (range(1, 40) as $u) {
+        $views[] = ['user_id' => 100 + $u, 'article_id' => 1, 'created_at' => $at];
+        if ($u <= 15) {
+            $likes[] = ['user_id' => 100 + $u, 'article_id' => 1, 'created_at' => $at]; // + 10 from beforeEach
+        }
+    }
+    DB::table('article_views')->insert($views);
+    DB::table('article_likes')->insert($likes);
+    $this->artisan('recommender:rebuild-scores', ['feed' => 'articles', '--days' => 7, '--force' => true])->assertSuccessful();
+
+    $stats = Recommender::stats('articles', [1, 9, 404]);
+
+    expect($stats[1])->toMatchArray(['positive' => 25, 'exposure' => 40, 'rate' => 0.625])
+        ->and($stats[9])->toMatchArray(['positive' => 1, 'exposure' => 1, 'rate' => 1.0])
+        ->and($stats[1]['quality'])->toBeGreaterThan($stats[9]['quality'])   // 25/40 beats one lucky 1/1
+        ->and($stats[404])->toMatchArray(['positive' => 0, 'exposure' => 0, 'rate' => null, 'quality' => 0.0, 'popularity' => 0.0])
+        ->and(Article::find(1)->recommendationStats('articles')['popularity'])->toBe(1.0);    // the hottest article
+});

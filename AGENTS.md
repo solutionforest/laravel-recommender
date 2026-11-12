@@ -43,7 +43,7 @@ Do **not** invent an external ML service for this package’s job. Prefer packag
 - `sources` → blend pool · `boosters` → re-rank in-pool · `exploration_ratio` → reserved explore slots  
 - After changes: `Recommender::forgetUser` / `forgetTrending`
 
-Historical imports: set `scores_backfill_days` before the first score run. For an existing feed, follow the feed-scoped rebuild procedure in `docs/operations.md`.
+Historical imports: set `scores_backfill_days` before the first score run. For an existing feed, run `recommender:rebuild-scores {feed} --days=…` (dry run first).
 
 ---
 

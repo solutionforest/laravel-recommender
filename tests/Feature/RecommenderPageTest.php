@@ -207,3 +207,40 @@ it('explains each source share so contributions add up to the score', function (
         expect(round(array_sum($row['contributions']), 3))->toBe(round($row['score'], 3));
     }
 });
+
+it('explains the final order after diversity and where items sit in the cached list', function () {
+    StaticSource::$scores = [11 => 9.0, 12 => 8.0, 13 => 7.0, 21 => 6.0];
+    $this->configureFeed(['diversity' => ['shop' => 1]]); // page_size 3, shop = id div 10
+
+    $before = collect(Recommender::explain('reviews', 7))->keyBy('id');
+    expect($before->pluck('final', 'id')->all())->toBe([11 => 1, 12 => 3, 13 => 4, 21 => 2])
+        ->and($before->pluck('cached')->filter()->all())->toBe([]); // nothing served yet
+
+    Recommender::page('reviews', 7);
+    $after = collect(Recommender::explain('reviews', 7))->keyBy('id');
+
+    expect($after->pluck('cached', 'id')->all())->toBe([11 => 1, 12 => 3, 13 => 4, 21 => 2]);
+});
+
+it('lists exploration-only items that reach the final order', function () {
+    StaticSource::$scores = [11 => 9.0, 21 => 8.0, 31 => 7.0];
+    seedTrending([90]);
+    $this->configureFeed([
+        'exploration_sources' => [\SolutionForest\Recommender\Sources\TrendingSource::class],
+        'exploration_ratio' => 0.5,
+    ]);
+
+    $explored = collect(Recommender::explain('reviews', 7))->firstWhere('exploration', true);
+
+    expect($explored)->not->toBeNull()
+        ->and($explored['id'])->toBe(90)
+        ->and($explored['final'])->toBeInt()
+        ->and($explored['score'])->toBe(0.0);
+});
+
+it('packs ids that contain commas or percent signs without corrupting them', function () {
+    $ids = ['sku,red', 'a%2Cb', '100%', 42, 'plain'];
+
+    expect(FeedCache::unpack(FeedCache::pack($ids)))->toBe($ids)
+        ->and(FeedCache::pack([1, 2, 'abc']))->toBe('1,2,abc'); // plain ids keep the compact format
+});

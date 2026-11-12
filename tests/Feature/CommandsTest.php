@@ -39,6 +39,7 @@ it('scaffolds a basic feed with recommender:make-feed', function () {
 
     $this->artisan('recommender:make-feed', [
         'name' => 'posts',
+        '--classes' => true,
         '--force' => true,
         '--no-interaction' => true,
     ])
@@ -72,6 +73,7 @@ it('scaffolds a products preset with a third purchase event', function () {
         'name' => 'products',
         '--preset' => 'products',
         '--force' => true,
+        '--classes' => true,
         '--no-interaction' => true,
     ])->assertSuccessful();
 
@@ -110,7 +112,29 @@ it('walks the interactive scaffold wizard', function () {
         ->expectsQuestion('Published column on item', 'published')
         ->expectsQuestion('Title column on item', 'title')
         ->expectsConfirmation('Add a third interaction type (purchase / join / share / …)?', 'no')
-        ->expectsConfirmation('Create these files and register the feed?', 'yes')
+        ->expectsConfirmation('Register the feed in config/recommender.php?', 'yes')
         ->expectsOutputToContain('Registered feed [posts]')
+        ->expectsOutputToContain('no classes needed')
         ->assertSuccessful();
+});
+
+it('registers a config-only feed by default as valid config', function () {
+    $files = app(\Illuminate\Filesystem\Filesystem::class);
+    $files->deleteDirectory(app_path('Recommendation/Products'));
+    $files->delete(config_path('recommender.php'));
+
+    $this->artisan('recommender:make-feed', ['name' => 'products', '--preset' => 'products', '--no-interaction' => true])
+        ->expectsOutputToContain('Registered feed [products]')
+        ->expectsOutputToContain('scopeRecommendable')
+        ->assertSuccessful();
+
+    expect($files->isDirectory(app_path('Recommendation/Products')))->toBeFalse(); // no classes
+
+    $config = require config_path('recommender.php');
+    $feed = $config['feeds']['products'];
+    expect($feed['model'])->toBe('App\\Models\\Product')
+        ->and($feed['interactions'])->toBe(['product_likes' => 'like', 'product_views' => 'view', 'product_purchases' => 'purchase'])
+        ->and($feed)->not->toHaveKey('item_column') // product_id is the default for Product
+        ->and($feed)->not->toHaveKey('cards')
+        ->and($feed['positive_events'])->toBe(['like', 'purchase']);
 });
