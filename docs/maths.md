@@ -2,7 +2,7 @@
 
 This page is the **formulas** behind recommendation — not a separate product feature.
 
-Plain-language pipeline first: [README → How it fits together](../README.md#how-it-fits-together) and [How it works](how-it-works.md).
+Plain-language pipeline first: [README → How we recommend](../README.md#how-we-recommend) and [How it works](how-it-works.md).
 
 Not a black-box neural ranker. Classic, explainable ideas you can show with `recommender:explain`.
 
