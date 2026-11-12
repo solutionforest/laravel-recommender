@@ -167,6 +167,22 @@ With `?cursor=` the response uses Laravel's cursor-paginator shape. `FeedPage::n
 
 A cursor means **"the next page of this feed for this user"**, not a frozen snapshot: personal paging follows the user's seen-set, which all their devices share, so items never repeat across devices. Cursors carry the feed name; a cursor from another feed is ignored (page 1).
 
+### Recording interactions
+
+The package reads your interaction tables; it can also write a row for you, using the same table and column mapping, so the knowledge lives in one place:
+
+```php
+$post->recordInteraction($user, 'view');                  // a plain insert: every view is kept
+$post->recordInteraction($user, 'like', once: true);      // idempotent: false if already liked
+Recommender::recordInteraction('posts', $post, $user, 'like', once: true);   // without the trait
+```
+
+- It is a **plain insert**. A missing column, a required column the package does not know about, or a foreign-key error throws; nothing is swallowed.
+- `once: true` is for like-style tables with a **unique index on (user, item)**; it returns `false` instead of adding a second row. **Do not put that index on view tables**: repeated views are real signals.
+- An event that maps to two tables throws; pass `table:` to choose. A feed that reads interactions from a class must record them itself.
+- The timestamp column is set by the package (scores decay by it). It fires no events and dispatches no jobs; scores update on the schedule.
+- **Unliking is your own delete.** Scores are decayed counters and do not go back down.
+
 ### How good is an item?
 
 ```php

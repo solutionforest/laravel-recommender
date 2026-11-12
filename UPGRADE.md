@@ -1,5 +1,9 @@
 # Upgrade guide
 
+## From 0.7.0 to 0.7.1
+
+Nothing to change. `recordInteraction()` is optional and additive.
+
 ## From 0.6.x to 0.7.0
 
 - **Signed-in JSON changed.** `recommendations()` / returning a `FeedPage` now gives Laravel's simple-paginator shape for a signed-in user: no `total`, `last_page` or numbered `links`. Use `next_page_url` / `next_cursor` (and `has_more`) to load more. Guests are unchanged. If a frontend still needs `total` / `last_page`, return `$page->toPaginator()->toArray()` yourself.

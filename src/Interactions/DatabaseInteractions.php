@@ -5,6 +5,7 @@ namespace SolutionForest\Recommender\Interactions;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Database\Connection;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -67,6 +68,60 @@ final class DatabaseInteractions implements InteractionSource
     public function tables(): array
     {
         return $this->tables;
+    }
+
+    /**
+     * Write one interaction using the feed's own table and column mapping.
+     *
+     * A plain insert: a missing column, a foreign-key error or any other
+     * database problem throws (nothing is swallowed), and repeatable events
+     * such as views keep every row. With `$once` the event is idempotent —
+     * meant for like-style tables with a unique index on (user, item): it
+     * returns false when the row already exists instead of adding another.
+     * The timestamp column is always set here, because scores decay by it.
+     *
+     * @param  ?string  $table  needed only when two tables share the event name
+     * @return bool true when a row was added
+     */
+    public function record(int|string $userId, int|string $itemId, string $event, bool $once = false, ?string $table = null, ?DateTimeInterface $at = null): bool
+    {
+        $matches = array_filter(
+            $this->tables,
+            fn (array $t, string $name) => $t['event'] === $event && ($table === null || $name === $table),
+            ARRAY_FILTER_USE_BOTH,
+        );
+
+        if ($matches === []) {
+            $known = implode(', ', array_unique(array_column($this->tables, 'event')));
+            throw new InvalidArgumentException("Feed [{$this->feed->name}] has no interactions table for event [{$event}]".($table !== null ? " named [{$table}]" : '').". Configured events: {$known}.");
+        }
+        if (count($matches) > 1) {
+            throw new InvalidArgumentException("Feed [{$this->feed->name}] has several tables for event [{$event}] (".implode(', ', array_keys($matches)).'); pass the table name to choose one.');
+        }
+
+        $name = (string) array_key_first($matches);
+        $t = $matches[$name];
+        $row = [
+            $t['user'] => $userId,
+            $t['item'] => $itemId,
+            $t['timestamp'] => $at ?? CarbonImmutable::now(),
+        ];
+
+        if ($once && $this->query($name)->where($t['user'], $userId)->where($t['item'], $itemId)->exists()) {
+            return false;
+        }
+
+        try {
+            $this->query($name)->insert($row);
+        } catch (UniqueConstraintViolationException) {
+            if ($once) {
+                return false; // a concurrent request recorded it first
+            }
+
+            throw new InvalidArgumentException("Table [{$name}] has a unique index that rejected this row; pass once: true if the event should be idempotent.");
+        }
+
+        return true;
     }
 
     public function between(DateTimeInterface $from, DateTimeInterface $to): iterable

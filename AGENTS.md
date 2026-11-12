@@ -45,6 +45,7 @@ Do **not** invent an external ML service for this package’s job. Prefer packag
 - `sources` → blend pool · `boosters` → re-rank in-pool · `exploration_ratio` → reserved explore slots  
 - `list_vary_by` (e.g. `['tenant']`) → required when an attribute passed via `attributes:` changes which items appear: lists, trending and `warm()` are kept per value (the `recommendable` scope must still enforce tenancy)
 - Signed-in feeds are sequential (a refresh advances the feed; JSON is the simple paginator, no `total`) → follow `next_cursor`
+- `$model->recordInteraction($user, 'like', once: true)` → writes the row with the feed's table/columns (plain insert; `once` only for unique (user, item) like tables, never views; ambiguous event → pass `table:`)
 - `tail` (default on) → newest items after ranked + trending · `impressions` (opt-in) → quality = positive ÷ shown  
 - After changes: `Recommender::forgetUser` / `forgetTrending`
 

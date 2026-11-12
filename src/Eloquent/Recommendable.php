@@ -46,6 +46,25 @@ trait Recommendable
     }
 
     /**
+     * Record that $user did $event with this item, in the feed's own table:
+     * `$post->recordInteraction($user, 'like', once: true)`. See
+     * {@see Recommender::recordInteraction()}.
+     *
+     * @return bool true when a row was added
+     */
+    public function recordInteraction(
+        \Illuminate\Contracts\Auth\Authenticatable|int|string $user,
+        string $event,
+        bool $once = false,
+        ?string $feed = null,
+        ?string $table = null,
+    ): bool {
+        $recommender = app(Recommender::class);
+
+        return $recommender->recordInteraction($feed ?? $recommender->feedFor($this), $this, $user, $event, $once, $table);
+    }
+
+    /**
      * How this item is doing in a feed: positive / exposure counts, rate,
      * quality (0..1, confidence-adjusted) and popularity (0..1).
      *
