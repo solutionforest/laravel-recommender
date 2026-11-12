@@ -1,0 +1,25 @@
+# Changelog
+
+All notable changes to this package are documented here.
+
+Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+This project uses [Semantic Versioning](https://semver.org/).
+
+## [Unreleased]
+
+## [0.0.1] — 2026-11-12
+
+### Added
+- Self-hosted recommendation feeds for Laravel 10–13 (PHP 8.1+)
+- `Recommender::page()` with seen-set paging and guest trending fallback
+- `FeedPage::toPaginator()` / `toPaginatorArray()` for Laravel paginator JSON
+- Jobs / commands: `update-scores`, `build-neighbours`, `prune`, `explain`, `status`
+- Built-in `CoInteractionSource`, `TrendingSource`, `QualityBooster`
+- Blog example under `examples/blog`
+- Docs: getting started, how we recommend, how we score, tuning, ops
+
+### Note
+- Prefer Composer constraint `^0.0.1`. An older `v0.1.0` git tag is obsolete — do not require it.
+
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.1...HEAD
+[0.0.1]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.1

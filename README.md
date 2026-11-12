@@ -81,6 +81,8 @@ php artisan vendor:publish --tag=recommender-config   # optional
 
 On [Packagist](https://packagist.org/packages/solutionforest/laravel-recommender). Prefer **`^0.0.1`** (current). An older `v0.1.0` tag also exists — do not use it.
 
+Changelog: [CHANGELOG.md](CHANGELOG.md) · Releases: [GitHub Releases](https://github.com/solutionforest/laravel-recommender/releases)
+
 ---
 
 ## 60-second shape
