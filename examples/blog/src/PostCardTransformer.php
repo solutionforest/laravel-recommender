@@ -7,6 +7,10 @@ use SolutionForest\Recommender\Contracts\CardTransformer;
 /**
  * Step 3 — what the API returns per item. Cached per post and shared by all
  * users, so nothing viewer-specific in here.
+ *
+ * Lab lesson (media): if your cover URL can be a video (`.mp4`), do **not** put
+ * it in `<img src>`. Map to a poster/thumb URL here (e.g. Azure `video_thumb/{stem}.jpg`)
+ * and expose `cover.is_video` / `cover.video_url` for the client.
  */
 class PostCardTransformer implements CardTransformer
 {
