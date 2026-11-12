@@ -7,6 +7,11 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.0.4] — 2026-11-12
+
+### Added
+- `php artisan recommender:make-feed {name}` — scaffold InteractionSource, ItemFilter, CardTransformer + register feed config
+
 ## [0.0.3] — 2026-11-12
 
 ### Added
@@ -30,7 +35,8 @@ This project uses [Semantic Versioning](https://semver.org/).
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.3...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.4...HEAD
+[0.0.4]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.4
 [0.0.3]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.3
 [0.0.2]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.2
 [0.0.1]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.1

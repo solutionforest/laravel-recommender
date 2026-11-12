@@ -1,0 +1,24 @@
+<?php
+
+namespace {{ namespace }};
+
+use {{ model_fqcn }};
+use SolutionForest\Recommender\Contracts\ItemFilter;
+use SolutionForest\Recommender\Support\Context;
+use SolutionForest\Recommender\Support\Ids;
+
+/**
+ * One query for all candidate ids. Adjust published / ownership rules for your app.
+ */
+class {{ class }} implements ItemFilter
+{
+    public function allowed(Context $context, array $ids): array
+    {
+        return Ids::normalizeAll({{ model }}::query()
+            ->whereIn('id', $ids)
+            ->where('{{ published_column }}', true)
+            ->when($context->userId, fn ($q) => $q->where('{{ owner_column }}', '<>', $context->userId))
+            ->pluck('id')
+            ->all());
+    }
+}

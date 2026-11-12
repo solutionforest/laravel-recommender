@@ -152,14 +152,16 @@ Then `recommender:explain posts {userId}` to verify. More recipes: [Tuning](docs
 ## Install
 
 ```bash
-composer require solutionforest/laravel-recommender:^0.0.3
+composer require solutionforest/laravel-recommender:^0.0.4
 php artisan migrate
-php artisan vendor:publish --tag=recommender-config
+php artisan recommender:make-feed posts
 ```
 
-Publish is required so you can define at least one feed in `config/recommender.php` (package defaults ship with `'feeds' => []`). Then wire your `interactions` / `filter` / `cards` classes — copy [`examples/blog`](examples/blog) to start.
+`recommender:make-feed` publishes `config/recommender.php` if needed, scaffolds the three classes under `app/Recommendation/...`, and registers the feed. Adjust table/column names, then run scores + neighbours.
 
-On [Packagist](https://packagist.org/packages/solutionforest/laravel-recommender). Current: **`^0.0.3`** (PHP 8.3+ / Laravel 11–13).
+Or copy [`examples/blog`](examples/blog) by hand.
+
+On [Packagist](https://packagist.org/packages/solutionforest/laravel-recommender). Current: **`^0.0.4`** (PHP 8.3+ / Laravel 11–13).
 
 Changelog: [CHANGELOG.md](CHANGELOG.md) · Releases: [GitHub Releases](https://github.com/solutionforest/laravel-recommender/releases)
 

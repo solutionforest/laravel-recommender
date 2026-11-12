@@ -33,7 +33,7 @@ Nobody re-cooks the whole kitchen on every scroll.
 
 ## What you must write (only 3 classes)
 
-Think of three homework sheets. Copy from [`examples/blog`](../examples/blog) and change table names.
+Think of three homework sheets. Fastest: `php artisan recommender:make-feed posts` (or copy [`examples/blog`](../examples/blog)).
 
 ### ① InteractionSource — “where are the likes?”
 
@@ -63,22 +63,25 @@ That is the whole integration. Everything else is config + schedule.
 ### Step 0 — Install
 
 ```bash
-composer require solutionforest/laravel-recommender:^0.0.3
+composer require solutionforest/laravel-recommender:^0.0.4
 php artisan migrate
-php artisan vendor:publish --tag=recommender-config
+php artisan recommender:make-feed posts
 ```
 
 You should now have three tables: `rec_item_scores`, `rec_item_neighbours`, `rec_state`.  
 Those are the package’s notebooks. Your likes table stays yours.
 
-**Publish is required:** edit `config/recommender.php` and add a feed (defaults ship with empty `feeds`). Wire `interactions` / `filter` / `cards` (copy [`examples/blog`](../examples/blog)).
+`make-feed` also publishes `config/recommender.php` (if missing) and registers the feed.
 
-### Step 1 — Copy the blog example
+### Step 1 — Adjust the generated classes
 
-1. Copy `examples/blog/src/*` → e.g. `app/Recommendation/Posts/`
-2. Fix namespaces
-3. Point classes at **your** `posts` / likes / views tables
-4. Merge `examples/blog/config/recommender.php` into your `config/recommender.php`
+Generated under `app/Recommendation/Posts/` (for feed `posts`):
+
+1. `PostInteractionSource` — set likes/views table names  
+2. `VisiblePostFilter` — published / not-mine rules  
+3. `PostCardTransformer` — card JSON fields  
+
+Or copy [`examples/blog`](../examples/blog) by hand if you prefer.
 
 ### Step 2 — Serve one route
 

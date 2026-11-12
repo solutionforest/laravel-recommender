@@ -28,6 +28,7 @@ class RecommenderServiceProvider extends ServiceProvider
             Console\ExplainCommand::class,
             Console\PruneCommand::class,
             Console\StatusCommand::class,
+            Console\MakeFeedCommand::class,
         ]);
 
         if ($this->app->runningInConsole()) {

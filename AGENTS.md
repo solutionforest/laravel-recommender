@@ -22,9 +22,10 @@ Human docs live under [`docs/`](docs/). Prefer linking there over pasting walls 
 ## First-time setup (do not skip)
 
 1. Migrate.
-2. `recommender:update-scores {feed}` then `recommender:build-neighbours {feed}`.
-3. `recommender:explain {feed} {activeUserId}` — personal sources should appear.
-4. Schedule scores / neighbours / prune; Redis + `recommender` queue in prod.
+2. `recommender:make-feed {name}` (scaffolds 3 classes + config) — then adjust table/column names.
+3. `recommender:update-scores {feed}` then `recommender:build-neighbours {feed}`.
+4. `recommender:explain {feed} {activeUserId}` — personal sources should appear.
+5. Schedule scores / neighbours / prune; Redis + `recommender` queue in prod.
 
 Historical imports: widen `scores_backfill_days` or clear watermark + scores, then rebuild neighbours.
 

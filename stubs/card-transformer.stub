@@ -1,0 +1,27 @@
+<?php
+
+namespace {{ namespace }};
+
+use {{ model_fqcn }};
+use SolutionForest\Recommender\Contracts\CardTransformer;
+
+/**
+ * Shared card payload (cached). Keep viewer-specific fields out of here.
+ */
+class {{ class }} implements CardTransformer
+{
+    public function cards(array $ids): array
+    {
+        return {{ model }}::query()
+            ->whereIn('id', $ids)
+            ->where('{{ published_column }}', true)
+            ->get()
+            ->mapWithKeys(fn ({{ model }} $item) => [$item->id => [
+                'id' => $item->id,
+                'title' => $item->{{ title_column }},
+                '{{ owner_column }}' => $item->{{ owner_column }},
+                'published_at' => $item->created_at?->toIso8601String(),
+            ]])
+            ->all();
+    }
+}

@@ -31,3 +31,30 @@ it('queues a unique warm-up build', function () {
 
     Bus::assertDispatched(BuildFeed::class, fn (BuildFeed $job) => $job->uniqueId() === 'reviews:7' && $job->queue === 'recommender');
 });
+
+it('scaffolds a basic feed with recommender:make-feed', function () {
+    $files = app(\Illuminate\Filesystem\Filesystem::class);
+    $files->deleteDirectory(app_path('Recommendation/Posts'));
+    $files->delete(config_path('recommender.php'));
+
+    $this->artisan('recommender:make-feed', ['name' => 'posts', '--force' => true])
+        ->expectsOutputToContain('Created:')
+        ->expectsOutputToContain('Registered feed [posts]')
+        ->assertSuccessful();
+
+    expect(file_exists(app_path('Recommendation/Posts/PostInteractionSource.php')))->toBeTrue()
+        ->and(file_exists(app_path('Recommendation/Posts/VisiblePostFilter.php')))->toBeTrue()
+        ->and(file_exists(app_path('Recommendation/Posts/PostCardTransformer.php')))->toBeTrue()
+        ->and(file_exists(config_path('recommender.php')))->toBeTrue();
+
+    $config = file_get_contents(config_path('recommender.php'));
+    expect($config)->toContain("'posts'")
+        ->and($config)->toContain('PostInteractionSource::class')
+        ->and($config)->toContain('VisiblePostFilter::class')
+        ->and($config)->toContain('PostCardTransformer::class');
+
+    $interaction = file_get_contents(app_path('Recommendation/Posts/PostInteractionSource.php'));
+    expect($interaction)->toContain('post_likes')
+        ->and($interaction)->toContain('post_views')
+        ->and($interaction)->toContain('implements InteractionSource');
+});
