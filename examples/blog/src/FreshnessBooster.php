@@ -8,9 +8,9 @@ use SolutionForest\Recommender\Support\Context;
 /**
  * Prefer newer items among the *already blended* candidates.
  *
- * Lab lesson: keep this weight small (≈0.05–0.10) for “for you” feeds.
- * A large freshness weight makes every cohort see the same newest cards
- * (dog vs cat owners look identical). See README “Fine-tuning weights”.
+ * Lab lesson: inspiration feeds should NOT optimise for “latest first”.
+ * Prefer omitting this booster. If used, keep weight tiny (≈0.05) —
+ * a large weight makes every cohort see the same newest cards.
  *
  * score = exp(−ageHours / 72), then scaled so the freshest in the batch is 1.0.
  */

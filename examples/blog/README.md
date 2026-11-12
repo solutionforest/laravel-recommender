@@ -24,8 +24,8 @@ flowchart LR
 | `src/PostCardTransformer.php` | 3 | API card per post (shared cache; media/poster note) |
 | `config/recommender.php` | 4 | Feed weights + sizes (lab-tuned comments) |
 | `src/RecommendedPostsController.php` | 5 | Serving pages in Laravel's paginator JSON shape |
-| `src/FreshPostSource.php` | optional | Your own candidate source |
-| `src/FreshnessBooster.php` | optional | Prefer newer candidates — **keep weight small** for “for you” |
+| `src/FreshPostSource.php` | optional | Guest/empty-score fallback only (not “latest first”) |
+| `src/FreshnessBooster.php` | optional | Prefer newer candidates — **omit by default**; large weight collapses cohorts |
 | `src/PostAuthorGroups.php` | optional | "At most 1 post per author per page" |
 | `src/InfiniteScrollFeed.php` | app UX | Ranked batches → chronological **catalog tail** until empty |
 
@@ -60,14 +60,9 @@ The test:
 
 Helper: [`InfiniteScrollFeed`](src/InfiniteScrollFeed.php). UI: 2-column CSS grid + sentinel at the bottom.
 
-### 2. Freshness vs “for you”
+### 2. Latest is not the goal
 
-Raising `FreshPostSource` / `FreshnessBooster` / `exploration_ratio` makes **every user see the same newest posts** (segment demos fail). Prefer:
-
-- Personal / co-interaction / your domain sources **high**
-- Freshness **≈ 0.05–0.10** as spice
-
-Recipes: main README [Fine-tuning weights](../../README.md#fine-tuning-weights).
+Lab default: **do not** optimise for newest comments/posts. High `Fresh*` / `FreshnessBooster` makes every cohort look the same. Prefer co-interaction + your domain sources + modest trending; keep fresh only as a guest fallback. Recipes: [Fine-tuning weights](../../README.md#fine-tuning-weights).
 
 ### 3. Cards & media
 
