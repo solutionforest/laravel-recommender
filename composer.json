@@ -23,6 +23,7 @@
         "illuminate/console": "^11.0|^12.0|^13.0",
         "illuminate/contracts": "^11.0|^12.0|^13.0",
         "illuminate/database": "^11.0|^12.0|^13.0",
+        "illuminate/http": "^11.0|^12.0|^13.0",
         "illuminate/pagination": "^11.0|^12.0|^13.0",
         "illuminate/queue": "^11.0|^12.0|^13.0",
         "illuminate/support": "^11.0|^12.0|^13.0",
@@ -38,12 +39,16 @@
     "autoload": {
         "psr-4": {
             "SolutionForest\\Recommender\\": "src/"
-        }
+        },
+        "files": [
+            "src/helpers.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {
             "SolutionForest\\Recommender\\Tests\\": "tests/",
             "SolutionForest\\Recommender\\Examples\\Blog\\": "examples/blog/src/",
+            "SolutionForest\\Recommender\\Examples\\Simple\\": "examples/simple/src/",
             "SolutionForest\\Recommender\\Examples\\Products\\": "examples/products/src/",
             "SolutionForest\\Recommender\\Examples\\Reviews\\": "examples/reviews/src/",
             "SolutionForest\\Recommender\\Examples\\Events\\": "examples/events/src/",

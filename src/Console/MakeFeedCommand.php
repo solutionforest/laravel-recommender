@@ -460,7 +460,8 @@ class MakeFeedCommand extends Command
         $path = config_path('recommender.php');
         $contents = $this->files->get($path);
 
-        if (preg_match("/['\"]".preg_quote($feed, '/')."['\"]\\s*=>/", $contents) === 1) {
+        // Ignore commented-out examples (lines starting with |, * or //).
+        if (preg_match("/^(?!\\s*(?:\\||\\*|\/\/)).*['\"]".preg_quote($feed, '/')."['\"]\\s*=>/m", $contents) === 1) {
             warning("Config already has feed [{$feed}] — left unchanged. Wire classes manually if needed.");
 
             return;

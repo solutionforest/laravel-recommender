@@ -78,7 +78,10 @@ return [
         // Ranking — see README "Fine-tuning weights".
         // Inspiration/segments: keep personal sources high; Fresh* / exploration low.
         // Chronological spice: raise Fresh* + exploration_ratio (cohorts will look more alike).
-        'sources' => [],             // [CandidateSource::class => weight]
+        'sources' => [               // [CandidateSource::class => weight]
+            \SolutionForest\Recommender\Sources\CoInteractionSource::class => 0.6,
+            \SolutionForest\Recommender\Sources\TrendingSource::class => 0.4,
+        ],
         'boosters' => [],            // [Booster::class => weight]
         'exploration_sources' => [], // [CandidateSource::class, ...]
         'exploration_ratio' => 0.15, // share of slots reserved for exploration (interleave, not a blend weight)
@@ -109,17 +112,36 @@ return [
         'write_chunk' => 500,
         'delete_chunk' => 5000,
 
-        // App bindings (class names resolved from the container)
-        'interactions' => null,      // InteractionSource
+        // What you recommend + where interactions live (simple feeds need only these)
+        'model' => null,             // Eloquent model; ids are its keys (int, UUID, ULID)
+        'interactions' => null,      // ['post_likes' => 'like', ...] table => event, or an InteractionSource class
+        'item_column' => null,       // item id column in those tables (default: {model}_id)
+        'user_column' => 'user_id',
+        'timestamp_column' => 'created_at',
+        'history_events' => null,    // events used for "similar items" (default: positive_events)
+        'interactions_connection' => null,
+
+        // Optional custom classes (resolved from the container). When null and
+        // 'model' is set: filter = model's recommendable scope, cards =
+        // toRecommendationCard() / toArray(), groups = model attributes.
         'filter' => null,            // ItemFilter
         'cards' => null,             // CardTransformer
-        'groups' => null,            // DiversityGroups (optional)
+        'groups' => null,            // DiversityGroups
     ],
 
     /*
     |--------------------------------------------------------------------------
     | Feeds
     |--------------------------------------------------------------------------
+    | Simplest feed — no classes needed:
+    |
+    | 'posts' => [
+    |     'model' => \App\Models\Post::class,
+    |     'interactions' => ['post_likes' => 'like', 'post_views' => 'view'],
+    | ],
+    |
+    | Fully custom feed:
+    |
     | 'reviews' => [
     |     'sources' => [
     |         \SolutionForest\Recommender\Sources\CoInteractionSource::class => 0.35,

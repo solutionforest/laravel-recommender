@@ -4,6 +4,7 @@ These integrations are exercised by Pest. Adapt their schemas, namespaces, visib
 
 | Example | Shows | Test |
 |---|---|---|
+| [`simple/`](simple/) | **Start here** — config only: `model` + interaction tables, no classes | `SimpleExampleTest` |
 | [`blog/`](blog/) | Likes + views → posts; sponsors; diversity | `BlogExampleTest` |
 | [`products/`](products/) | **Three events** (`view` / `like` / `purchase`) → catalog | `ProductsExampleTest` |
 | [`events/`](events/) | **Meetup listing** (`view` / `like` / `join`) → recommended events | `EventsExampleTest` |

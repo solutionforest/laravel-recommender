@@ -2,7 +2,11 @@
 
 namespace SolutionForest\Recommender\Support;
 
+use Illuminate\Contracts\Support\Responsable;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
+use JsonSerializable;
 
 /**
  * One page of a feed, ready to be returned by a controller.
@@ -10,8 +14,11 @@ use Illuminate\Pagination\LengthAwarePaginator;
  * Use {@see toPaginator()} when you want Laravel's usual LengthAwarePaginator
  * (JSON shape, links, Blade `{{ $paginator->links() }}`). Note: page numbers are
  * metadata — uniqueness comes from the seen-set, not SQL OFFSET.
+ *
+ * Return it straight from a route or controller to get the paginator JSON
+ * (plus `origin` / `has_more`), like returning `Model::paginate()`.
  */
-final class FeedPage
+final class FeedPage implements JsonSerializable, Responsable
 {
     /**
      * @param  list<array<string, mixed>>  $items  cards in display order
@@ -41,6 +48,8 @@ final class FeedPage
     /**
      * Laravel LengthAwarePaginator for API JSON / Blade pagination links.
      *
+     * `path` defaults to the current URL, as with Eloquent's paginate().
+     *
      * @param  array<string, mixed>  $options  e.g. ['path' => $request->url(), 'query' => $request->query()]
      * @return LengthAwarePaginator<int, array<string, mixed>>
      */
@@ -51,7 +60,7 @@ final class FeedPage
             $this->total(),
             $this->perPage,
             $this->page,
-            $options,
+            $options + ['path' => Paginator::resolveCurrentPath()],
         );
     }
 
@@ -67,6 +76,25 @@ final class FeedPage
             'origin' => $this->origin,
             'has_more' => $this->hasMore,
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function jsonSerialize(): array
+    {
+        return $this->toPaginatorArray();
+    }
+
+    /**
+     * @param  \Illuminate\Http\Request  $request
+     */
+    public function toResponse($request): JsonResponse
+    {
+        return new JsonResponse($this->toPaginatorArray([
+            'path' => $request->url(),
+            'query' => $request->query(),
+        ]));
     }
 
     /**
