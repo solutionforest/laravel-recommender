@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static void forgetModel(\Illuminate\Database\Eloquent\Model $model)
  * @method static void forgetUser(string $feed, \Illuminate\Contracts\Auth\Authenticatable|int|string $user)
  * @method static void forgetTrending(string $feed)
- * @method static list<array{id: int|string, score: float, sources: array<string, float>}> explain(string $feed, \Illuminate\Contracts\Auth\Authenticatable|int|string|null $user, int $limit = 20)
+ * @method static list<array{id: int|string, score: float, sources: array<string, float>, contributions: array<string, float>}> explain(string $feed, \Illuminate\Contracts\Auth\Authenticatable|int|string|null $user, int $limit = 20)
  * @method static \SolutionForest\Recommender\Support\FeedDefinition feed(string $name)
  * @method static bool enabled()
  *

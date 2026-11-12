@@ -197,3 +197,13 @@ it('exposes a Laravel LengthAwarePaginator', function () {
 it('rejects unknown feeds', function () {
     Recommender::page('nope', 1);
 })->throws(InvalidArgumentException::class);
+
+it('explains each source share so contributions add up to the score', function () {
+    \SolutionForest\Recommender\Tests\Fixtures\StaticSource::$scores = [10 => 4.0, 11 => 2.0];
+    $rows = app(\SolutionForest\Recommender\Recommender::class)->explain('reviews', 1);
+
+    expect($rows)->not->toBeEmpty();
+    foreach ($rows as $row) {
+        expect(round(array_sum($row['contributions']), 3))->toBe(round($row['score'], 3));
+    }
+});

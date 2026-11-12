@@ -28,6 +28,7 @@ abstract class TestCase extends Orchestra
 
     protected function defineEnvironment($app): void
     {
+        $app['config']->set('app.key', 'base64:'.base64_encode(str_repeat('k', 32)));
         $app['config']->set('database.default', 'testing');
         if (getenv('RECOMMENDER_TEST_DB') === 'mysql') {
             // Optional: run the suite against MySQL/MariaDB, e.g.
