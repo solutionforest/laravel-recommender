@@ -1,6 +1,6 @@
 # Dashboard
 
-One read-only page that answers “is the recommender healthy, and why does this user see that?”, in the same spirit as Laravel Horizon. It is plain Blade with no JavaScript build and no Livewire, and it refreshes itself every 10 seconds.
+One read-only page that answers “is the recommender healthy, and why does this user see that?”, in the same spirit as Laravel Horizon. It is plain Blade with no JavaScript build and no Livewire, refreshes itself every 10 seconds, and follows your system's light or dark theme (or toggle it).
 
 ```text
 https://your-app.test/recommender
@@ -12,18 +12,19 @@ https://your-app.test/recommender
 
 | Area | Shows |
 |---|---|
-| Header | Kill switch state, cache store and whether it supports build locks, last update. Untick **live** to stop refreshing. |
-| Feed tabs | One tab per feed in `config/recommender.php`; the dot is the feed's worst check (green / amber / red). |
-| Cards | **Health** (OK / WARN / FAIL), **scores lag** since the last `update-scores`, **scored items**, **neighbours** (items with “similar items”). |
-| Checks | Everything that can stop a feed from working, worst first, each with a fix. |
-| Trending now | Top 10 items by time-decayed popularity, with positive (e.g. likes) and exposure (e.g. views) counts. |
-| Explain a user | Enter a user id to see why each item is ranked: every source's contribution, best first. |
+| Sidebar | Every feed with its status dot (green / amber / red) and scored-item count; engine, cache store, build locks and environment at the bottom. |
+| Header | Feed status (**Healthy / Warnings / Failing**), time since the last update, the **Live** switch and the theme toggle. |
+| Pipeline | The four steps a feed goes through — **Interactions → Scores → Similar items → Serving** — so you see at a glance *where* it is broken. |
+| Cards | Checks passing, score lag against the 1-hour limit, scored items, and similar-items coverage (share of items that have neighbours). |
+| Trending now | Top 10 items by time-decayed popularity, with positive (e.g. likes) and exposure (e.g. views) counts and their rate. |
+| Checks | Problems first, each with its fix; passing checks fold away. |
+| Explain a user | Enter a user id to see why each item is ranked, as a stacked bar of every source's share of the score. |
 
 ### Explain a user
 
 ![Explain a user](../art/screenshots/dashboard-explain.png)
 
-`CoInteractionSource` means “people who liked what this user liked also liked this”, and `TrendingSource` means “popular right now”. A user who only gets `TrendingSource` rows has too little history or no shared interactions yet. Explain runs a fresh build before exploration and diversity, so it can differ slightly from the cached page. Live refresh pauses while a user is explained, so the build does not repeat.
+Each bar is the item's score split by source (the parts add up to the score). `CoInteractionSource` means “people who liked what this user liked also liked this”, and `TrendingSource` means “popular right now”. A user who only gets `TrendingSource` rows has too little history or no shared interactions yet. Explain runs a fresh build before exploration and diversity, so it can differ slightly from the cached page. Live refresh pauses while a user is explained, so the build does not repeat.
 
 ### Checks
 
@@ -40,7 +41,7 @@ https://your-app.test/recommender
 | Neighbours | `build-neighbours` never ran, or produced an empty graph (warning) |
 | Cache | the cache store cannot lock, so concurrent builds are last-write-wins (warning) |
 
-Dark mode follows the operating system:
+Dark mode follows the operating system; the **Theme** button overrides it and is remembered:
 
 ![Dark mode](../art/screenshots/dashboard-dark.png)
 
@@ -85,4 +86,14 @@ php artisan recommender:doctor          # every feed
 php artisan recommender:doctor posts    # one feed
 ```
 
-It prints the same checks and exits with a non-zero code when any check fails, so you can run it in a deploy script or CI after migrations. `php artisan recommender:status` still prints the raw numbers.
+It prints the same checks and exits with a non-zero code when any check fails, so you can run it in a deploy script or CI after migrations.
+
+![recommender:doctor](../art/screenshots/terminal-doctor.png)
+
+The jobs and `recommender:status` print what they did and the raw numbers:
+
+![update-scores, build-neighbours and status](../art/screenshots/terminal-jobs.png)
+
+And `recommender:explain` is the terminal version of **Explain a user**:
+
+![recommender:explain](../art/screenshots/terminal-explain.png)

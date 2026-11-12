@@ -15,6 +15,7 @@ This project uses [Semantic Versioning](https://semver.org/).
 - GitHub Actions [`release.yml`](.github/workflows/release.yml) — push `v*.*.*` tag → Release with notes from `CHANGELOG.md`
 
 - Dashboard at `/recommender` (Blade, no JS build): health, checks, trending, explain; `viewRecommender` gate, open in `local`; `recommender.dashboard.*` config. Guide with screenshots: [docs/dashboard.md](docs/dashboard.md)
+- `explain()` rows include `contributions`: each source / booster's share of the score (they add up to `score`)
 - `recommender:doctor` — configuration / table / column / pipeline checks with a non-zero exit code on failure (`docs/improvements.md` #1)
 - `tests/Feature/StressTest.php` — data-volume and interaction-frequency stress tests (`--group=stress`, `RECOMMENDER_STRESS_SCALE`)
 

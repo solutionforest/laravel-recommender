@@ -108,7 +108,7 @@ final class Health
     /**
      * Configuration and pipeline checks, worst first.
      *
-     * @return list<array{level: string, label: string, hint: ?string}>
+     * @return list<array{level: string, label: string, hint: ?string, stage: string}>
      */
     public function checks(FeedDefinition $feed, ?CarbonImmutable $now = null): array
     {
@@ -117,7 +117,7 @@ final class Health
             ...$this->pipelineChecks($feed, $this->metrics($feed, $now)),
         ];
         if (! $this->cache->supportsLocks()) {
-            $checks[] = self::warn('Cache store has no locks', 'Concurrent builds fall back to last-write-wins. Use redis, or database + cache_locks.');
+            $checks[] = self::warn('Cache store has no locks', 'Concurrent builds fall back to last-write-wins. Use redis, or database + cache_locks.', 'serving');
         }
 
         $rank = [self::FAIL => 0, self::WARN => 1, self::OK => 2];
@@ -127,7 +127,23 @@ final class Health
     }
 
     /**
-     * @param  list<array{level: string, label: string, hint: ?string}>  $checks
+     * Worst level per pipeline stage: setup → scores → neighbours → serving.
+     *
+     * @param  list<array{level: string, label: string, hint: ?string, stage: string}>  $checks
+     * @return array<string, string>
+     */
+    public static function stages(array $checks): array
+    {
+        $out = [];
+        foreach (['setup', 'scores', 'neighbours', 'serving'] as $stage) {
+            $out[$stage] = self::worst(array_values(array_filter($checks, fn (array $c) => $c['stage'] === $stage)));
+        }
+
+        return $out;
+    }
+
+    /**
+     * @param  list<array{level: string, label: string, hint: ?string, stage: string}>  $checks
      */
     public static function worst(array $checks): string
     {
@@ -139,7 +155,7 @@ final class Health
     // ---------------------------------------------------------------------
 
     /**
-     * @return list<array{level: string, label: string, hint: ?string}>
+     * @return list<array{level: string, label: string, hint: ?string, stage: string}>
      */
     private function bindingChecks(FeedDefinition $feed): array
     {
@@ -152,7 +168,7 @@ final class Health
             } else {
                 $table = (new $model)->getTable();
                 $checks[] = $this->tableExists($table, (new $model)->getConnectionName())
-                    ? self::ok("model {$model} → table {$table}")
+                    ? self::ok('model '.class_basename($model)." → table {$table}")
                     : self::fail("model table [{$table}] does not exist", 'Run your migrations.');
             }
         }
@@ -191,7 +207,7 @@ final class Health
 
     /**
      * @param  array<mixed>  $interactions
-     * @return list<array{level: string, label: string, hint: ?string}>
+     * @return list<array{level: string, label: string, hint: ?string, stage: string}>
      */
     private function tableChecks(FeedDefinition $feed, array $interactions): array
     {
@@ -230,37 +246,37 @@ final class Health
 
     /**
      * @param  array{watermark: ?CarbonImmutable, lag: ?int, scores: int, hot: int, last_event: ?string, version: ?int, neighbours: int, shards: string}  $m
-     * @return list<array{level: string, label: string, hint: ?string}>
+     * @return list<array{level: string, label: string, hint: ?string, stage: string}>
      */
     private function pipelineChecks(FeedDefinition $feed, array $m): array
     {
         $checks = [];
 
         if ($m['watermark'] === null) {
-            $checks[] = self::fail('Scores never ran', "php artisan recommender:update-scores {$feed->name}");
+            $checks[] = self::fail('Scores never ran', "php artisan recommender:update-scores {$feed->name}", 'scores');
         } elseif ($m['lag'] > self::MAX_SCORE_LAG) {
-            $checks[] = self::warn('Scores are '.self::human((int) $m['lag']).' behind', 'Check the scheduler runs recommender:update-scores every ~10 minutes.');
+            $checks[] = self::warn('Scores are '.self::human((int) $m['lag']).' behind', 'Check the scheduler runs recommender:update-scores every ~10 minutes.', 'scores');
         } else {
-            $checks[] = self::ok('Scores up to date ('.self::human((int) $m['lag']).' lag)');
+            $checks[] = self::ok('Scores up to date ('.self::human((int) $m['lag']).' lag)', 'scores');
         }
 
         if ($m['watermark'] !== null && $m['scores'] === 0) {
-            $checks[] = self::warn('No scored items yet', 'No interactions were found in the backfill window (scores_backfill_days).');
+            $checks[] = self::warn('No scored items yet', 'No interactions were found in the backfill window (scores_backfill_days).', 'scores');
         }
 
         if ($m['version'] === null) {
-            $checks[] = self::fail('Neighbours never built', "php artisan recommender:build-neighbours {$feed->name}");
+            $checks[] = self::fail('Neighbours never built', "php artisan recommender:build-neighbours {$feed->name}", 'neighbours');
         } elseif ($m['neighbours'] === 0) {
-            $checks[] = self::warn('Neighbour graph is empty', 'Too little shared history; widen history_days or lower neighbours_min_co_count.');
+            $checks[] = self::warn('Neighbour graph is empty', 'Too little shared history; widen history_days or lower neighbours_min_co_count.', 'neighbours');
         } else {
-            $checks[] = self::ok(number_format($m['neighbours']).' items have neighbours');
+            $checks[] = self::ok(number_format($m['neighbours']).' items have neighbours', 'neighbours');
         }
 
         return $checks;
     }
 
     /**
-     * @return array{level: string, label: string, hint: ?string}
+     * @return array{level: string, label: string, hint: ?string, stage: string}
      */
     private function classCheck(string $role, string $class, string $contract): array
     {
@@ -293,21 +309,21 @@ final class Health
         };
     }
 
-    /** @return array{level: string, label: string, hint: ?string} */
-    private static function ok(string $label): array
+    /** @return array{level: string, label: string, hint: ?string, stage: string} */
+    private static function ok(string $label, string $stage = 'setup'): array
     {
-        return ['level' => self::OK, 'label' => $label, 'hint' => null];
+        return ['level' => self::OK, 'label' => $label, 'hint' => null, 'stage' => $stage];
     }
 
-    /** @return array{level: string, label: string, hint: ?string} */
-    private static function warn(string $label, ?string $hint = null): array
+    /** @return array{level: string, label: string, hint: ?string, stage: string} */
+    private static function warn(string $label, ?string $hint = null, string $stage = 'setup'): array
     {
-        return ['level' => self::WARN, 'label' => $label, 'hint' => $hint];
+        return ['level' => self::WARN, 'label' => $label, 'hint' => $hint, 'stage' => $stage];
     }
 
-    /** @return array{level: string, label: string, hint: ?string} */
-    private static function fail(string $label, ?string $hint = null): array
+    /** @return array{level: string, label: string, hint: ?string, stage: string} */
+    private static function fail(string $label, ?string $hint = null, string $stage = 'setup'): array
     {
-        return ['level' => self::FAIL, 'label' => $label, 'hint' => $hint];
+        return ['level' => self::FAIL, 'label' => $label, 'hint' => $hint, 'stage' => $stage];
     }
 }

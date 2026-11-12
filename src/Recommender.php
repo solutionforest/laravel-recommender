@@ -265,7 +265,10 @@ class Recommender
      * Explain a user's ranking: per-source contributions of the top items.
      * For debugging / admin only — runs a full build without storing it.
      *
-     * @return list<array{id: int|string, score: float, sources: array<string, float>}>
+     * `sources` are each source's raw score; `contributions` are the parts of
+     * `score` (weight × normalised value), so they sum to `score`.
+     *
+     * @return list<array{id: int|string, score: float, sources: array<string, float>, contributions: array<string, float>}>
      */
     public function explain(string $feedName, Authenticatable|int|string|null $user, int $limit = 20): array
     {
@@ -274,20 +277,33 @@ class Recommender
         $context = new Context($feed, $userId, [], [], CarbonImmutable::now());
         $parts = $this->collect($context, $feed->int('source_limit', 200), $userId === null);
 
+        $max = [];
+        foreach ($parts['sources'] as $class => $scores) {
+            $max[$class] = $scores === [] ? 0.0 : max($scores);
+        }
+
         $out = [];
         foreach (array_slice($parts['blended'], 0, $limit, true) as $id => $score) {
-            $sources = [];
+            $sources = $contributions = [];
             foreach ($parts['sources'] as $class => $scores) {
                 if (isset($scores[$id])) {
                     $sources[class_basename($class)] = round($scores[$id], 4);
+                    $weight = $parts['weights'][$class] ?? 0.0;
+                    if ($weight > 0 && $max[$class] > 0) {
+                        $contributions[class_basename($class)] = round($weight * max(0.0, $scores[$id]) / $max[$class], 4);
+                    }
                 }
             }
             foreach ($parts['boosts'] as $class => $values) {
                 if (isset($values[$id])) {
                     $sources[class_basename($class)] = round($values[$id], 4);
+                    $weight = $parts['boost_weights'][$class] ?? 0.0;
+                    if ($weight > 0) {
+                        $contributions[class_basename($class)] = round($weight * min(1.0, max(0.0, $values[$id])), 4);
+                    }
                 }
             }
-            $out[] = ['id' => $id, 'score' => round($score, 4), 'sources' => $sources];
+            $out[] = ['id' => $id, 'score' => round($score, 4), 'sources' => $sources, 'contributions' => $contributions];
         }
 
         return $out;
@@ -406,7 +422,7 @@ class Recommender
     /**
      * Gather candidates from every source, filter once, blend.
      *
-     * @return array{sources: array<string, array<int|string, float>>, boosts: array<string, array<int|string, float>>, blended: array<int|string, float>, exploration: list<int|string>}
+     * @return array{sources: array<string, array<int|string, float>>, boosts: array<string, array<int|string, float>>, blended: array<int|string, float>, exploration: list<int|string>, weights: array<string, float>, boost_weights: array<string, float>}
      */
     private function collect(Context $context, int $limit, bool $trendingOnly): array
     {
@@ -478,6 +494,8 @@ class Recommender
             'boosts' => $boosts,
             'blended' => $blended,
             'exploration' => array_keys($exploration),
+            'weights' => $sourceWeights,
+            'boost_weights' => $boostWeights,
         ];
     }
 

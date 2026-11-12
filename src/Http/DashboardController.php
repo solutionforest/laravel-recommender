@@ -26,7 +26,9 @@ final class DashboardController
                 'metrics' => $health->metrics($definition),
                 'checks' => $checks,
                 'status' => Health::worst($checks),
+                'stages' => Health::stages($checks),
                 'trending' => $health->trending($definition),
+                'interactions' => $this->describeInteractions($definition->get('interactions')),
             ];
         }
 
@@ -43,13 +45,32 @@ final class DashboardController
             }
         }
 
+        // One colour per source / booster across the explain bars and legend.
+        $legend = [];
+        foreach ($explain['rows'] ?? [] as $row) {
+            foreach (array_keys($row['contributions']) as $source) {
+                $legend[$source] ??= count($legend) % 6;
+            }
+        }
+
         return $views->file(dirname(__DIR__, 2).'/resources/views/dashboard.blade.php', [
             'overview' => $overview,
             'feeds' => $feeds,
             'selected' => $selected,
             'explain' => $explain,
+            'legend' => $legend,
+            'maxScore' => max([0.0001, ...array_column($explain['rows'] ?? [], 'score')]),
             // Explain runs a full build: never repeat it on a timer.
             'refresh' => $explain === null ? max(0, (int) config('recommender.dashboard.refresh', 10)) : 0,
         ]);
+    }
+
+    private function describeInteractions(mixed $binding): string
+    {
+        if (is_array($binding)) {
+            return count($binding).' '.(count($binding) === 1 ? 'table' : 'tables');
+        }
+
+        return is_string($binding) && $binding !== '' ? class_basename($binding) : 'not configured';
     }
 }

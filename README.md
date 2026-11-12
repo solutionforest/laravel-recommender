@@ -102,7 +102,11 @@ It is open in the `local` environment. In production, choose who can see it:
 Gate::define('viewRecommender', fn ($user) => $user->is_admin);
 ```
 
-`php artisan recommender:doctor` runs the same checks in the terminal and fails a deploy when something is wrong. **[Dashboard guide →](docs/dashboard.md)**
+`php artisan recommender:doctor` runs the same checks in the terminal and fails a deploy when something is wrong:
+
+![recommender:doctor](art/screenshots/terminal-doctor.png)
+
+**[Dashboard guide →](docs/dashboard.md)**
 
 ## Inspect and tune
 

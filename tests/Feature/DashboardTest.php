@@ -70,7 +70,7 @@ it('flags pipeline and schema problems before jobs ran', function () {
 
     $this->actingAs(new GenericUser(['id' => 1]))->get('/recommender')
         ->assertOk()
-        ->assertSee('FAIL')
+        ->assertSee('Failing')
         ->assertSee('Scores never ran')
         ->assertSee('Neighbours never built')
         ->assertSee('interactions table [article_shares] does not exist')
@@ -85,6 +85,7 @@ it('explains a user and pauses live refresh while doing so', function () {
         ->assertOk()
         ->assertSee('Explain a user')
         ->assertSee('CoInteractionSource')
+        ->assertSee('class="stack"', false)
         ->assertDontSee('id="recommender-live"', false);
 });
 
