@@ -2,10 +2,9 @@
 
 namespace SolutionForest\Recommender\Sources;
 
-use Illuminate\Contracts\Container\Container;
 use SolutionForest\Recommender\Contracts\CandidateSource;
-use SolutionForest\Recommender\Contracts\InteractionSource;
 use SolutionForest\Recommender\Storage\NeighbourStore;
+use SolutionForest\Recommender\Support\Bindings;
 use SolutionForest\Recommender\Support\Context;
 
 /**
@@ -19,7 +18,7 @@ final class CoInteractionSource implements CandidateSource
 {
     public function __construct(
         private readonly NeighbourStore $neighbours,
-        private readonly Container $container,
+        private readonly Bindings $bindings,
     ) {
     }
 
@@ -29,18 +28,12 @@ final class CoInteractionSource implements CandidateSource
             return [];
         }
 
-        $class = $context->feed->get('interactions');
-        if (! $class) {
-            return [];
-        }
-
+        $interactions = $this->bindings->interactions($context->feed);
         $userId = $context->userId;
-        if ($userId === null) {
+        if ($interactions === null || $userId === null) {
             return [];
         }
 
-        /** @var InteractionSource $interactions */
-        $interactions = $this->container->make($class);
         $recent = $interactions->recentItems($userId, $context->feed->int('recent_items', 20));
         if ($recent === []) {
             return [];

@@ -38,7 +38,23 @@ php artisan migrate
 php artisan recommender:make-feed posts
 ```
 
-The wizard creates three classes and registers a feed. **Edit the generated classes to match your schema**, then build scores and neighbours:
+The wizard creates three classes and registers a feed. **Edit the generated classes to match your schema**.
+
+Or skip the classes. If each interaction table has `user_id`, `post_id` and `created_at`, this is the whole feed:
+
+```php
+// config/recommender.php
+'feeds' => [
+    'posts' => [
+        'model' => App\Models\Post::class,
+        'interactions' => ['post_likes' => 'like', 'post_views' => 'view'],
+    ],
+],
+```
+
+Add an optional `scopeRecommendable()` and `toRecommendationCard()` to the model for visibility and the JSON shape. See [`examples/simple`](examples/simple/).
+
+Then build scores and neighbours:
 
 ```bash
 php artisan recommender:update-scores posts
@@ -51,14 +67,11 @@ Expose the feed from a route:
 ```php
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use SolutionForest\Recommender\Facades\Recommender;
 
-Route::get('/posts/recommended', function (Request $request) {
-    $feed = Recommender::page('posts', $request->user()?->id, (int) $request->query('page', 1));
-
-    return response()->json($feed->toPaginatorArray(['path' => $request->url()]));
-});
+Route::get('/posts/recommended', fn (Request $request) => recommendations('posts', $request->user()));
 ```
+
+The response is Laravel's paginator JSON plus `origin` and `has_more`; `?page=` is read automatically. `Recommender::page('posts', $user)` does the same.
 
 **[Follow the first-feed tutorial →](docs/tutorial.md)** for the required table shape, checks, scheduler and troubleshooting. Run the maintenance commands after your app has recorded interactions; the first score run excludes the most recent minute.
 
@@ -71,10 +84,29 @@ Route::get('/posts/recommended', function (Request $request) {
 | Understand ranking and cache behavior | [How it works](docs/how-it-works.md) |
 | Change what influences the feed | [Tuning](docs/tuning.md) |
 | Look up methods, contracts and configuration | [Reference](docs/reference.md) |
+| Monitor feeds in the browser | [Dashboard](docs/dashboard.md) |
 | Run, monitor or rebuild in production | [Operations](docs/operations.md) |
 | Explore the formulas | [Maths](docs/maths.md) (optional) |
 | Adapt an integration | [Examples](examples/) — blog, products, events and reviews |
 | Review proposed usability improvements | [Improvement proposals](docs/improvements.md) |
+
+## Dashboard
+
+Open `/recommender` to see each feed's health, what is broken and how to fix it, what is trending, and why a given user gets their recommendations.
+
+![Recommender dashboard](art/screenshots/dashboard-healthy.png)
+
+It is open in the `local` environment. In production, choose who can see it:
+
+```php
+Gate::define('viewRecommender', fn ($user) => $user->is_admin);
+```
+
+`php artisan recommender:doctor` runs the same checks in the terminal and fails a deploy when something is wrong:
+
+![recommender:doctor](art/screenshots/terminal-doctor.png)
+
+**[Dashboard guide →](docs/dashboard.md)**
 
 ## Inspect and tune
 

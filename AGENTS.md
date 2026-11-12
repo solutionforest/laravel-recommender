@@ -12,6 +12,7 @@ Human docs live under [`docs/`](docs/). Prefer linking there over pasting walls 
 | [docs/tuning.md](docs/tuning.md) | Weights / lessons |
 | [docs/reference.md](docs/reference.md) | API / config / jobs / cache locks |
 | [docs/operations.md](docs/operations.md) | Go-live / FAQ / scale |
+| [docs/dashboard.md](docs/dashboard.md) | `/recommender` dashboard, `viewRecommender` gate, `recommender:doctor` |
 | [docs/maths.md](docs/maths.md) | How we score (formulas) |
 | [skills/laravel-recommender/SKILL.md](skills/laravel-recommender/SKILL.md) | Cursor skill for **consuming apps** |
 | [examples/](examples/) | Samples (`Models/` · `Sources/` · `Boosters/` · …): `blog`, `products`, `events`, `events-advanced`, `reviews` |
@@ -21,9 +22,9 @@ Human docs live under [`docs/`](docs/). Prefer linking there over pasting walls 
 ## When working in a **consuming Laravel app**
 
 1. `composer require solutionforest/laravel-recommender` → `php artisan migrate`
-2. `php artisan recommender:make-feed` (interactive wizard) or `… posts -n` — then tweak scaffolded classes if needed
+2. Simplest: config-only feed — `'model' => Post::class, 'interactions' => ['post_likes' => 'like', …]` (see `examples/simple`). Otherwise `php artisan recommender:make-feed` (wizard) or `… posts -n`, then tweak scaffolded classes
 3. `recommender:update-scores` → `build-neighbours` → `explain {feed} {userId}`
-4. Serve with `Recommender::page()` → `toPaginator()` / `toPaginatorArray()`
+4. Serve with `recommendations('posts', $request->user())` (or `Recommender::page()`) — return it directly for paginator JSON
 5. Schedule scores / neighbours / prune; cache with locks (`redis` or `database`+`cache_locks`)
 
 Copy the Cursor skill into the app so agents auto-load it:

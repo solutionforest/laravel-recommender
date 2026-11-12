@@ -3,20 +3,21 @@
 namespace SolutionForest\Recommender;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Contracts\Container\Container;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 use SolutionForest\Recommender\Contracts\Booster;
 use SolutionForest\Recommender\Contracts\CandidateSource;
-use SolutionForest\Recommender\Contracts\CardTransformer;
-use SolutionForest\Recommender\Contracts\DiversityGroups;
-use SolutionForest\Recommender\Contracts\ItemFilter;
 use SolutionForest\Recommender\Feed\FeedCache;
 use SolutionForest\Recommender\Jobs\BuildFeed;
 use SolutionForest\Recommender\Scoring\Blender;
 use SolutionForest\Recommender\Scoring\Diversifier;
 use SolutionForest\Recommender\Scoring\Explorer;
+use SolutionForest\Recommender\Support\Bindings;
 use SolutionForest\Recommender\Support\Context;
 use SolutionForest\Recommender\Support\FeedDefinition;
 use SolutionForest\Recommender\Support\FeedPage;
@@ -31,6 +32,7 @@ class Recommender
     public function __construct(
         private readonly Container $container,
         private readonly FeedCache $cache,
+        private readonly Bindings $bindings,
         private readonly Blender $blender = new Blender(),
         private readonly Explorer $explorer = new Explorer(),
         private readonly Diversifier $diversifier = new Diversifier(),
@@ -88,12 +90,17 @@ class Recommender
      * skipping everything already served (the seen-set), and top up with the
      * trending list when the personal list runs out.
      *
+     * Pass the user model (or its id, or null for guests). The page number
+     * defaults to the request's `?page=` like Eloquent's paginate().
+     *
+     * @param  Authenticatable|int|string|null  $user  the viewer; a model is also available to sources as `$context->attribute('user')`
      * @param  array<string, mixed>  $attributes  passed to sources/filters via Context
      */
-    public function page(string $feedName, int|string|null $userId, int $page = 1, ?int $perPage = null, array $attributes = []): FeedPage
+    public function page(string $feedName, Authenticatable|int|string|null $user = null, ?int $page = null, ?int $perPage = null, array $attributes = []): FeedPage
     {
+        [$userId, $attributes] = $this->viewer($user, $attributes);
         $feed = $this->feed($feedName);
-        $page = max(1, $page);
+        $page = max(1, $page ?? Paginator::resolveCurrentPage());
         $perPage = max(1, $perPage ?? $feed->int('page_size', 12));
 
         if ($userId === null || ! $this->enabled()) {
@@ -174,8 +181,10 @@ class Recommender
      * @param  array<string, mixed>  $attributes
      * @return list<int|string>
      */
-    public function build(string $feedName, int|string $userId, ?array $seen = null, array $attributes = []): array
+    public function build(string $feedName, Authenticatable|int|string $user, ?array $seen = null, array $attributes = []): array
     {
+        [$userId, $attributes] = $this->viewer($user, $attributes);
+        $userId ??= throw new InvalidArgumentException('Cannot build a feed for a user without an id.');
         $feed = $this->feed($feedName);
         $seen ??= $this->cache->seen($feed, $userId);
         $context = new Context($feed, $userId, $seen, $attributes, CarbonImmutable::now());
@@ -213,10 +222,10 @@ class Recommender
     /**
      * Queue a background rebuild (e.g. on login / app open).
      */
-    public function warm(string $feedName, int|string $userId): void
+    public function warm(string $feedName, Authenticatable|int|string $user): void
     {
         $this->feed($feedName);
-        BuildFeed::dispatch($feedName, $userId);
+        BuildFeed::dispatch($feedName, $this->viewer($user)[0] ?? throw new InvalidArgumentException('Cannot warm a feed for a user without an id.'));
     }
 
     /** Drop a cached card, e.g. after the item was edited or hidden. */
@@ -225,9 +234,23 @@ class Recommender
         $this->cache->forgetCard($this->feed($feedName), $id);
     }
 
-    /** Forget a user's list and seen-set (e.g. "reset my recommendations"). */
-    public function forgetUser(string $feedName, int|string $userId): void
+    /**
+     * Drop the cached card of $model in every feed whose `model` is its class
+     * (used by the Recommendable trait on save / delete).
+     */
+    public function forgetModel(Model $model): void
     {
+        foreach ((array) config('recommender.feeds', []) as $name => $config) {
+            if (($config['model'] ?? null) === $model::class && $model->getKey() !== null) {
+                $this->forgetCard((string) $name, $model->getKey());
+            }
+        }
+    }
+
+    /** Forget a user's list and seen-set (e.g. "reset my recommendations"). */
+    public function forgetUser(string $feedName, Authenticatable|int|string $user): void
+    {
+        $userId = $this->viewer($user)[0] ?? throw new InvalidArgumentException('Cannot forget a user without an id.');
         $feed = $this->feed($feedName);
         $this->cache->forgetList($feed, $userId);
         $this->cache->forgetSeen($feed, $userId);
@@ -242,28 +265,45 @@ class Recommender
      * Explain a user's ranking: per-source contributions of the top items.
      * For debugging / admin only — runs a full build without storing it.
      *
-     * @return list<array{id: int|string, score: float, sources: array<string, float>}>
+     * `sources` are each source's raw score; `contributions` are the parts of
+     * `score` (weight × normalised value), so they sum to `score`.
+     *
+     * @return list<array{id: int|string, score: float, sources: array<string, float>, contributions: array<string, float>}>
      */
-    public function explain(string $feedName, int|string|null $userId, int $limit = 20): array
+    public function explain(string $feedName, Authenticatable|int|string|null $user, int $limit = 20): array
     {
+        $userId = $this->viewer($user)[0];
         $feed = $this->feed($feedName);
         $context = new Context($feed, $userId, [], [], CarbonImmutable::now());
         $parts = $this->collect($context, $feed->int('source_limit', 200), $userId === null);
 
+        $max = [];
+        foreach ($parts['sources'] as $class => $scores) {
+            $max[$class] = $scores === [] ? 0.0 : max($scores);
+        }
+
         $out = [];
         foreach (array_slice($parts['blended'], 0, $limit, true) as $id => $score) {
-            $sources = [];
+            $sources = $contributions = [];
             foreach ($parts['sources'] as $class => $scores) {
                 if (isset($scores[$id])) {
                     $sources[class_basename($class)] = round($scores[$id], 4);
+                    $weight = $parts['weights'][$class] ?? 0.0;
+                    if ($weight > 0 && $max[$class] > 0) {
+                        $contributions[class_basename($class)] = round($weight * max(0.0, $scores[$id]) / $max[$class], 4);
+                    }
                 }
             }
             foreach ($parts['boosts'] as $class => $values) {
                 if (isset($values[$id])) {
                     $sources[class_basename($class)] = round($values[$id], 4);
+                    $weight = $parts['boost_weights'][$class] ?? 0.0;
+                    if ($weight > 0) {
+                        $contributions[class_basename($class)] = round($weight * min(1.0, max(0.0, $values[$id])), 4);
+                    }
                 }
             }
-            $out[] = ['id' => $id, 'score' => round($score, 4), 'sources' => $sources];
+            $out[] = ['id' => $id, 'score' => round($score, 4), 'sources' => $sources, 'contributions' => $contributions];
         }
 
         return $out;
@@ -326,12 +366,7 @@ class Recommender
      */
     private function render(FeedDefinition $feed, array $ids, int $perPage): array
     {
-        $class = $feed->get('cards');
-        if (! $class) {
-            throw new InvalidArgumentException("Feed [{$feed->name}] has no 'cards' transformer configured.");
-        }
-        /** @var CardTransformer $transformer */
-        $transformer = $this->container->make($class);
+        $transformer = $this->bindings->cards($feed);
 
         $cards = [];
         $consumed = [];
@@ -376,10 +411,8 @@ class Recommender
         $ids = array_slice($ids, 0, $size);
 
         $diversity = (array) $feed->get('diversity', []);
-        $groupsClass = $feed->get('groups');
-        if ($diversity !== [] && $groupsClass && $ids !== []) {
-            /** @var DiversityGroups $groups */
-            $groups = $this->container->make($groupsClass);
+        $groups = $diversity !== [] && $ids !== [] ? $this->bindings->groups($feed) : null;
+        if ($groups !== null) {
             $ids = $this->diversifier->apply($ids, $groups->groups($ids), $diversity, $feed->int('page_size', 12));
         }
 
@@ -389,7 +422,7 @@ class Recommender
     /**
      * Gather candidates from every source, filter once, blend.
      *
-     * @return array{sources: array<string, array<int|string, float>>, boosts: array<string, array<int|string, float>>, blended: array<int|string, float>, exploration: list<int|string>}
+     * @return array{sources: array<string, array<int|string, float>>, boosts: array<string, array<int|string, float>>, blended: array<int|string, float>, exploration: list<int|string>, weights: array<string, float>, boost_weights: array<string, float>}
      */
     private function collect(Context $context, int $limit, bool $trendingOnly): array
     {
@@ -461,6 +494,8 @@ class Recommender
             'boosts' => $boosts,
             'blended' => $blended,
             'exploration' => array_keys($exploration),
+            'weights' => $sourceWeights,
+            'boost_weights' => $boostWeights,
         ];
     }
 
@@ -519,14 +554,28 @@ class Recommender
         if ($ids === []) {
             return [];
         }
-        $class = $context->feed->get('filter');
-        if (! $class) {
+        $filter = $this->bindings->filter($context->feed);
+        if ($filter === null) {
             return $ids;
         }
-        /** @var ItemFilter $filter */
-        $filter = $this->container->make($class);
 
         return $filter->allowed($context, Ids::normalizeAll($ids));
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     * @return array{0: int|string|null, 1: array<string, mixed>}  user id, attributes (with 'user' when a model was given)
+     */
+    private function viewer(Authenticatable|int|string|null $user, array $attributes = []): array
+    {
+        if ($user instanceof Authenticatable) {
+            $attributes['user'] ??= $user;
+            $id = $user->getAuthIdentifier();
+
+            return [is_int($id) || is_string($id) ? $id : null, $attributes];
+        }
+
+        return [$user, $attributes];
     }
 
     private function report(FeedDefinition $feed, string $stage, Throwable $e): void

@@ -3,8 +3,8 @@
 namespace SolutionForest\Recommender\Maintenance;
 
 use Carbon\CarbonImmutable;
-use Illuminate\Contracts\Container\Container;
 use SolutionForest\Recommender\Contracts\InteractionSource;
+use SolutionForest\Recommender\Support\Bindings;
 use SolutionForest\Recommender\Scoring\Math;
 use SolutionForest\Recommender\Storage\ScoreStore;
 use SolutionForest\Recommender\Storage\StateStore;
@@ -21,7 +21,7 @@ use SolutionForest\Recommender\Support\Interaction;
 final class ScoreUpdater
 {
     public function __construct(
-        private readonly Container $container,
+        private readonly Bindings $bindings,
         private readonly ScoreStore $scores,
         private readonly StateStore $state,
     ) {
@@ -32,12 +32,8 @@ final class ScoreUpdater
      */
     public function run(FeedDefinition $feed, ?CarbonImmutable $now = null): array
     {
-        $class = $feed->get('interactions');
-        if (! $class) {
-            throw new \RuntimeException("Feed [{$feed->name}] has no 'interactions' source configured.");
-        }
-        /** @var InteractionSource $source */
-        $source = $this->container->make($class);
+        $source = $this->bindings->interactions($feed)
+            ?? throw new \RuntimeException("Feed [{$feed->name}] has no 'interactions' configured.");
 
         $now ??= CarbonImmutable::now();
         // Leave a small margin for rows still being written.
