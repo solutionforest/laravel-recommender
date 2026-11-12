@@ -207,7 +207,7 @@ class MakeFeedCommand extends Command
             return 'custom';
         }
 
-        return select(
+        return (string) select(
             label: 'Choose a starting preset',
             options: [
                 'blog' => 'Blog posts — like + view',

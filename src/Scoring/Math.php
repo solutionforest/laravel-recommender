@@ -161,14 +161,16 @@ final class Math
 
     private static function itemId(mixed $item): int|string
     {
-        if (is_object($item)) {
-            return $item->id;
+        if (is_int($item) || is_string($item)) {
+            return $item;
         }
 
-        if (is_array($item)) {
-            return $item['id'];
+        $id = is_array($item) ? ($item['id'] ?? null) : data_get($item, 'id');
+
+        if (is_int($id) || is_string($id)) {
+            return $id;
         }
 
-        return $item;
+        throw new \InvalidArgumentException('scoreInOrder items must be ids, or objects/arrays with an id.');
     }
 }

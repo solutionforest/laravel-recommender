@@ -3,6 +3,7 @@
 namespace SolutionForest\Recommender\Examples\Blog\Support;
 
 use Illuminate\Database\Eloquent\Builder;
+use SolutionForest\Recommender\Examples\Blog\Models\Post;
 use SolutionForest\Recommender\Facades\Recommender;
 
 /**
