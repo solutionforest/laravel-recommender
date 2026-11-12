@@ -60,6 +60,80 @@ Formulas behind “hot”, neighbours, and quality: [How we score (maths)](docs/
 
 ---
 
+## How to adjust the ratio
+
+All knobs live in `config/recommender.php` under your feed (e.g. `feeds.posts`). **Bigger number = that signal counts more.** Weights are relative to each other.
+
+### 1. Views count more / likes count more (trending “hot”)
+
+```php
+'events' => [
+    'view' => 1.0,   // raise → more views push trending harder
+    'like' => 4.0,   // raise → more likes push trending harder
+],
+```
+
+Default is “a like is worth ~4 views”. Want likes to dominate? e.g. `'like' => 8.0`. Want views to matter more? raise `'view'` or lower `'like'`.
+
+These feed `recommender:update-scores` → the `hot` score. After changing them, re-run scores (and forget trending cache) so old `hot` values catch up.
+
+Quality (Wilson) uses separate lists:
+
+```php
+'positive_events' => ['like'],   // “good” actions
+'exposure_events' => ['view'],   // “seen” actions
+```
+
+### 2. Personal “liked together” vs trending vs your own rules
+
+```php
+'sources' => [
+    CoInteractionSource::class => 0.6,  // people who liked X also liked Y
+    TrendingSource::class => 0.2,       // hot items
+    // YourSource::class => 0.3,        // e.g. same pet / related shop
+],
+'boosters' => [
+    QualityBooster::class => 0.2,       // like-rate quality bump
+],
+```
+
+Raise a source weight → that source’s cards rank higher in the blend.  
+`exploration_ratio` (e.g. `0.15`) is different: it **reserves slots** for fresh/explore items, not the same as a source weight.
+
+### 3. Sponsor wants certain posts / shops to show more
+
+Two pieces (see [`examples/blog`](examples/blog)):
+
+1. Put the author/shop ids in config  
+2. Give them a **source** (inject into the pool) **and** a **booster** (push score up)
+
+```php
+'sponsored_author_ids' => [42, 99],   // or sponsored_shop_ids for shops
+
+'sources' => [
+    // …
+    SponsoredShopSource::class => 0.20,   // raise → more sponsored candidates enter
+],
+'boosters' => [
+    // …
+    SponsoredShopBooster::class => 0.25,  // raise → those items rank higher
+],
+'diversity' => ['author' => 1],           // still cap so one sponsor cannot fill the whole page
+```
+
+Booster alone only helps items **already** in the pool — Source + Booster is the usual paid pattern.
+
+### After you change weights
+
+```php
+Recommender::forgetUser('posts', $userId);
+Recommender::forgetTrending('posts');
+```
+
+Then `recommender:explain posts {userId}` to verify. More recipes: [Tuning](docs/tuning.md).
+
+---
+
 ## Start here
 
 👉 **[docs/getting-started.md](docs/getting-started.md)** — slow, plain walkthrough (3 classes → cook once → schedule).

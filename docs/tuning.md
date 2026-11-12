@@ -1,6 +1,26 @@
 # Fine-tuning weights
 
-Weights are **relative**. Exploration **interleaves** slots (`exploration_ratio`) — that is not the same as raising a source weight.
+Weights are **relative**. Bigger number = that signal counts more.  
+Exploration **interleaves** slots (`exploration_ratio`) — that is not the same as raising a source weight.
+
+Quick “views / likes / sponsors” overview also on the [README](../README.md#how-to-adjust-the-ratio).
+
+## Event weights (views vs likes → trending)
+
+```php
+'events' => ['view' => 1.0, 'like' => 4.0],
+```
+
+Used by `update-scores` when folding events into `hot`. Raise `like` if likes should dominate trending; raise `view` if browse volume should matter more. Re-run `recommender:update-scores` after big changes.
+
+## Sponsors (certain posts / shops more often)
+
+1. List ids: `sponsored_author_ids` or `sponsored_shop_ids`
+2. `SponsoredShopSource` weight → how often they enter the candidate pool
+3. `SponsoredShopBooster` weight → how hard they are pushed in the blend
+4. Keep `diversity` so one sponsor cannot own every slot
+
+See [`examples/blog`](../examples/blog).
 
 ## Recipes
 
