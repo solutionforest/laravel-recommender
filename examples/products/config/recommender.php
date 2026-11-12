@@ -1,8 +1,6 @@
 <?php
 
-use SolutionForest\Recommender\Boosters\QualityBooster;
 use SolutionForest\Recommender\Examples\Products\Sources\FreshProductSource;
-use SolutionForest\Recommender\Sources\CoInteractionSource;
 use SolutionForest\Recommender\Sources\TrendingSource;
 use SolutionForest\Recommender\Examples\Products\Models\Product;
 
@@ -17,6 +15,7 @@ return [
     'feeds' => [
         'products' => [
             // What to recommend, and where interactions live — no classes needed.
+            'preset' => 'catalog',   // weights, purchase > like > view, decay, exploration
             'model' => Product::class,
             'interactions' => [
                 'product_views' => 'view',
@@ -29,29 +28,11 @@ return [
             'trending_size' => 200,
             'seen_max' => 500,
 
-            'sources' => [
-                CoInteractionSource::class => 0.55,
-                TrendingSource::class => 0.35,
-            ],
-            'boosters' => [
-                QualityBooster::class => 0.20,
-            ],
-            'exploration_sources' => [TrendingSource::class],
-            'exploration_ratio' => 0.05,
             'diversity' => ['seller_id' => 1],
             'trending_sources' => [
                 TrendingSource::class => 1.0,
                 FreshProductSource::class => 0.15,
             ],
-
-            // Any names your InteractionSource yields — not only like/view.
-            'events' => [
-                'view' => 1.0,
-                'like' => 4.0,
-                'purchase' => 10.0,
-            ],
-            'positive_events' => ['like', 'purchase'],
-            'exposure_events' => ['view'],
         ],
     ],
 ];

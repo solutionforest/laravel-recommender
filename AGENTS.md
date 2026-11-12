@@ -10,6 +10,7 @@ Human docs live under [`docs/`](docs/). Prefer linking there over pasting walls 
 | [docs/getting-started.md](docs/getting-started.md) | First-time wiring (slower) |
 | [docs/how-it-works.md](docs/how-it-works.md) | Mental model |
 | [docs/tuning.md](docs/tuning.md) | Weights / lessons |
+| [docs/advanced.md](docs/advanced.md) | Own sources / boosters, Context attributes, custom classes, several feeds, A/B, presets, stats, testing |
 | [docs/reference.md](docs/reference.md) | API / config / jobs / cache locks |
 | [docs/operations.md](docs/operations.md) | Go-live / FAQ / scale |
 | [docs/dashboard.md](docs/dashboard.md) | `/recommender` dashboard, `viewRecommender` gate, `recommender:doctor` |

@@ -32,5 +32,5 @@ vendor/bin/pest tests/Feature/ReviewsExampleTest.php
 1. Merge the feed from `config/recommender.php` into yours (`model` → your model class).
 2. Copy the model's `scopeRecommendable()` and `toRecommendationCard()` into your model, and add `use Recommendable;`.
 2b. Replace `pet_type_id` with your real affinity rule (category, district, …).
-3. Route: `Route::get('/reviews/recommended', fn (Request $r) => recommendations('reviews', $r->user()));`
-4. Check it: `php artisan recommender:doctor reviews`, then schedule `update-scores` / `build-neighbours` — see [the tutorial](../../docs/tutorial.md#5-keep-it-updated).
+3. Route: `Route::get('/reviews/recommended', fn (Request $r) => Review::recommendedFor($r->user()));`
+4. Check it: `php artisan recommender:doctor reviews`. The scoring jobs are scheduled by the package — keep Laravel's scheduler running.

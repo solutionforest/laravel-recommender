@@ -3,7 +3,7 @@
 Weights are **relative**. Bigger number = that signal counts more.  
 Exploration **interleaves** slots (`exploration_ratio`) — that is not the same as raising a source weight.
 
-Start with the generated defaults and change one setting at a time. [Getting started](getting-started.md) explains the terms.
+Start from a preset (`'preset' => 'catalog' | 'social' | 'events'`, see [reference → presets](reference.md#presets)) and change one setting at a time — anything you set on the feed overrides the preset. [Getting started](getting-started.md) explains the terms.
 
 ## Event weights (any interaction type → trending)
 
@@ -31,6 +31,8 @@ For neighbours (`build-neighbours`), only strong actions count by default: `hist
 4. Keep `diversity` so one sponsor cannot own every slot
 
 See [`examples/blog`](../examples/blog).
+
+Your own sources and boosters: see [advanced usage](advanced.md).
 
 ## Recipes
 

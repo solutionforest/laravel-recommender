@@ -90,6 +90,7 @@ That's it. The response is Laravel's paginator JSON (with `next_cursor` for infi
 | Follow a complete working setup | [First-feed tutorial](docs/tutorial.md) |
 | Understand ranking and cache behavior | [How it works](docs/how-it-works.md) |
 | Change what influences the feed | [Tuning](docs/tuning.md) |
+| Add my own rules, several feeds, A/B tests, tests | [Advanced usage](docs/advanced.md) |
 | Look up methods, contracts and configuration | [Reference](docs/reference.md) |
 | Monitor feeds in the browser | [Dashboard](docs/dashboard.md) |
 | Run, monitor or rebuild in production | [Operations](docs/operations.md) |

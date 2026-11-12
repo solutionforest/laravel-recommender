@@ -1,6 +1,5 @@
 <?php
 
-use SolutionForest\Recommender\Boosters\QualityBooster;
 use SolutionForest\Recommender\Examples\Reviews\Sources\FreshReviewSource;
 use SolutionForest\Recommender\Examples\Reviews\Sources\PetTypeMatchSource;
 use SolutionForest\Recommender\Sources\CoInteractionSource;
@@ -17,6 +16,7 @@ return [
     'feeds' => [
         'reviews' => [
             // What to recommend, and where interactions live — no classes needed.
+            'preset' => 'social',   // boosters, events, decay; own sources below
             'model' => Review::class,
             'interactions' => [
                 'review_likes' => 'like',
@@ -34,20 +34,12 @@ return [
                 CoInteractionSource::class => 0.35,
                 TrendingSource::class => 0.25,
             ],
-            'boosters' => [
-                QualityBooster::class => 0.15,
-            ],
-            'exploration_sources' => [TrendingSource::class],
             'exploration_ratio' => 0.05,
             'diversity' => ['shop_id' => 2, 'user_id' => 1], // per shop / per writer
             'trending_sources' => [
                 TrendingSource::class => 1.0,
                 FreshReviewSource::class => 0.15,
             ],
-
-            'events' => ['view' => 1.0, 'like' => 4.0],
-            'positive_events' => ['like'],
-            'exposure_events' => ['view'],
         ],
     ],
 ];

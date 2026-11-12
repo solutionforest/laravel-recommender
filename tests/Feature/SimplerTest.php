@@ -87,3 +87,26 @@ it('stays quiet when pages have items', function () {
 
     Log::shouldNotHaveReceived('notice');
 });
+
+it('matches the "testing your feed" example in docs/advanced.md', function () {
+    config(['recommender.feeds.articles' => [
+        'model' => Article::class,
+        'interactions' => ['article_likes' => 'like'],
+        'exploration_ratio' => 0,
+    ]]);
+    $this->app->forgetInstance(RecommenderService::class);
+
+    $a = Article::create(['id' => 1, 'author_id' => 100, 'title' => 'A']);
+    $b = Article::create(['id' => 2, 'author_id' => 101, 'title' => 'B']);
+    foreach ([11, 12, 13] as $reader) {
+        DB::table('article_likes')->insert([['user_id' => $reader, 'article_id' => $a->id, 'created_at' => now()], ['user_id' => $reader, 'article_id' => $b->id, 'created_at' => now()]]);
+    }
+    DB::table('article_likes')->insert(['user_id' => 99, 'article_id' => $a->id, 'created_at' => now()]);
+
+    $this->travel(2)->minutes();
+    $this->artisan('recommender:update-scores', ['feed' => 'articles']);
+    $this->artisan('recommender:build-neighbours', ['feed' => 'articles']);
+
+    expect(Article::recommendedFor(new GenericUser(['id' => 99]))->ids)->toContain($b->id)
+        ->and(Recommender::explain('articles', 99)[0]['sources'])->toHaveKey('CoInteractionSource');
+});

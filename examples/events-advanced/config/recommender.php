@@ -24,6 +24,7 @@ return [
     'feeds' => [
         'events' => [
             // What to recommend, and where interactions live — no classes needed.
+            'preset' => 'events',   // decay + defaults; own sources, boosters and a comment event below
             'model' => Event::class,
             'interactions' => [
                 'event_views' => 'view',
@@ -52,7 +53,6 @@ return [
                 QualityBooster::class => 0.10,
             ],
             'exploration_sources' => [FreshEventSource::class],
-            'exploration_ratio' => 0.08,
             'diversity' => [               // model attributes
                 'host_id' => 1,
                 'district_id' => 3,

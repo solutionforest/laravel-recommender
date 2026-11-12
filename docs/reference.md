@@ -1,6 +1,6 @@
 # Reference
 
-Contracts, serving API, jobs, and config knobs.
+Contracts, serving API, jobs, and config knobs. For worked examples of custom sources, boosters, classes and several feeds, see [advanced usage](advanced.md).
 
 ## What is `Context`?
 

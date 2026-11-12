@@ -7,6 +7,17 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.6.1] — 2026-11-12
+
+Docs and examples.
+
+### Added
+- [docs/advanced.md](docs/advanced.md) — advanced usage: own sources and boosters, extra `Context` attributes, replacing built-ins with classes, interaction-table variations, several feeds per model, A/B tests, custom presets, item stats, serving (API resources / Blade / Livewire / cursors), caching and invalidation, scheduling and queues, testing a feed (the testing example runs in the suite)
+
+### Changed
+- Examples use named presets (`catalog`, `social`, `events`) and drop keys the preset already sets; controllers are `Model::recommendedFor($request->user())`
+- Docs refreshed for 0.6: getting started, how it works (catalog tail, scope, scheduling), tuning (presets), example READMEs (no manual scheduling)
+
 ## [0.6.0] — 2026-11-12
 
 Simpler still: the model serves its feed, the jobs schedule themselves, and the published config is short.
@@ -231,7 +242,8 @@ First minor release: a feed is now **configuration only** — tell the package w
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/solutionforest/laravel-recommender/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/solutionforest/laravel-recommender/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.4.0...v0.5.0

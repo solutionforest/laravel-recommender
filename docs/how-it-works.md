@@ -6,7 +6,8 @@
 2. Every **~10 minutes** a job updates a small “how hot is this item?” score.
 3. **Once a night** another job stores “people who liked *this* also liked *what?*” (neighbours).
 4. When they open “for you”, the package builds a personal ranked list, remembers what they saw, and serves the next page from cache.
-5. **Guests** get a shared trending list. A new user may receive trending candidates in a personal list, or an empty feed if no eligible candidates exist.
+5. **Guests** get a shared trending list. A new user may receive trending candidates in a personal list.
+6. When ranked and trending items run out, feeds with a `model` continue with the **newest** items the user may see (the catalog tail), so scrolling does not hit a wall.
 
 One line: **signals in your tables → quiet background learning → personal next cards in your configured cache.**
 
@@ -22,7 +23,7 @@ flowchart LR
 |---|---|
 | **Every scroll** | Slice the cached list; mark cards as seen |
 | **~every 30 min per active user** | Rebuild that user’s list if stale |
-| **~10 min / nightly / daily** | Scores, neighbours, prune |
+| **~10 min / nightly / daily** | Scores, neighbours, prune — scheduled by the package |
 
 During a list **build**, every custom source / booster / filter receives a **`Context`** (viewer id, feed config, clock) — not the HTTP request. See [reference.md → What is Context?](reference.md#what-is-context).
 
@@ -39,15 +40,15 @@ sequenceDiagram
   participant K as Cache
   participant DB as Database
 
-  C->>API: GET /posts/recommended?page=2
-  API->>R: page('posts', userId, 2)
+  C->>API: GET /posts/for-you?cursor=…
+  API->>R: Post::recommendedFor($user)
   R->>K: GET list:{user}, GET seen:{user}
   alt list missing / older than feed_ttl
     R->>K: LOCK lock:{user}
     R->>DB: sources (LIMIT) + filter (PK) + boosters (PK)
     R->>K: SET list:{user}
   end
-  R->>R: next unseen ids (top up from trending if short)
+  R->>R: next unseen ids (top up from trending, then the catalog tail)
   R->>K: read cached cards
   opt some cards not cached
     R->>DB: one query WHERE id IN (...)
@@ -66,7 +67,7 @@ flowchart LR
   A2[TrendingSource] --> M
   A3[Your sources] --> M
   X[Exploration sources] --> M
-  M[Merge candidates] --> F[ItemFilter]
+  M[Merge candidates] --> F[recommendable scope / ItemFilter]
   F --> BL[Blend]
   BL --> BO[Boosters]
   BO --> EX[Interleave exploration]
@@ -75,10 +76,10 @@ flowchart LR
 ```
 
 1. **Candidates** — each source returns up to `source_limit` ids (indexed SQL + `LIMIT`). A failing source is logged and skipped.
-2. **Filter** — your `ItemFilter` gets *all* ids at once.
+2. **Filter** — the model's `recommendable` scope (or your `ItemFilter`) checks *all* ids in one query.
 3. **Blend** — each source normalised to 0..1, then `Σ weight · score`.
 4. **Boost** — e.g. Wilson quality; boosters only touch existing candidates.
-5. **Explore** — `exploration_ratio` controls interleaving when exploration sources are configured; the default source list is empty.
+5. **Explore** — `exploration_ratio` interleaves items from `exploration_sources` (the presets use trending).
 6. **Diversify** — e.g. max 1 post per author per page; overflow slides to later pages.
 
 ## Two algorithms (short)

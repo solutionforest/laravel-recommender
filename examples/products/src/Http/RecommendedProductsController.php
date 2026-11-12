@@ -3,6 +3,7 @@
 namespace SolutionForest\Recommender\Examples\Products\Http;
 
 use Illuminate\Http\Request;
+use SolutionForest\Recommender\Examples\Products\Models\Product;
 use SolutionForest\Recommender\Support\FeedPage;
 
 /**
@@ -13,6 +14,6 @@ class RecommendedProductsController
 {
     public function __invoke(Request $request): FeedPage
     {
-        return recommendations('products', $request->user());
+        return Product::recommendedFor($request->user());
     }
 }
