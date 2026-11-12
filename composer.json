@@ -46,7 +46,8 @@
             "SolutionForest\\Recommender\\Examples\\Blog\\": "examples/blog/src/",
             "SolutionForest\\Recommender\\Examples\\Products\\": "examples/products/src/",
             "SolutionForest\\Recommender\\Examples\\Reviews\\": "examples/reviews/src/",
-            "SolutionForest\\Recommender\\Examples\\Events\\": "examples/events/src/"
+            "SolutionForest\\Recommender\\Examples\\Events\\": "examples/events/src/",
+            "SolutionForest\\Recommender\\Examples\\EventsAdvanced\\": "examples/events-advanced/src/"
         }
     },
     "extra": {

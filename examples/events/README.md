@@ -10,6 +10,8 @@ Meetup / community **events** people can **view**, **like**, and **join** (RSVP)
 
 Covered by [`EventsExampleTest`](../../tests/Feature/EventsExampleTest.php).
 
+Want **district / living area / favorite event type**? See [`../events-advanced`](../events-advanced/).
+
 ```mermaid
 flowchart LR
   V[(views)] & L[(likes)] & J[(joins)] --> I[EventInteractionSource]

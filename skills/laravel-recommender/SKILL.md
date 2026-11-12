@@ -24,7 +24,7 @@ Human docs (prefer linking over pasting):
 | `…/docs/tuning.md` | Weight recipes |
 | `…/docs/operations.md` | Go-live / FAQ |
 | `…/AGENTS.md` | Short agent rules |
-| `…/examples/` | `blog` · `products` · `events` (view/like/join) · `reviews` (+ PetTypeMatchSource) |
+| `…/examples/` | `blog` · `products` · `events` (view/like/join) · `events-advanced` (district + type) · `reviews` (+ PetTypeMatchSource) |
 
 ---
 

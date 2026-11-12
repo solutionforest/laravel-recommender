@@ -7,12 +7,14 @@ Copy-paste integrations covered by Pest so the docs cannot rot.
 | [`blog/`](blog/) | Likes + views → posts; sponsors; diversity | `BlogExampleTest` |
 | [`products/`](products/) | **Three events** (`view` / `like` / `purchase`) → catalog | `ProductsExampleTest` |
 | [`events/`](events/) | **Meetup listing** (`view` / `like` / `join`) → recommended events | `EventsExampleTest` |
+| [`events-advanced/`](events-advanced/) | District + living district + favorite event type (join frequency) on top of view/like/join | `EventsAdvancedExampleTest` |
 | [`reviews/`](reviews/) | Shop UGC + custom `PetTypeMatchSource` | `ReviewsExampleTest` |
 
 ```bash
 vendor/bin/pest tests/Feature/BlogExampleTest.php
 vendor/bin/pest tests/Feature/ProductsExampleTest.php
 vendor/bin/pest tests/Feature/EventsExampleTest.php
+vendor/bin/pest tests/Feature/EventsAdvancedExampleTest.php
 vendor/bin/pest tests/Feature/ReviewsExampleTest.php
 ```
 
