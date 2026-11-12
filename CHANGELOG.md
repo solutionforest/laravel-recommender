@@ -7,6 +7,17 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-11-12
+
+Impressions that mean "first shown".
+
+### Changed
+- **Impressions are counted once per user and item within the seen window** (`seen_max` items / `seen_ttl`), not on every serve: a refresh, a retry or the page-1 fallback that re-shows seen items no longer inflates them. Guests have no seen-set and still count once per page served. **Stored counts will grow more slowly than before and `rate` / `quality` rise accordingly** — see [UPGRADE.md](UPGRADE.md)
+- Impressions are written **after the response** when serving HTTP (`'impressions_after_response' => false` keeps them inline). In the console (tests, jobs) they are written at once. A failed write is logged and never breaks serving
+
+### Fixed
+- The seen-set update is atomic where the cache store has locks: two parallel requests for one user (two tabs, a retry) no longer overwrite each other's additions, so users see fewer repeats. `FeedCache::markSeen()` now returns the ids that were new
+
 ## [0.7.1] — 2026-11-12
 
 ### Added
@@ -283,7 +294,8 @@ First minor release: a feed is now **configuration only** — tell the package w
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/solutionforest/laravel-recommender/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.6.3...v0.7.0
 [0.6.3]: https://github.com/solutionforest/laravel-recommender/compare/v0.6.2...v0.6.3

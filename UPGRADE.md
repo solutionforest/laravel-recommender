@@ -1,5 +1,13 @@
 # Upgrade guide
 
+## From 0.7.x to 0.8.0
+
+Only if you use `'impressions' => true`:
+
+- An impression now means **first time shown to this user within the seen window**. New counts accumulate more slowly than the old "every serve" counts and `rate` / `quality` move up. Existing numbers are not rewritten; to compare feeds fairly, compare periods after the upgrade. (Impressions cannot be replayed from your tables, so `rebuild-scores` keeps them.)
+- Writes happen after the response in HTTP requests. Set `'impressions_after_response' => false` to keep them inline.
+- Nothing else to change.
+
 ## From 0.7.0 to 0.7.1
 
 Nothing to change. `recordInteraction()` is optional and additive.

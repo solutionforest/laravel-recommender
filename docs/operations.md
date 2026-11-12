@@ -170,7 +170,7 @@ Yes for feeds with a `model`: ranked items, then trending, then the newest items
 
 ## Roadmap / open ideas
 
-Done in 0.1–0.5: `recommender:bootstrap` and named presets (0.5); impressions and quality over time (0.4); catalog tail and cursor pagination (0.3); config-only feeds, dashboard + `doctor`, guided `rebuild-scores`, explain with final / cached positions, card invalidation on model save, ids with commas, a config-only `make-feed`, per-item `stats()` (quality / popularity).
+Done in 0.1–0.8: impressions counted once per user within the seen window and written after the response, an atomic seen-set (0.8); `recordInteraction` (0.7); per-tenant lists and simple-paginator JSON for signed-in feeds (0.7); fixes (0.6.x); `recommender:bootstrap` and named presets (0.5); impressions and quality over time (0.4); catalog tail and cursor pagination (0.3); config-only feeds, dashboard + `doctor`, guided `rebuild-scores`, explain with final / cached positions, card invalidation on model save, ids with commas, a config-only `make-feed`, per-item `stats()` (quality / popularity).
 
 Under consideration (open an issue if you need one):
 

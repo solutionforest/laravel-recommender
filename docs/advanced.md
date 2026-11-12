@@ -254,7 +254,7 @@ Recommender::stats('products', $product, days: 7);  // last 7 days
 $product->recommendationStats('products');
 ```
 
-`quality` (0..1) is the like rate adjusted for how much evidence there is — 1 like from 1 view does not beat 25 from 40. Turn on `'impressions' => true` and every served item counts as shown, so quality becomes "liked when shown". Details: [reference → how good is an item?](reference.md#how-good-is-an-item).
+`quality` (0..1) is the like rate adjusted for how much evidence there is — 1 like from 1 view does not beat 25 from 40. Turn on `'impressions' => true` and every served item counts as shown, so quality becomes "liked when shown" (counted once per user and item within the seen window). Details: [reference → how good is an item?](reference.md#how-good-is-an-item).
 
 Use it for "top rated this week" lists, moderation queues (high exposure, low quality), or seller dashboards.
 

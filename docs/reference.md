@@ -195,7 +195,7 @@ $product->recommendationStats('products');          // with the Recommendable tr
 | Key | Meaning |
 |---|---|
 | `positive` / `exposure` | counts of your `positive_events` (likes, joins, purchases, comments…) and `exposure_events` (views) |
-| `impressions` | times the item was served in a page (when `'impressions' => true`) |
+| `impressions` | times the item was shown (when `'impressions' => true`): a signed-in user counts once per item within the seen window, a guest once per page served |
 | `rate` | positive ÷ exposure — or ÷ impressions when impressions are on (capped at 1 when likes outnumber recorded views); `null` when the denominator is 0 |
 | `quality` | Wilson lower bound of the rate (0..1): a *confident* "how good". One like from one view (0.21) ranks below 25 from 40 (0.47) — the same score `QualityBooster` uses |
 | `popularity` | time-decayed activity (`half_life_days`) relative to the hottest item right now (0..1) |
@@ -206,7 +206,7 @@ Works for anything you recommend — products, events, posts, or comments if com
 
 #### Impressions (shown, not just viewed)
 
-Views your app records are only a proxy for "the user saw it". Turn on impressions and every item served in a page counts as shown:
+Views your app records are only a proxy for "the user saw it". Turn on impressions and every item shown counts. The metric is **"first time shown to this user within the seen window"** (`seen_max` items or `seen_ttl`): a refresh, a retry or the page-1 "allow seen items" fallback does not count again, and an item can count again once it has left the seen window. Guests have no seen-set, so they count once per page served:
 
 ```php
 'posts' => [
@@ -216,7 +216,7 @@ Views your app records are only a proxy for "the user saw it". Turn on impressio
 ],
 ```
 
-Each served page costs four small statements (insert missing rows, then atomic increments — safe under concurrent requests); a failure is logged and never breaks the page. `QualityBooster` and `stats()` then rate items by how often they were liked *when shown*. `rebuild-scores` keeps impressions (they cannot be replayed from your tables); `prune` keeps items that are still being shown.
+Only items shown for the first time cost anything: four small statements per page (insert missing rows, then atomic increments — safe under concurrent requests), written **after the response** when serving HTTP (`'impressions_after_response' => false` writes them inline). Two requests racing for the same user count an item once (the seen-set update is atomic where the cache store has locks). A failure is logged and never breaks the page. `QualityBooster` and `stats()` then rate items by how often they were liked *when shown*. `rebuild-scores` keeps impressions (they cannot be replayed from your tables); `prune` keeps items that are still being shown.
 
 ### Hiding an item (visibility changes)
 

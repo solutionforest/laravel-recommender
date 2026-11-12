@@ -115,3 +115,63 @@ it('prunes old daily rows but keeps items that are still being shown', function 
     expect($store->pruneDaily('articles', $cutoff))->toBeGreaterThan(0)
         ->and(DB::table('rec_item_daily')->count())->toBe(0);
 });
+
+it('counts a signed-in user once per item: a refresh adds no impressions', function () {
+    enableImpressions();
+    $user = new GenericUser(['id' => 777]);
+
+    $first = Recommender::page('articles', $user, 1);
+    $sum = fn () => (int) DB::table('rec_item_scores')->sum('impressions');
+    expect($sum())->toBe(count($first->ids));
+
+    // Same items served again (the page-1 "never show an empty screen" fallback
+    // after everything was seen) are not counted a second time.
+    Recommender::forgetTrending('articles');
+    app(SolutionForest\Recommender\Feed\FeedCache::class)->markSeen(Recommender::feed('articles'), 777, [1, 2, 3, 4, 5, 6]);
+    $before = $sum();
+    Recommender::page('articles', $user, 1);
+
+    expect($sum())->toBe($before);
+});
+
+it('counts an impression only once when two requests race on the seen-set', function () {
+    $feed = Recommender::feed('articles');
+    $cache = app(SolutionForest\Recommender\Feed\FeedCache::class);
+
+    expect($cache->markSeen($feed, 5, [10, 11]))->toBe([10, 11])
+        ->and($cache->markSeen($feed, 5, [11, 12]))->toBe([12])
+        ->and($cache->seen($feed, 5))->toBe([10, 11, 12]);
+});
+
+it('keeps counting every serve for guests', function () {
+    enableImpressions();
+    $ids = Recommender::page('articles', null)->ids;
+    Recommender::page('articles', null);
+
+    expect($ids)->not->toBeEmpty()
+        ->and((int) DB::table('rec_item_scores')->sum('impressions'))->toBe(2 * count($ids));
+});
+
+it('serves the page even when the impression write fails', function () {
+    enableImpressions();
+    // The daily table is only written by impressions: dropping it makes the write fail.
+    Illuminate\Support\Facades\Schema::drop('rec_item_daily');
+
+    expect(Recommender::page('articles', new GenericUser(['id' => 9]), 1)->ids)->not->toBeEmpty();
+});
+
+it('writes impressions after the response when serving HTTP', function () {
+    enableImpressions();
+    $property = new ReflectionProperty(app(), 'isRunningInConsole');
+    $property->setValue(app(), false);
+
+    try {
+        Recommender::page('articles', new GenericUser(['id' => 11]), 1);
+        expect((int) DB::table('rec_item_scores')->sum('impressions'))->toBe(0);
+
+        app()->terminate();
+        expect((int) DB::table('rec_item_scores')->sum('impressions'))->toBeGreaterThan(0);
+    } finally {
+        $property->setValue(app(), true);
+    }
+});
