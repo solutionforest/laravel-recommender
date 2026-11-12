@@ -107,7 +107,7 @@ Recommender::forgetTrending('reviews');
 | Huge journey payloads | Prefer recent ids; don’t load multi-thousand JSON to slice 20 |
 | Source SQL | Indexed `whereIn` + PHP cap, or bounded `UNION ALL` of per-id `LIMIT`s |
 | First paint for new users | Trending can help; filtering, missing cards or sparse data can still yield an empty page |
-| Scroll is long, not infinite | App-level catalog tail after `hasMore` — see `InfiniteScrollFeed` |
+| Scroll ends too early | Give the feed a `model` (catalog tail is on by default) and check `tail` is not `false` |
 | Media | Map `.mp4` → poster in `toRecommendationCard()` |
 | Sponsored shops | Source + Booster + diversity caps |
 

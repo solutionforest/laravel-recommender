@@ -20,7 +20,6 @@ flowchart LR
 | `src/Sources/` | Fresh posts (guests) + sponsored posts |
 | `src/Boosters/` | Freshness + sponsored |
 | `src/Http/` | One-line controller |
-| `src/Support/` | Infinite scroll helper |
 
 ## Try it
 
@@ -37,7 +36,7 @@ vendor/bin/pest tests/Feature/BlogExampleTest.php
 
 ## Lab ideas
 
-- **Infinite scroll** — ranked then chronological tail: `InfiniteScrollFeed`.
+- **Infinite scroll** — built in: ranked, then trending, then the newest posts (`'tail'`), following `next_cursor`.
 - **Don’t optimise for “latest”** — high Fresh\* collapses cohorts: [tuning](../../docs/tuning.md).
 - **Video covers** — poster URL in `toRecommendationCard()`, not `.mp4` in `<img>`.
 - **Sponsors** — Source + Booster + diversity caps.

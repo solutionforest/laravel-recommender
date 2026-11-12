@@ -154,3 +154,66 @@ it('reports how good an item is, confidence-adjusted', function () {
         ->and($stats[404])->toMatchArray(['positive' => 0, 'exposure' => 0, 'rate' => null, 'quality' => 0.0, 'popularity' => 0.0])
         ->and(Article::find(1)->recommendationStats('articles')['popularity'])->toBe(1.0);    // the hottest article
 });
+
+it('keeps scrolling into the catalog after ranked and trending items run out', function () {
+    config(['recommender.feeds.articles.page_size' => 2]);
+    $this->app->forgetInstance(\SolutionForest\Recommender\Recommender::class);
+    $user = new GenericUser(['id' => 1]);
+
+    $served = [];
+    $origins = [];
+    for ($page = 1; $page <= 10; $page++) {
+        $result = Recommender::page('articles', $user, $page);
+        array_push($served, ...$result->ids);
+        $origins[] = $result->origin;
+        if (! $result->hasMore) {
+            break;
+        }
+    }
+
+    // Every published article that is not the viewer's own — including 4, 6, 8 that nobody touched.
+    expect($served)->toEqualCanonicalizing([1, 2, 4, 5, 6, 8])
+        ->and(count($served))->toBe(count(array_unique($served)))
+        ->and($origins)->toContain('tail')
+        ->and($result->hasMore)->toBeFalse();
+});
+
+it('stops at ranked and trending items when the tail is turned off', function () {
+    config(['recommender.feeds.articles.tail' => false, 'recommender.feeds.articles.page_size' => 20]);
+    $this->app->forgetInstance(\SolutionForest\Recommender\Recommender::class);
+
+    expect(Recommender::page('articles', new GenericUser(['id' => 1]))->ids)->not->toContain(4)->not->toContain(6);
+});
+
+it('pages guests from trending into the catalog by offset', function () {
+    config(['recommender.feeds.articles.page_size' => 3]);
+    $this->app->forgetInstance(\SolutionForest\Recommender\Recommender::class);
+
+    $served = [];
+    foreach (range(1, 4) as $page) {
+        array_push($served, ...Recommender::page('articles', null, $page)->ids);
+    }
+
+    expect($served)->toEqualCanonicalizing([1, 2, 4, 5, 6, 7, 8]); // guests also see article 7
+});
+
+it('follows next_cursor to the end like cursorPaginate()', function () {
+    config(['recommender.feeds.articles.page_size' => 2]);
+    $this->app->forgetInstance(\SolutionForest\Recommender\Recommender::class);
+    $user = new GenericUser(['id' => 1]);
+
+    $first = $this->actingAs($user)->getJson('/articles/for-you')->assertOk();
+    $cursor = $first->json('next_cursor');
+    $served = collect($first->json('data'))->pluck('id')->all();
+
+    while ($cursor !== null) {
+        $response = $this->actingAs($user)->getJson('/articles/for-you?cursor='.$cursor)
+            ->assertOk()
+            ->assertJsonStructure(['data', 'path', 'per_page', 'next_cursor', 'next_page_url', 'prev_cursor', 'origin', 'has_more']);
+        array_push($served, ...collect($response->json('data'))->pluck('id')->all());
+        $cursor = $response->json('next_cursor');
+    }
+
+    expect($served)->toEqualCanonicalizing([1, 2, 4, 5, 6, 8])
+        ->and(\SolutionForest\Recommender\Support\Cursor::decode('not-a-cursor'))->toBeNull();
+});

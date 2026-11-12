@@ -13,7 +13,7 @@ use SolutionForest\Recommender\Examples\Blog\Models\Post;
  *
  * Lab defaults: personalisation first (not latest-first).
  * Sponsors: fill sponsored_author_ids (blog) or sponsored_shop_ids (reviews apps).
- * Infinite scroll: sizes below + InfiniteScrollFeed catalog tail when hasMore is false.
+ * Infinite scroll: built in — after ranked + trending posts, the newest published posts follow ('tail').
  */
 return [
     'enabled' => env('RECOMMENDER_ENABLED', true),

@@ -7,6 +7,17 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-11-12
+
+Never run out of items: feeds with a `model` keep scrolling into the catalog, and clients can follow a cursor.
+
+### Added
+- **Catalog tail**: after ranked and trending items, pages continue with the newest items the model's `recommendable` scope allows (signed-in users skip their seen-set; guests page by offset), until the catalog is exhausted. `origin: 'tail'` for such pages. Config `tail` (default `true`) and `tail_order`
+- **Cursor pagination**: `FeedPage::nextCursor()` / `toCursorArray()`; `?cursor=` is accepted wherever `?page=` is, and returning a page for a cursor request renders Laravel's cursor-paginator JSON. Paginator JSON also includes `next_cursor`
+
+### Removed
+- `examples/blog/src/Support/InfiniteScrollFeed` — replaced by the built-in tail and cursor
+
 ## [0.2.0] — 2026-11-12
 
 Finishes the improvements list: safe score rebuilds, an explain that shows the real order, a config-only `make-feed`, per-item quality stats. Upgrading: see [UPGRADE.md](UPGRADE.md) (nothing to change in apps).
@@ -189,7 +200,8 @@ First minor release: a feed is now **configuration only** — tell the package w
 [0.0.2]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.2
 [0.0.1]: https://github.com/solutionforest/laravel-recommender/releases/tag/v0.0.1
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/solutionforest/laravel-recommender/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.0.15...v0.1.0

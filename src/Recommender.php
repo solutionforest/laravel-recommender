@@ -19,6 +19,7 @@ use SolutionForest\Recommender\Scoring\Diversifier;
 use SolutionForest\Recommender\Scoring\Explorer;
 use SolutionForest\Recommender\Support\Bindings;
 use SolutionForest\Recommender\Support\Context;
+use SolutionForest\Recommender\Support\Cursor;
 use SolutionForest\Recommender\Support\FeedDefinition;
 use SolutionForest\Recommender\Support\FeedPage;
 use SolutionForest\Recommender\Support\Ids;
@@ -101,7 +102,7 @@ class Recommender
     {
         [$userId, $attributes] = $this->viewer($user, $attributes);
         $feed = $this->feed($feedName);
-        $page = max(1, $page ?? Paginator::resolveCurrentPage());
+        $page = max(1, $page ?? Cursor::currentPage() ?? Paginator::resolveCurrentPage());
         $perPage = max(1, $perPage ?? $feed->int('page_size', 12));
 
         if ($userId === null || ! $this->enabled()) {
@@ -146,6 +147,12 @@ class Recommender
             }
         }
 
+        $tail = [];
+        if (count($unseen) < $perPage + 1) {
+            // Ranked and trending items used up: continue with the catalog.
+            [$unseen, $tail] = $this->appendTail($feed, $userId, $unseen, $seenSet, $attributes, $perPage + 1 - count($unseen));
+        }
+
         if ($page === 1 && count($unseen) < $perPage) {
             // Never show an empty first screen: allow previously seen items.
             $unseen = $this->appendAllowed(
@@ -163,6 +170,9 @@ class Recommender
         $this->cache->markSeen($feed, $userId, $consumed);
 
         $remaining = max(0, count($unseen) - count($consumed));
+        if ($servedIds !== [] && $tail !== [] && array_diff(array_map('strval', $servedIds), array_keys($tail)) === []) {
+            $origin = 'tail';
+        }
 
         return new FeedPage(
             items: array_values($cards),
@@ -421,6 +431,17 @@ class Recommender
         $offset = ($page - 1) * $perPage;
         $window = array_slice($ids, $offset);
 
+        $origin = 'trending';
+        if (count($window) < $perPage + 1 && ($tail = $this->tail($feed)) !== null) {
+            // Guests page by offset: continue into the catalog after trending.
+            $context = new Context($feed, null, [], $attributes, CarbonImmutable::now());
+            $more = $tail->ids($context, $ids, $perPage + 1 - count($window), max(0, $offset - count($ids)));
+            if ($window === [] && $more !== []) {
+                $origin = 'tail';
+            }
+            $window = array_merge($window, $more);
+        }
+
         [$cards, $servedIds, $consumed] = $this->render($feed, $window, $perPage);
         $remaining = max(0, count($window) - count($consumed));
 
@@ -431,7 +452,7 @@ class Recommender
             perPage: $perPage,
             hasMore: $remaining > 0,
             remaining: $remaining,
-            origin: 'trending',
+            origin: $origin,
         );
     }
 
@@ -586,6 +607,50 @@ class Recommender
             'weights' => $sourceWeights,
             'boost_weights' => $boostWeights,
         ];
+    }
+
+    /**
+     * The feed's catalog tail, or null when it has no model or `tail` is off.
+     */
+    private function tail(FeedDefinition $feed): ?Eloquent\CatalogTail
+    {
+        $model = $feed->get('model');
+        if (! $feed->get('tail', true) || ! is_string($model) || ! is_a($model, Model::class, true)) {
+            return null;
+        }
+        $order = $feed->get('tail_order');
+
+        return new Eloquent\CatalogTail($model, is_string($order) && $order !== '' ? $order : null);
+    }
+
+    /**
+     * @param  list<int|string>  $unseen
+     * @param  array<int|string, mixed>  $seenSet
+     * @param  array<string, mixed>  $attributes
+     * @return array{0: list<int|string>, 1: array<string, true>}  queue, tail ids added
+     */
+    private function appendTail(FeedDefinition $feed, int|string $userId, array $unseen, array $seenSet, array $attributes, int $need): array
+    {
+        $tail = $this->tail($feed);
+        if ($tail === null || $need <= 0) {
+            return [$unseen, []];
+        }
+
+        try {
+            $context = new Context($feed, $userId, [], $attributes, CarbonImmutable::now());
+            $more = $tail->ids($context, array_merge(Ids::normalizeAll(array_keys($seenSet)), $unseen), $need);
+            // The scope already applied visibility; a custom filter class still gets its say.
+            $before = count($unseen);
+            $unseen = $feed->get('filter')
+                ? $this->appendAllowed($feed, $userId, $unseen, $more, $seenSet, $attributes)
+                : array_merge($unseen, $more);
+        } catch (Throwable $e) {
+            $this->report($feed, 'tail', $e);
+
+            return [$unseen, []];
+        }
+
+        return [$unseen, array_fill_keys(array_map('strval', array_slice($unseen, $before)), true)];
     }
 
     /**
