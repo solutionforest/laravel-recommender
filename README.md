@@ -94,6 +94,7 @@ That's it. The response is Laravel's paginator JSON (with `next_cursor` for infi
 | Look up methods, contracts and configuration | [Reference](docs/reference.md) |
 | Monitor feeds in the browser | [Dashboard](docs/dashboard.md) |
 | Run, monitor or rebuild in production | [Operations](docs/operations.md) |
+| See measured speed, load and concurrency results | [Performance](docs/performance.md) |
 | Explore the formulas | [Maths](docs/maths.md) (optional) |
 | Adapt an integration | [Examples](examples/) — blog, products, events and reviews |
 

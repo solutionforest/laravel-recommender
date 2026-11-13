@@ -109,9 +109,13 @@ it('folds 100k interactions into scores exactly, with bounded memory and queries
     $memoryBefore = memory_get_usage(true);
 
     $result = null;
+    $t = hrtime(true);
     $queries = countQueries(function () use (&$result) {
         $result = app(ScoreUpdater::class)->run(($this->feed)(), $this->now);
     });
+    $seconds = (hrtime(true) - $t) / 1e9;
+    perfNote(sprintf('update-scores: %s events (%s users) in %.2fs = %s ev/s, %d queries, +%d MB',
+        number_format($likes + $views), number_format($users), $seconds, number_format((int) (($likes + $views) / max($seconds, 0.001))), $queries, (memory_get_peak_usage(true) - $memoryBefore) / 1048576));
 
     $totals = DB::table('rec_item_scores')->where('feed', 'articles')
         ->selectRaw('count(*) as items, sum(positive) as positive, sum(exposure) as exposure')->first();
@@ -130,9 +134,11 @@ it('builds neighbours for thousands of users within the configured caps', functi
     seedVolume($this->now, $users, likesPerUser: 10, viewsPerUser: 40);
 
     $result = null;
+    $t = hrtime(true);
     $reads = countQueries(function () use (&$result) {
         $result = app(NeighbourBuilder::class)->run(($this->feed)(), $this->now);
     }, 'article_');
+    perfNote(sprintf('build-neighbours: %s users, 1,000 items in %.2fs, %d interaction-table reads', number_format($users), (hrtime(true) - $t) / 1e9, $reads));
 
     $items = range(1, STRESS_CLUSTERS * STRESS_CLUSTER_SIZE);
     $graph = app(\SolutionForest\Recommender\Storage\NeighbourStore::class)->neighboursOf('articles', $items);
@@ -155,17 +161,23 @@ it('serves personal pages at a constant query cost regardless of history size', 
     app(NeighbourBuilder::class)->run(($this->feed)(), $this->now);
     $recommender = app(Recommender::class);
 
-    $build = $cached = [];
+    $build = $cached = $coldMs = $warmMs = [];
     foreach (range(1, 200) as $u) {
         $user = new GenericUser(['id' => $u]);
         $page = null;
+        $t = hrtime(true);
         $build[] = countQueries(function () use ($recommender, $user, &$page) {
             $page = $recommender->page('articles', $user, 1);
         });
+        $coldMs[] = (hrtime(true) - $t) / 1e6;
         expect($page->origin)->toBe('personal')->and($page->items)->toHaveCount(10);
 
+        $t = hrtime(true);
         $cached[] = countQueries(fn () => $recommender->page('articles', $user, 2));
+        $warmMs[] = (hrtime(true) - $t) / 1e6;
     }
+    perfNote(sprintf('page (200 users): cold build p50 %.1f ms / p95 %.1f ms, max %d queries; warm page p50 %.1f ms / p95 %.1f ms, max %d queries',
+        percentile($coldMs, 50), percentile($coldMs, 95), max($build), percentile($warmMs, 50), percentile($warmMs, 95), max($cached)));
 
     // Cold build: recent items + neighbours + scores + filter + cards + groups.
     expect(max($build))->toBeLessThanOrEqual(12)
@@ -215,6 +227,7 @@ it('counts every event exactly once when events arrive every minute and scores r
 
     // Flush the safety margin.
     $counted += $updater->run(($this->feed)(), $start->addMinutes(125))['events'];
+    perfNote(sprintf('every-minute stream: 120 score runs, %s events (incl. a 1,000-like burst in one second), counted %s', number_format(array_sum($inserted)), number_format($counted)));
 
     $totals = DB::table('rec_item_scores')->where('feed', 'articles')
         ->selectRaw('sum(positive) as positive, sum(exposure) as exposure')->first();
@@ -240,22 +253,27 @@ it('handles rapid-fire page requests without repeats and with throttled rebuilds
 
     // Scroll as fast as possible: 60 pages back to back.
     $served = [];
+    $t = hrtime(true);
     $builds = countQueries(function () use ($recommender, $user, &$served) {
         for ($page = 1; $page <= 60; $page++) {
             array_push($served, ...$recommender->page('articles', $user, $page)->ids);
         }
     }, 'rec_item_neighbours');
+    $scrollMs = (hrtime(true) - $t) / 1e6;
 
     expect(count($served))->toBe(count(array_unique($served))) // no repeats while scrolling
         ->and(count($served))->toBeGreaterThan(200)            // personal list, then trending top-up
         ->and($builds)->toBe(1);                               // one build for the whole scroll
 
     // Hammer page 1 (pull-to-refresh) 100 times within the rebuild interval.
+    $t = hrtime(true);
     $rebuilds = countQueries(function () use ($recommender, $user) {
         foreach (range(1, 100) as $_) {
             expect($recommender->page('articles', $user, 1)->items)->not->toBeEmpty();
         }
     }, 'rec_item_neighbours');
+    perfNote(sprintf('rapid fire: 60 pages back to back in %.0f ms (%.1f ms/page), %d items, 0 repeats, %d build; 100× page 1 in %.0f ms, %d rebuilds',
+        $scrollMs, $scrollMs / 60, count($served), $builds, (hrtime(true) - $t) / 1e6, $rebuilds));
 
     expect($rebuilds)->toBeLessThanOrEqual(1); // min_rebuild_interval throttles exhausted-list rebuilds
 })->group('stress');

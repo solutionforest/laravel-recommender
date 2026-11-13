@@ -147,6 +147,7 @@ it('absorbs 1M mixed interactions from 500k users at the same time without a que
     $liveViews = $liveLikes = $liveShares = 0;
     $served = [];
     $cold = [];
+    $pageMs = [];
     $meter = new stdClass;
     $meter->n = 0;
     DB::listen(function () use ($meter) {
@@ -167,7 +168,9 @@ it('absorbs 1M mixed interactions from 500k users at the same time without a que
             $user = new GenericUser(['id' => $id]);
             $meter->n = 0;
             foreach ([1, 2] as $page) {
+                $t = hrtime(true);
                 $p = $recommender->page('articles', $user, $page);
+                $pageMs[] = (hrtime(true) - $t) / 1e6;
                 expect($p->items)->not->toBeEmpty();
                 $served[$id] = [...($served[$id] ?? []), ...$p->ids];
             }
@@ -203,7 +206,8 @@ it('absorbs 1M mixed interactions from 500k users at the same time without a que
     $hottest = array_keys(app(SolutionForest\Recommender\Storage\ScoreStore::class)->hottest('articles', 10));
     expect(count(array_filter($hottest, fn ($id) => $id <= 20)))->toBeGreaterThanOrEqual(5);
 
-    heavyNote(sprintf('served pages: max %d queries per user; peak memory %d MB', max($cold), memory_get_peak_usage(true) / 1048576));
+    heavyNote(sprintf('served pages: %d member pages while scoring, p50 %.1f ms / p95 %.1f ms, max %d queries per user; peak memory %d MB',
+        count($pageMs), percentile($pageMs, 50), percentile($pageMs, 95), max($cold), memory_get_peak_usage(true) / 1048576));
 
     // ---- 5. The point of the exercise: no errors anywhere -------------------------------
     expect($this->problems)->toBe([]);

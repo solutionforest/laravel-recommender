@@ -113,7 +113,7 @@ A nonempty impression batch issues four bulk database statements, updating `rec_
 
 Crash mid-slice: watermark / version activation → resume cleanly, no double-count.
 
-Verified under real concurrency (opt-in `ConcurrencyTest`, MariaDB, database cache store, impressions on): 24 processes × 300 pages while likes arrive and scores update — **0 deadlocks, 0 errors, ~300 pages/s**. Before the 0.8.2 write-order fix the same test produced 213 deadlocks in 1,800 pages on impression writes, so this is a regression test, not a guess.
+Verified under real concurrency: 0 deadlocks and 0 errors up to 48 processes on the database cache (before the 0.8.2 fix: 213 deadlocks in 1,800 pages). All numbers: [performance](performance.md).
 
 ## Memory
 
@@ -163,7 +163,7 @@ Works, nothing to configure. The package keeps no per-request state in statics; 
 No, and you do not have to choose: if your app has a working Redis store the package uses it automatically, otherwise your normal cache. The **database** cache is comfortable for small and medium apps (roughly tens of thousands of daily active users); `recommender:prune` keeps its table from growing. For heavy traffic add Redis to the app — no package change needed. See [reference → Cache](reference.md#cache-store--locks).
 
 **Will it deadlock under heavy load?**  
-Tested, not assumed: see the deadlocks table and the concurrency result above.
+Tested, not assumed: see the deadlocks table above and [performance](performance.md).
 
 **Will `build-neighbours` OOM?**  
 Shards + retry; previous graph stays live.
