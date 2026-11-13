@@ -323,6 +323,7 @@ Per feed (defaults, overridable in `feeds.*`). `seen_max` / `seen_ttl` also read
 | `sources` | `CoInteractionSource` 0.6, `TrendingSource` 0.4 | `class => weight` |
 | `boosters` | – | `class => weight` |
 | `exploration_sources` / `exploration_ratio` | – / 0.15 | exploration |
+| `jitter` | 0.0 | randomness per list build: `(1−j)·score + j·random`; 0 = pure ranking, 1 = uniform random order (stable while the list is cached) |
 | `diversity` | – | `group => max per page` |
 | `events` | `view` 1, `like` 4 (any names OK) | trending weights per event type |
 | `positive_events` / `exposure_events` | like / view | quality (Wilson) |

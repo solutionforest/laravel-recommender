@@ -8,6 +8,7 @@ use SolutionForest\Recommender\Contracts\CandidateSource;
 use SolutionForest\Recommender\Scoring\Blender;
 use SolutionForest\Recommender\Scoring\Diversifier;
 use SolutionForest\Recommender\Scoring\Explorer;
+use SolutionForest\Recommender\Scoring\Jitter;
 use SolutionForest\Recommender\Sources\TrendingSource;
 use SolutionForest\Recommender\Support\Bindings;
 use SolutionForest\Recommender\Support\Context;
@@ -29,6 +30,7 @@ final class Ranker
         private readonly Blender $blender = new Blender(),
         private readonly Explorer $explorer = new Explorer(),
         private readonly Diversifier $diversifier = new Diversifier(),
+        private readonly Jitter $jitter = new Jitter(),
     ) {
     }
 
@@ -131,7 +133,10 @@ final class Ranker
         $explore = $trendingOnly ? [] : $parts['exploration'];
         shuffle($explore);
 
-        $ids = $this->explorer->interleave(array_slice(array_keys($parts['blended']), 0, $size), $explore, $feed->float('exploration_ratio', 0.15));
+        // Optional randomness (classic "random order" feeds); never for the shared trending list.
+        $blended = $trendingOnly ? $parts['blended'] : $this->jitter->apply($parts['blended'], $feed->float('jitter', 0.0));
+
+        $ids = $this->explorer->interleave(array_slice(array_keys($blended), 0, $size), $explore, $feed->float('exploration_ratio', 0.15));
         $ids = array_slice($ids, 0, $size);
 
         $diversity = (array) $feed->get('diversity', []);

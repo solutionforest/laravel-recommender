@@ -24,7 +24,7 @@ https://your-app.test/recommender
 
 ![Explain a user](../art/screenshots/dashboard-explain.png)
 
-Each bar is the item's score split by source (the parts add up to the score). **Final** is the item's position after exploration and diversity in this fresh build, and **Served** its position in the list the user gets right now — so you can tell a ranking question from a caching one. `CoInteractionSource` means “people who liked what this user liked also liked this”, and `TrendingSource` means “popular right now”. A user who only gets `TrendingSource` rows has too little history or no shared interactions yet. Exploration is shuffled on every build, so *Final* can move between runs. Live refresh pauses while a user is explained, so the build does not repeat.
+Each bar is the item's score split by source (the parts add up to the score). **Final** is the item's position after exploration and diversity in this fresh build, and **Served** its position in the list the user gets right now — so you can tell a ranking question from a caching one. `CoInteractionSource` means “people who liked what this user liked also liked this”, and `TrendingSource` means “popular right now”. A user who only gets `TrendingSource` rows has too little history or no shared interactions yet. Exploration is shuffled on every build, so *Final* can move between runs. The same goes for a feed with `jitter` above 0: its rows are ranked by score before the shuffle, so look at *Served* for what the user actually sees. Live refresh pauses while a user is explained, so the build does not repeat.
 
 ### Checks
 
