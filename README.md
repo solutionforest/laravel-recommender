@@ -80,6 +80,8 @@ That's it. The response is Laravel's paginator JSON (with `next_cursor` for infi
 ],
 ```
 
+For a related-posts block, `$post->similar(6)` returns the cards of the posts most often liked together with this one. See [similar items](docs/reference.md#similar-items-related-posts).
+
 **[Follow the first-feed tutorial →](docs/tutorial.md)** for other table shapes, custom classes and troubleshooting.
 
 ## Choose your next step
