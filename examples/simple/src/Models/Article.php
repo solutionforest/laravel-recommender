@@ -19,10 +19,7 @@ class Article extends Model
 
     protected $guarded = [];
 
-    protected function casts(): array
-    {
-        return ['published' => 'boolean'];
-    }
+    protected $casts = ['published' => 'boolean'];
 
     /**
      * Which articles may be recommended. $context->userId is the viewer

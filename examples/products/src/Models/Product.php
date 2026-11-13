@@ -20,12 +20,9 @@ class Product extends Model
 
     protected $guarded = [];
 
-    protected function casts(): array
-    {
-        return [
+    protected $casts = [
             'published' => 'boolean',
-        ];
-    }
+    ];
 
     /**
      * Published, and not the viewer's own listings.

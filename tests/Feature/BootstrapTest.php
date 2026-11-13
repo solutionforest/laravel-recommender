@@ -56,6 +56,7 @@ it('runs migrations first unless skipped', function () {
 });
 
 it('fails with the doctor output when the schema does not match', function () {
+    $this->withoutMockingConsoleOutput(); // Laravel 10's console mock would swallow Artisan::call() output
     $output = new \Symfony\Component\Console\Output\BufferedOutput();
     $code = \Illuminate\Support\Facades\Artisan::call('recommender:bootstrap', bootstrapArgs(['--likes' => 'missing_likes', '--skip-migrate' => true]), $output);
     $text = $output->fetch();

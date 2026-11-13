@@ -420,4 +420,4 @@ composer analyse
 
 Stress tests run in the normal suite (~10 s on SQLite). Run them alone or bigger with `RECOMMENDER_STRESS_SCALE=5 vendor/bin/pest --group=stress`. Add `RECOMMENDER_PERF=1` to print the numbers. Measured results for all of these: [performance](performance.md).
 
-CI: PHPStan + PHP 8.3–8.4 × Laravel 11–13 (SQLite) + Laravel 13 / MySQL 8.
+CI: PHPStan + PHP 8.3–8.4 × Laravel 10–13 (SQLite) + Laravel 13 / MySQL 8.

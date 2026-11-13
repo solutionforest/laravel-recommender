@@ -7,6 +7,12 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **Laravel 10 support** (PHP 8.3+ unchanged). No runtime code changes were needed; CI now runs Laravel 10 on PHP 8.3 and 8.4.
+
+### Changed
+- Example models declare casts with the `$casts` property instead of the Laravel 11+ `casts()` method, so the examples run on Laravel 10–13.
+
 ## [0.8.5] — 2026-11-13
 
 Measured, and written down.

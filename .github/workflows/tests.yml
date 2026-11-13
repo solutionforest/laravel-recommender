@@ -27,6 +27,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - { php: '8.3', laravel: '10.*', testbench: '8.*', pest: '2.*' }
+          - { php: '8.4', laravel: '10.*', testbench: '8.*', pest: '2.*' }
           - { php: '8.3', laravel: '11.*', testbench: '9.*', pest: '3.*' }
           - { php: '8.4', laravel: '11.*', testbench: '9.*', pest: '3.*' }
           - { php: '8.3', laravel: '12.*', testbench: '10.*', pest: '3.*' }
@@ -43,6 +45,8 @@ jobs:
           coverage: none
       - run: |
           composer config audit.block-insecure false
+          # larastan has no Laravel 10 release; it is only needed by the PHPStan job
+          if [ "${{ matrix.laravel }}" = "10.*" ]; then composer remove --dev larastan/larastan phpstan/phpstan --no-update --no-interaction; fi
           composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" "pestphp/pest:${{ matrix.pest }}" --dev --no-update --no-interaction
           composer update --prefer-dist --no-interaction --no-progress
       - run: vendor/bin/pest
