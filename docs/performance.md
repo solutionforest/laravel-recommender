@@ -11,6 +11,7 @@ Measured results from the package's own performance tests. Each one is a Pest te
 | Many processes on the database cache? | **0 deadlocks, 0 errors** up to 48 processes × 200 pages | Concurrency |
 | Events every minute, bursts? | Every event counted exactly once | Stress |
 | Fast scrolling? | 60 pages in 75–126 ms, 0 repeats, 1 build | Stress |
+| Related items (`similar()`)? | **0 queries** warm, 2 cold; same cost and latency at 2,000 and 10,000 users | Stress |
 | Laravel Octane? | No repeats across requests, impressions written, config isolated per request | Octane |
 
 ## Test machine
@@ -53,6 +54,17 @@ What the test asserts:
 | Page 2, list cached (warm) | **0.2 / 0.4 ms** | **0.2 / 1.0 ms** | 1 |
 
 SQLite gives the same numbers at 100k and 500k events (scale 1 and 5): **serving cost does not grow with history**. Asserted: cold ≤ 12 queries, warm ≤ 2.
+
+### Similar items: 200 items, cold then warm
+
+`similar(6)` per item, measured after `build-neighbours` at two user counts in one run (SQLite, 2026-11-13, not yet on MariaDB):
+
+| Users | Cold p95 | Warm p95 | Max queries cold / warm |
+|---|---|---|---|
+| 2,000 | 0.64 ms | 0.07 ms | 2 / 0 |
+| 10,000 | 0.80 ms | 0.07 ms | 2 / 0 |
+
+Nothing is stored per user, so the cost follows items, not users. Asserted: the same query count at both sizes (cold ≤ 2, warm 0) and no large latency jump.
 
 ## 2. Interaction frequency: `StressTest`
 

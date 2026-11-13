@@ -192,6 +192,31 @@ Recommender::recordInteraction('posts', $post, $user, 'like', once: true);   // 
 - The timestamp column is set by the package (scores decay by it). It fires no events and dispatches no jobs; scores update on the schedule.
 - **Unliking is your own delete.** Scores are decayed counters and do not go back down.
 
+### Similar items (related posts)
+
+"More like this one", from the neighbours `build-neighbours` already computes (people who liked this item also liked these):
+
+```php
+$post->similar(6);                              // cards, most similar first
+Recommender::similar('posts', $post, 6);        // without the trait (a model or an id)
+Recommender::similar('posts', $post, 6, ['locale' => 'en']);   // cards_vary_by / list_vary_by values
+```
+
+```blade
+@if ($related = $post->similar(4))
+    <h2>You may also like</h2>
+    @foreach ($related as $card)
+        <a href="/posts/{{ $card['id'] }}">{{ $card['title'] }}</a>
+    @endforeach
+@endif
+```
+
+- **The same for every viewer.** No seen-memory and no viewer filter (the `recommendable` scope runs as a guest, like cards), so the result is cached per item and its cost does not grow with users. It is not a personal feed: use `page()` for that.
+- **Nothing new is stored.** It reads the item's one `rec_item_neighbours` row. The list of showable ids is cached per item for `similar_ttl` (3600 s) and keyed by the neighbour version, so a rebuild switches over at once.
+- **Cost:** warm, cache reads only; cold, one neighbours row and one card query (plus one filter query when the feed has a custom `filter` class). The first call after a rebuild also reads the active neighbour version once per feed.
+- **Hidden items** are left out when the list is built. An item hidden later drops out when its card is forgotten (`Recommendable` does that on save); until the list expires it costs one card query per call.
+- **Empty** until the item has neighbours (new items, or too few co-interactions: `neighbours_min_co_count`). Hide the block, or fall back to your own query (e.g. newest posts in the same category). `$limit` is capped at `neighbours_max` (30).
+
 ### How good is an item?
 
 ```php
@@ -314,6 +339,7 @@ Per feed (defaults, overridable in `feeds.*`). `seen_max` / `seen_ttl` also read
 | `trending_sources` | `[TrendingSource => 1]` | guest / fallback |
 | `trending_size` / `trending_ttl` | 200 / 600 | shared list |
 | `card_ttl` | 3600 | card cache |
+| `similar_ttl` | 3600 | `similar()` id list per item (keyed by neighbour version, so a rebuild switches over at once) |
 | `cards_vary_by` | `[]` | cache cards per attribute, e.g. `['locale']` (`locale` defaults to the app locale) |
 | `list_vary_by` | `[]` | keep the ranked list, trending list and background build per attribute value, e.g. `['tenant']` (see [advanced](advanced.md#passing-extra-context)) |
 | `seen_vary_by` | `tenant` if in `list_vary_by`, else none | split the seen-set per attribute; `device` / `locale` stay shared by default |

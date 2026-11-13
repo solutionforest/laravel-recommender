@@ -185,6 +185,48 @@ it('serves personal pages at a constant query cost regardless of history size', 
         ->and(max($cached))->toBeLessThanOrEqual(2);
 })->group('stress');
 
+it('serves similar items at the same query cost and latency with 5x the users', function () {
+    $measure = function (int $users): array {
+        DB::table('article_likes')->delete();
+        DB::table('article_views')->delete();
+        cache()->flush();
+        seedVolume($this->now, $users, likesPerUser: 10, viewsPerUser: 40);
+        app(NeighbourBuilder::class)->run(($this->feed)(), $this->now);
+
+        $items = range(1, STRESS_CLUSTERS * STRESS_CLUSTER_SIZE, 5); // 200 items
+        $article = fn (int $id) => (new Article)->forceFill(['id' => $id])->syncOriginal();
+        app(Recommender::class)->similar('articles', 1); // the neighbour version, read once per feed
+
+        $cold = $warm = $coldMs = $warmMs = [];
+        foreach ($items as $id) {
+            $t = hrtime(true);
+            $cold[] = countQueries(function () use ($article, $id) {
+                expect($article($id)->similar(6))->toHaveCount(6);
+            });
+            $coldMs[] = (hrtime(true) - $t) / 1e6;
+
+            $t = hrtime(true);
+            $warm[] = countQueries(fn () => $article($id)->similar(6));
+            $warmMs[] = (hrtime(true) - $t) / 1e6;
+        }
+
+        return ['cold' => max($cold), 'warm' => max($warm), 'cold_p95' => percentile($coldMs, 95), 'warm_p95' => percentile($warmMs, 95)];
+    };
+
+    $small = $measure(2000 * stressScale());
+    $large = $measure(10000 * stressScale());
+    perfNote(sprintf('similar (200 items): %s users cold p95 %.2f ms / warm p95 %.2f ms; %s users cold p95 %.2f ms / warm p95 %.2f ms; queries cold %d / warm %d',
+        number_format(2000 * stressScale()), $small['cold_p95'], $small['warm_p95'], number_format(10000 * stressScale()), $large['cold_p95'], $large['warm_p95'], $large['cold'], $large['warm']));
+
+    // One neighbours row + one card query cold, cache only warm — at both sizes.
+    expect($small['cold'])->toBeLessThanOrEqual(2)
+        ->and($large['cold'])->toBe($small['cold'])
+        ->and($small['warm'])->toBe(0)
+        ->and($large['warm'])->toBe(0)
+        // Generous bound: what matters is that it does not scale with users.
+        ->and($large['cold_p95'])->toBeLessThan($small['cold_p95'] * 3 + 5);
+})->group('stress');
+
 // -------------------------------------------------------------------------
 // 2. Interaction frequency
 // -------------------------------------------------------------------------

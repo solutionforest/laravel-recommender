@@ -295,6 +295,66 @@ final class FeedCache
         $this->store()->forget($this->key($feed, 'trending'.self::suffix($variant)));
     }
 
+    /**
+     * The active neighbour version, cached so warm similar-items reads need
+     * no database query. build-neighbours forgets it when it activates a new
+     * version; the TTL is only a safety net. "Never built" is kept briefly.
+     *
+     * @param  callable(): ?int  $resolve
+     */
+    public function neighbourVersion(FeedDefinition $feed, callable $resolve): ?int
+    {
+        $key = $this->key($feed, 'neighbours-version');
+        $cached = $this->store()->get($key);
+        if (is_int($cached)) {
+            return $cached;
+        }
+        if ($cached === 'none') {
+            return null;
+        }
+
+        $version = $resolve();
+        $this->putQuietly($feed, $key, $version ?? 'none', $version === null ? 60 : 3600);
+
+        return $version;
+    }
+
+    public function forgetNeighbourVersion(FeedDefinition $feed): void
+    {
+        $this->store()->forget($this->key($feed, 'neighbours-version'));
+    }
+
+    /**
+     * Cached similar-item ids of one item for one neighbour version (so a
+     * rebuild switches over without any forgetting). One key per item.
+     *
+     * @param  callable(): list<int|string>  $build
+     * @return list<int|string>
+     */
+    public function similar(FeedDefinition $feed, int|string $id, int $version, ?string $variant, callable $build): array
+    {
+        $key = $this->key($feed, "similar:{$id}:n{$version}".self::suffix($variant));
+        $cached = $this->store()->get($key);
+        if (is_string($cached)) {
+            return self::unpack($cached);
+        }
+
+        $ids = $build();
+        $this->putQuietly($feed, $key, self::pack($ids), $feed->int('similar_ttl', 3600));
+
+        return $ids;
+    }
+
+    /** A cache write that must not fail the request: logged instead. */
+    private function putQuietly(FeedDefinition $feed, string $key, mixed $value, int $ttl): void
+    {
+        try {
+            $this->store()->put($key, $value, $ttl);
+        } catch (\Throwable $e) {
+            Log::warning("[recommender:{$feed->name}] cache write failed: {$e->getMessage()}");
+        }
+    }
+
     /** Whether the configured cache store can provide atomic locks. */
     public function supportsLocks(): bool
     {

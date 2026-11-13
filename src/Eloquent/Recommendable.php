@@ -14,6 +14,7 @@ use SolutionForest\Recommender\Recommender;
  *     }
  *
  *     Route::get('/posts/for-you', fn (Request $r) => Post::recommendedFor($r->user()));
+ *     $post->similar(6); // related posts
  */
 trait Recommendable
 {
@@ -43,6 +44,21 @@ trait Recommendable
         $recommender = app(Recommender::class);
 
         return $recommender->page($feed ?? $recommender->feedFor(static::class), $user, null, $perPage, $attributes);
+    }
+
+    /**
+     * Items similar to this one, as cards (most similar first), e.g.
+     * `$post->similar(6)` for a related-posts block. See
+     * {@see Recommender::similar()}.
+     *
+     * @param  array<string, mixed>  $attributes
+     * @return list<array<string, mixed>>
+     */
+    public function similar(int $limit = 6, ?string $feed = null, array $attributes = []): array
+    {
+        $recommender = app(Recommender::class);
+
+        return $recommender->similar($feed ?? $recommender->feedFor($this), $this, $limit, $attributes);
     }
 
     /**
