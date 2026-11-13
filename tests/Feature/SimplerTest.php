@@ -110,3 +110,36 @@ it('matches the "testing your feed" example in docs/advanced.md', function () {
     expect(Article::recommendedFor(new GenericUser(['id' => 99]))->ids)->toContain($b->id)
         ->and(Recommender::explain('articles', 99)[0]['sources'])->toHaveKey('CoInteractionSource');
 });
+
+it('switches one feed off: trending only, nothing written, no warm-up, jobs skip it', function () {
+    seedArticles();
+    config(['recommender.feeds.articles.enabled' => false, 'recommender.feeds.articles.impressions' => true]);
+    $this->app->forgetInstance(RecommenderService::class);
+    \Illuminate\Support\Facades\Bus::fake();
+    $user = new GenericUser(['id' => 9]);
+
+    $page = Recommender::page('articles', $user);
+    Recommender::warm('articles', $user);
+    app()->terminate();
+
+    expect($page->origin)->toBe('trending')
+        ->and($page->items)->not->toBeEmpty()                                                     // routes keep working
+        ->and(app(\SolutionForest\Recommender\Feed\FeedCache::class)->seen(Recommender::feed('articles'), 9))->toBe([])
+        ->and((int) DB::table('rec_item_scores')->sum('impressions'))->toBe(0)
+        ->and(Recommender::enabled('articles'))->toBeFalse()
+        ->and(Recommender::enabled())->toBeTrue();
+    \Illuminate\Support\Facades\Bus::assertNothingDispatched();
+
+    $this->artisan('recommender:update-scores')->doesntExpectOutputToContain('[articles]')->assertSuccessful();
+    $this->artisan('recommender:update-scores', ['feed' => 'articles'])->expectsOutputToContain('[articles]'); // explicit still runs
+    $this->artisan('recommender:doctor', ['feed' => 'articles'])->expectsOutputToContain('Feed [articles] is switched off');
+});
+
+it('switches the whole package off with RECOMMENDER_ENABLED=false and pauses the schedule', function () {
+    config(['recommender.enabled' => false]);
+    $this->app->forgetInstance(Schedule::class);
+
+    expect(Recommender::enabled())->toBeFalse()
+        ->and(Recommender::enabled('articles'))->toBeFalse()
+        ->and(collect(app(Schedule::class)->events())->filter(fn ($e) => str_contains($e->command, 'recommender:')))->toBeEmpty();
+});

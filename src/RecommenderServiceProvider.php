@@ -57,7 +57,8 @@ class RecommenderServiceProvider extends ServiceProvider
     private function registerSchedule(): void
     {
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
-            if (! config('recommender.schedule.enabled', true)) {
+            // Switched off (RECOMMENDER_ENABLED=false): pause the jobs too.
+            if (! config('recommender.schedule.enabled', true) || ! config('recommender.enabled', true)) {
                 return;
             }
             $jobs = [

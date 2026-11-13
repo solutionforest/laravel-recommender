@@ -152,6 +152,15 @@ Item ids may be integers, UUIDs, ULIDs or any string (commas included). Plain nu
 
 Add your own under `presets` in `config/recommender.php` (e.g. `'jobs' => ['events' => ['view' => 1, 'apply' => 10], 'half_life_days' => 30]`). An unknown preset name fails with the list of available ones. `make-feed` writes the matching preset (blog / reviews → `social`, products → `catalog`, events → `events`).
 
+### Turning it on and off
+
+| Switch | Effect |
+|---|---|
+| `RECOMMENDER_ENABLED=false` | The whole package is off: every page serves the shared trending list (from the last computed scores), nothing personal is built, no seen lists or impressions are written, `warm()` does nothing and the scheduled jobs pause. Routes keep working. |
+| `'enabled' => false` on a feed | The same for that feed only. Scheduled jobs skip it; running a command with the feed name still works. |
+
+Remove the switch to turn it back on — nothing else to do. `doctor`, `status` and the dashboard show when something is off. `Recommender::enabled('posts')` tells your code.
+
 ### Infinite scroll: catalog tail and cursors
 
 For a feed with a `model`, a page can continue through **ranked items → trending → the newest items the `recommendable` scope allows**. The bounded seen-set normally excludes recent items; repeats and empty pages are still possible, as described in [operations](operations.md#seen-memory-and-impressions). Pages made only of catalog items have `origin: 'tail'`. Turn it off with `'tail' => false`; order it by another column with `'tail_order' => 'published_at'`.
@@ -287,12 +296,12 @@ Top level:
 | Key | Env | Default | Purpose |
 |---|---|---|---|
 | `enabled` | `RECOMMENDER_ENABLED` | `true` | Kill switch → trending only |
-| `cache_store` | `RECOMMENDER_CACHE_STORE` | default | lists, seen, cards, locks |
+| `cache_store` | `RECOMMENDER_CACHE_STORE` | auto: Redis if the app has a working Redis store, else `CACHE_STORE` | lists, seen, cards, locks |
 | `prefix` | `RECOMMENDER_PREFIX` | `rec` | cache key prefix |
 | `queue` / `queue_connection` | `RECOMMENDER_QUEUE` / `…_CONNECTION` | `recommender` / default | `BuildFeed` |
 | `database_connection` | `RECOMMENDER_DB_CONNECTION` | default | package tables |
 
-Per feed (defaults, overridable in `feeds.*`):
+Per feed (defaults, overridable in `feeds.*`). `seen_max` / `seen_ttl` also read `RECOMMENDER_SEEN_MAX` / `RECOMMENDER_SEEN_TTL`:
 
 | Key | Default | Purpose |
 |---|---|---|
@@ -365,14 +374,14 @@ Checks cover the model and its table, every interaction table and column, events
 
 ## Cache store & locks
 
-Configured by `recommender.cache_store` / `RECOMMENDER_CACHE_STORE` (empty → app `CACHE_STORE`).
+**You normally set nothing.** With `RECOMMENDER_CACHE_STORE` empty, the package uses **Redis when the app has a working Redis store**, otherwise the app's `CACHE_STORE`. The check runs once and is remembered for an hour, so an unreachable Redis never slows requests. Set `RECOMMENDER_CACHE_STORE` only to force a store. `recommender:status`, `doctor` and the dashboard show which one is used.
 
 Build locks need a store that implements Laravel’s `LockProvider`. Not Redis-only.
 
 | Store | Locks | Typical use |
 |---|---|---|
 | **redis** | Yes | Production default — fast lists + atomic locks |
-| **database** | Yes on Laravel **11–13** if `cache` + `cache_locks` tables exist (`php artisan cache:table`) | Small / mid prod without Redis |
+| **database** | Yes on Laravel **11–13** if `cache` + `cache_locks` tables exist (`php artisan cache:table`) | Small / mid prod without Redis; `recommender:prune` deletes the package's expired rows (Laravel's database cache does not) |
 | **array** / **file** | Yes in recent Laravel (single process / local) | Local lab & CI |
 | Custom store without `LockProvider` | No | Package falls back to unlocked builds (last write wins) |
 
@@ -382,6 +391,8 @@ RECOMMENDER_CACHE_STORE=redis
 ```
 
 Verify: `php artisan recommender:status` (shows store name + locks yes/fallback).
+
+**Under load the page never fails because of the cache.** If saving the seen list fails (overloaded database, lock timeout), the page is still served and a warning is logged; at worst an item repeats later. Impression writes increment in a fixed row order, commit per statement and retry on deadlocks. Measured with the opt-in concurrency test below: 24 processes × 300 pages on MariaDB with the **database** cache store and impressions on, while likes arrive and scores update — 0 errors, 0 deadlocks, ~300 pages/s.
 
 ## Testing the package
 
@@ -404,6 +415,8 @@ composer analyse
 | `tests/Feature/DashboardTest.php` | dashboard gate, health/checks/trending/explain, `recommender:doctor` |
 | `tests/Feature/StressTest.php` | **volume**: 100k events / 2k users / 1k items — exact counts, bounded memory & queries, constant serving cost · **frequency**: per-minute score runs with bursts and boundary events (no loss, no double count), rapid-fire paging (no repeats, throttled rebuilds), edits between requests |
 | `tests/Feature/HeavyStressTest.php` | **heavy, opt-in** (`RECOMMENDER_HEAVY=1 vendor/bin/pest --group=heavy`, ~13 min on SQLite): 1M views / likes / shares from 500k users inside 10 minutes, then live bursts while scores update, the neighbour graph rebuilds and members load feeds. Fails on any exception, any warning-or-worse log line, a wrong count, a repeated item or runaway queries / memory |
+
+| `tests/Feature/ConcurrencyTest.php` | **concurrency, opt-in** (`RECOMMENDER_CONCURRENCY=1 RECOMMENDER_TEST_DB=mysql … vendor/bin/pest --group=concurrency`, needs `pcntl`): many forked processes serve feeds at the same moment on the database cache with impressions on, while one process adds likes and updates scores. Fails on any exception, deadlock or warning log. `RECOMMENDER_CONCURRENCY_WORKERS` / `_REQUESTS` change the load |
 
 Stress tests run in the normal suite (~10 s on SQLite). Run them alone or bigger with `RECOMMENDER_STRESS_SCALE=5 vendor/bin/pest --group=stress`.
 

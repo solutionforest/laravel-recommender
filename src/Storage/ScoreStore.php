@@ -24,6 +24,7 @@ final class ScoreStore
     public function merge(string $feed, array $deltas, int $chunk = 500): int
     {
         $written = 0;
+        ksort($deltas, SORT_STRING); // same row order as request-path writes: no lock-order deadlocks
         foreach (array_chunk($deltas, max(1, $chunk), true) as $part) {
             $ids = array_map('strval', array_keys($part));
             $existing = $this->connection()->table('rec_item_scores')
@@ -154,21 +155,67 @@ final class ScoreStore
         if ($ids === []) {
             return;
         }
+        sort($ids, SORT_STRING);
         $at = \Carbon\Carbon::instance($now);
         $day = $at->toDateString();
+
+        // Increment first: an UPDATE takes exclusive row locks in key order, so
+        // concurrent requests queue instead of deadlocking. (INSERT IGNORE on
+        // existing rows takes shared locks; two requests upgrading them to
+        // write locks is the classic MySQL deadlock.) Only rows that do not
+        // exist yet are inserted — rare once items have scores. Each statement
+        // commits on its own and is retried on a deadlock / lock timeout.
+        $this->incrementOrCreate('rec_item_scores', ['feed' => $feed], $ids, ['last_shown_at' => $at]);
+        $this->incrementOrCreate('rec_item_daily', ['feed' => $feed, 'day' => $day], $ids);
+    }
+
+    /**
+     * @param  array<string, string>  $where  fixed columns (feed, day)
+     * @param  list<string>  $ids  sorted item ids
+     * @param  array<string, mixed>  $extra  columns to set on increment
+     */
+    private function incrementOrCreate(string $table, array $where, array $ids, array $extra = []): void
+    {
         $db = $this->connection();
+        $query = fn (array $part) => $db->table($table)->where($where)->whereIn('item_id', $part);
 
-        $db->table('rec_item_scores')->insertOrIgnore(
-            array_map(fn (string $id) => ['feed' => $feed, 'item_id' => $id], $ids),
-        );
-        $db->table('rec_item_scores')->where('feed', $feed)->whereIn('item_id', $ids)
-            ->increment('impressions', 1, ['last_shown_at' => $at]);
+        $updated = $this->retryOnDeadlock(fn () => $query($ids)->increment('impressions', 1, $extra));
+        if ($updated >= count($ids)) {
+            return;
+        }
 
-        $db->table('rec_item_daily')->insertOrIgnore(
-            array_map(fn (string $id) => ['feed' => $feed, 'item_id' => $id, 'day' => $day], $ids),
-        );
-        $db->table('rec_item_daily')->where('feed', $feed)->whereIn('item_id', $ids)->where('day', $day)
-            ->increment('impressions');
+        $existing = array_flip(array_map('strval', $query($ids)->pluck('item_id')->all()));
+        $missing = array_values(array_filter($ids, fn (string $id) => ! isset($existing[$id])));
+        if ($missing === []) {
+            return; // created by another request meanwhile and already counted by our UPDATE
+        }
+
+        $this->retryOnDeadlock(fn () => $db->table($table)->insertOrIgnore(
+            array_map(fn (string $id) => $where + ['item_id' => $id, 'impressions' => 0], $missing),
+        ));
+        $this->retryOnDeadlock(fn () => $query($missing)->increment('impressions', 1, $extra));
+    }
+
+    /**
+     * @template T
+     *
+     * @param  \Closure(): T  $write
+     * @return T
+     */
+    private function retryOnDeadlock(\Closure $write, int $attempts = 3): mixed
+    {
+        for ($try = 1; ; $try++) {
+            try {
+                return $write();
+            } catch (\Illuminate\Database\QueryException $e) {
+                $concurrency = in_array($e->getCode(), ['40001', '40P01', 'HY000'], true)
+                    && preg_match('/deadlock|lock wait timeout|database is locked|serializ/i', $e->getMessage()) === 1;
+                if (! $concurrency || $try >= $attempts) {
+                    throw $e;
+                }
+                usleep(random_int(5_000, 25_000) * $try);
+            }
+        }
     }
 
     /**
@@ -185,6 +232,7 @@ final class ScoreStore
             }
         }
 
+        usort($flat, fn (array $a, array $b) => [$a['item_id'], $a['day']] <=> [$b['item_id'], $b['day']]);
         foreach (array_chunk($flat, max(1, $chunk)) as $part) {
             $existing = [];
             $query = $this->connection()->table('rec_item_daily')->where('feed', $feed)

@@ -10,6 +10,8 @@
 */
 return [
 
+    // false = off: everyone gets the shared trending list, nothing is built or
+    // written, jobs pause. One feed only: 'enabled' => false on that feed.
     'enabled' => env('RECOMMENDER_ENABLED', true),
 
     // Leave empty: Redis is used automatically when your app has a working Redis

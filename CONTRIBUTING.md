@@ -18,6 +18,13 @@ RECOMMENDER_TEST_DB=mysql DB_HOST=127.0.0.1 DB_PORT=3306 DB_DATABASE=rec_test DB
 
 Stress tests run in the normal suite; run them alone or larger with `RECOMMENDER_STRESS_SCALE=5 vendor/bin/pest --group=stress`.
 
+Opt-in, on MySQL / MariaDB:
+
+```bash
+RECOMMENDER_HEAVY=1 RECOMMENDER_TEST_DB=mysql … vendor/bin/pest --group=heavy              # 1M events, 500k users (~3 min)
+RECOMMENDER_CONCURRENCY=1 RECOMMENDER_TEST_DB=mysql … vendor/bin/pest --group=concurrency  # parallel processes, needs pcntl
+```
+
 ## Pull requests
 
 - One topic per pull request, with tests for behaviour changes.

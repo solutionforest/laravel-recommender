@@ -134,6 +134,21 @@ final class Health
             ...$this->bindingChecks($feed),
             ...$this->pipelineChecks($feed, $this->metrics($feed, $now)),
         ];
+        if (! $this->recommender->enabled($feed->name)) {
+            $checks[] = self::warn(
+                config('recommender.enabled', true) ? "Feed [{$feed->name}] is switched off" : 'Recommender is switched off (RECOMMENDER_ENABLED=false)',
+                'Serving the shared trending list only; jobs paused. Remove the switch to turn it back on.',
+                'serving',
+            );
+        }
+        $store = $this->cache->storeName() ?? (string) config('cache.default');
+        $driver = (string) config("cache.stores.{$store}.driver", $store);
+        $checks[] = match ($driver) {
+            'redis' => self::ok("Cache: {$store} (best for production)", 'serving'),
+            'database' => ['level' => self::OK, 'label' => "Cache: {$store} — fine for small and medium apps", 'hint' => 'For heavy traffic add Redis to the app — the package switches to it automatically. Expired rows are cleaned by recommender:prune.', 'stage' => 'serving'],
+            'array', 'null' => self::warn("Cache: {$store} does not persist between requests", 'Use redis (picked automatically when configured) or database.', 'serving'),
+            default => self::ok("Cache: {$store}", 'serving'),
+        };
         if (! $this->cache->supportsLocks()) {
             $checks[] = self::warn('Cache store has no locks', 'Concurrent builds fall back to last-write-wins. Use redis, or database + cache_locks.', 'serving');
         }
