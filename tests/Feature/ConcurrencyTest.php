@@ -25,6 +25,8 @@ it('serves many processes at once on the database cache without deadlocks or err
     $users = 300; // small pool on purpose: the same user is served by several processes at once
 
     $this->loadMigrationsFrom(__DIR__.'/../../examples/simple/database/migrations');
+    Schema::dropIfExists('cache');
+    Schema::dropIfExists('cache_locks');
     Schema::create('cache', function ($t) { $t->string('key')->primary(); $t->mediumText('value'); $t->integer('expiration'); });
     Schema::create('cache_locks', function ($t) { $t->string('key')->primary(); $t->string('owner'); $t->integer('expiration'); });
     config([

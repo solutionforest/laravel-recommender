@@ -25,6 +25,24 @@ RECOMMENDER_HEAVY=1 RECOMMENDER_TEST_DB=mysql … vendor/bin/pest --group=heavy 
 RECOMMENDER_CONCURRENCY=1 RECOMMENDER_TEST_DB=mysql … vendor/bin/pest --group=concurrency  # parallel processes, needs pcntl
 ```
 
+## Where things live
+
+`Recommender` (the facade) is a thin entry point: it resolves the feed and the viewer, then hands off to one small class per job.
+
+| Class | Job |
+|---|---|
+| `Feed\FeedRegistry` | Config → `FeedDefinition` (package defaults < app `defaults` < preset < feed), the on/off switch |
+| `Feed\FeedServer` | Serve one page: personal list → trending → catalog tail, or the shared list for guests |
+| `Feed\ListBuilder` | Build and cache ranked lists (per user under a lock, and the shared trending list) |
+| `Feed\Variants` | Which cache copy a request reads (`list_vary_by`, `seen_vary_by`, `cards_vary_by`) |
+| `Feed\ImpressionRecorder` | Count served items (after the response in HTTP) |
+| `Feed\FeedCache` | Every cache key the package writes |
+| `Ranking\Ranker` | Sources → filter → blend → boosters → exploration → diversity, and `explain()` |
+| `Insights\ItemStats` | "How good is this item?" (`stats()`) |
+| `Storage\ScoreStore` | The `rec_*` tables |
+
+Extend through the contracts in `src/Contracts` (sources, boosters, filters, cards, groups, interactions) and feed config. The classes above are `final` and internal: their signatures can change in a minor release.
+
 ## Pull requests
 
 - One topic per pull request, with tests for behaviour changes.
