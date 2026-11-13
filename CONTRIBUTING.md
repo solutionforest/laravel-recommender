@@ -49,6 +49,6 @@ Extend through the contracts in `src/Contracts` (sources, boosters, filters, car
 - One topic per pull request, with tests for behaviour changes.
 - Titles follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, `test:`, `chore:`).
 - Add a line under `## [Unreleased]` in [CHANGELOG.md](CHANGELOG.md), and a section in [UPGRADE.md](UPGRADE.md) if users must change anything.
-- Support PHP 8.3+ and Laravel 11–13; keep the hot path to cache reads and bulk writes (see [AGENTS.md](AGENTS.md)).
+- Support PHP 8.3+ and Laravel 10–13; keep the hot path to cache reads and bulk writes (see [AGENTS.md](AGENTS.md)).
 
 Releases are described in [docs/operations.md](docs/operations.md#publishing-a-package-release).

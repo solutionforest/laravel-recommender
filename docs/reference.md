@@ -411,7 +411,7 @@ Build locks need a store that implements Laravel’s `LockProvider`. Not Redis-o
 | Store | Locks | Typical use |
 |---|---|---|
 | **redis** | Yes | Production default — fast lists + atomic locks |
-| **database** | Yes on Laravel **11–13** if `cache` + `cache_locks` tables exist (`php artisan cache:table`) | Small / mid prod without Redis; `recommender:prune` deletes the package's expired rows (Laravel's database cache does not) |
+| **database** | Yes on Laravel **10–13** if `cache` + `cache_locks` tables exist (`php artisan cache:table`) | Small / mid prod without Redis; `recommender:prune` deletes the package's expired rows (Laravel's database cache does not) |
 | **array** / **file** | Yes in recent Laravel (single process / local) | Local lab & CI |
 | Custom store without `LockProvider` | No | Package falls back to unlocked builds (last write wins) |
 

@@ -23,14 +23,14 @@ Your interactions → scheduled score updates → ranked items → JSON or Blade
 Imagine a reader likes post A. If other readers interacted with both A and B, post B can become a suggestion. Popular recent posts can also appear, and you can add your own rules.
 
 1. **Learn from activity:** scheduled commands update trending scores and find items that users interacted with together (called neighbours).
-2. **Build a list:** sources suggest candidates; the package filters out disallowed items, combines their scores, and can apply optional boosts, exploration and diversity rules.
+2. **Build a list:** sources suggest candidates; the package filters out disallowed items, combines their scores, and can apply optional boosts, randomness (`jitter`), exploration and diversity rules.
 3. **Serve the feed:** the ranked list and cards are cached. Guests use a shared trending list; users with little history may see mostly trending items. If there are no eligible items, the feed can be empty.
 
 Your app records the interactions (or lets `$post->recordInteraction($user, 'like')` write them with your feed's mapping) and controls visibility and card fields. Cards are shared across viewers, so add viewer-specific fields separately. The package stores derived scores, daily counters and neighbours in four `rec_*` tables. When ranked and trending items run out, feeds with a model can continue with the newest eligible items. See [how it works](docs/how-it-works.md) for the full flow and [operations](docs/operations.md#seen-memory-and-impressions) for memory and impression costs.
 
 ## Your first feed
 
-Requires PHP 8.3+ and Laravel 11, 12, or 13. In an app with a `Post` model and interaction tables (`post_likes`, `post_views` with `user_id`, `post_id`, `created_at`):
+Requires PHP 8.3+ and Laravel 10, 11, 12, or 13. In an app with a `Post` model and interaction tables (`post_likes`, `post_views` with `user_id`, `post_id`, `created_at`):
 
 **1. Install and set up**
 

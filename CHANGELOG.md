@@ -7,6 +7,12 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Docs
+- Removed the "Roadmap / open ideas" section from operations: everything it listed has shipped
+- Maths: `jitter` formula, and how similar items use the neighbours
+- How it works and README: `jitter` step in the feed pipeline
+- Laravel 10–13 everywhere it still said 11–13 (README, CONTRIBUTING, agent skill, config comments, cache reference, CI note in performance)
+
 ## [0.10.1] — 2026-11-13
 
 Similar items after a rebuild, and the docs.

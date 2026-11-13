@@ -10,7 +10,7 @@ description: >-
 
 # Laravel Recommender — simple recommendation engine
 
-Package: `solutionforest/laravel-recommender` (PHP **8.3+**, Laravel **11–13**).
+Package: `solutionforest/laravel-recommender` (PHP **8.3+**, Laravel **10–13**).
 
 Self-hosted “for you” feeds: item–item collaborative filtering + time-decayed trending + optional custom sources. **Not** a neural net / AWS Personalize.
 
@@ -82,7 +82,7 @@ Route::get('/posts/for-you', fn (Request $request) => Post::recommendedFor($requ
 $related = $post->similar(4);   // cards, most similar first; [] until the post has neighbours
 ```
 
-6. **Schedule**: automatic (scores ~every 10 min · neighbours nightly · prune daily) — just run Laravel's scheduler; `RECOMMENDER_SCHEDULE=false` to do it yourself. Queue `recommender`. Cache store with locks: **redis** (preferred) or **database** + `cache_locks` (L11–13). Override: `RECOMMENDER_CACHE_STORE`.
+6. **Schedule**: automatic (scores ~every 10 min · neighbours nightly · prune daily) — just run Laravel's scheduler; `RECOMMENDER_SCHEDULE=false` to do it yourself. Queue `recommender`. Cache store with locks: **redis** (preferred) or **database** + `cache_locks` (L10–13). Override: `RECOMMENDER_CACHE_STORE`.
 
 ---
 
