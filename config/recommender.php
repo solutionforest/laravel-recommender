@@ -4,10 +4,12 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Kill switch
+    | On / off
     |--------------------------------------------------------------------------
-    | When disabled, Recommender::page() serves the shared trending list only:
-    | one cache read per request, no per-user work.
+    | RECOMMENDER_ENABLED=false switches the package off: every page serves the
+    | shared trending list (from the last computed scores), nothing personal is
+    | built, nothing is written, warm() does nothing and the scheduled jobs
+    | pause. Routes keep working. One feed only: 'enabled' => false on the feed.
     */
     'enabled' => env('RECOMMENDER_ENABLED', true),
 

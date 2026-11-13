@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use SolutionForest\Recommender\Facades\Recommender;
 use SolutionForest\Recommender\Feed\FeedCache;
@@ -155,4 +156,69 @@ it('uses the store you set and never probes', function () {
 
     expect(freshCache()->storeName())->toBe('array')
         ->and(Cache::get('recommender:store-probe'))->toBeNull();
+});
+
+function databaseCacheTables(): void
+{
+    Schema::dropIfExists('cache');
+    Schema::dropIfExists('cache_locks');
+    Schema::create('cache', function ($table) {
+        $table->string('key')->primary();
+        $table->mediumText('value');
+        $table->integer('expiration');
+    });
+    Schema::create('cache_locks', function ($table) {
+        $table->string('key')->primary();
+        $table->string('owner');
+        $table->integer('expiration');
+    });
+    config(['cache.stores.database' => [
+        'driver' => 'database', 'connection' => config('database.default'), 'table' => 'cache',
+        'lock_connection' => config('database.default'), 'lock_table' => 'cache_locks',
+    ]]);
+}
+
+it('prune removes only this package\'s expired rows from a database cache', function () {
+    databaseCacheTables();
+    useRecommenderCacheStore('database');
+    $prefix = Cache::store('database')->getPrefix();
+    DB::table('cache')->insert([
+        ['key' => $prefix.'rec:reviews:seen:1', 'value' => 'x', 'expiration' => time() - 10],   // ours, expired
+        ['key' => $prefix.'rec:reviews:seen:2', 'value' => 'x', 'expiration' => time() + 3600], // ours, live
+        ['key' => $prefix.'app:session:9', 'value' => 'x', 'expiration' => time() - 10],        // the app's
+    ]);
+
+    $this->artisan('recommender:prune')->expectsOutputToContain('Removed 1 expired rows')->assertSuccessful();
+
+    expect(DB::table('cache')->orderBy('key')->pluck('key')->all())
+        ->toBe([$prefix.'app:session:9', $prefix.'rec:reviews:seen:2']);
+});
+
+it('still serves the page when saving the seen list fails', function () {
+    Cache::extend('flaky', fn () => Cache::repository(new class extends \Illuminate\Cache\ArrayStore {
+        public function put($key, $value, $seconds)
+        {
+            if (str_contains($key, ':seen:')) {
+                throw new RuntimeException('Deadlock found when trying to get lock');
+            }
+
+            return parent::put($key, $value, $seconds);
+        }
+    }));
+    config(['cache.stores.flaky' => ['driver' => 'flaky']]);
+    useRecommenderCacheStore('flaky');
+    \Illuminate\Support\Facades\Log::spy();
+
+    $page = Recommender::page('reviews', 7);
+
+    expect($page->items)->not->toBeEmpty();
+    \Illuminate\Support\Facades\Log::shouldHaveReceived('warning')->withArgs(fn ($m) => str_contains($m, 'seen-set write failed'));
+});
+
+it('names the cache store in doctor', function () {
+    databaseCacheTables();
+    useRecommenderCacheStore('database');
+
+    $this->artisan('recommender:doctor', ['feed' => 'reviews'])
+        ->expectsOutputToContain('Cache: database — fine for small and medium apps');
 });

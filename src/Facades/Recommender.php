@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static void forgetTrending(string $feed, array<string, mixed> $attributes = [])
  * @method static list<array{id: int|string, score: float, sources: array<string, float>, contributions: array<string, float>, final: ?int, cached: ?int, exploration: bool}> explain(string $feed, \Illuminate\Contracts\Auth\Authenticatable|int|string|null $user, int $limit = 20, array<string, mixed> $attributes = [])
  * @method static \SolutionForest\Recommender\Support\FeedDefinition feed(string $name)
- * @method static bool enabled()
+ * @method static bool enabled(?string $feed = null)
  *
  * @see \SolutionForest\Recommender\Recommender
  */

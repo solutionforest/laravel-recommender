@@ -15,8 +15,13 @@ class PruneCommand extends Command
 
     protected $description = 'Delete score rows of items with no interaction for scores_retention_days (chunked, run daily)';
 
-    public function handle(Recommender $recommender, ScoreStore $scores): int
+    public function handle(Recommender $recommender, ScoreStore $scores, \SolutionForest\Recommender\Feed\FeedCache $cache): int
     {
+        $expired = $cache->pruneExpired();
+        if ($expired > 0) {
+            $this->info("Removed {$expired} expired rows from the database cache");
+        }
+
         foreach ($this->feedNames($recommender) as $name) {
             $feed = $recommender->feed($name);
             $before = now()->subDays($feed->int('scores_retention_days', 180));

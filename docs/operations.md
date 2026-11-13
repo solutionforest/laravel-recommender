@@ -58,7 +58,8 @@ A Git tag triggers the workflow; check that the corresponding GitHub Release was
 
 | Task | How |
 |---|---|
-| Stop personalisation | `RECOMMENDER_ENABLED=false` |
+| Switch the package off | `RECOMMENDER_ENABLED=false` — trending only, no writes, jobs paused ([details](reference.md#turning-it-on-and-off)) |
+| Switch one feed off | `'enabled' => false` on the feed |
 | Flush cache | Delete keys `rec:*` (or your prefix) |
 | Reset one user | `Recommender::forgetUser('posts', $id)` |
 | Debug ranking | `recommender:explain posts 123` |
@@ -104,10 +105,15 @@ A nonempty impression batch issues four bulk database statements, updating `rec_
 | Score job vs live traffic | Serving reads cache; builds and opt-in impression writes can access `rec_*` |
 | Neighbour mid-request | New version → activate → chunked delete of old |
 | Two builds same user | Cache lock when store supports `LockProvider`; otherwise unlocked fallback (last write wins) |
+| Many users at once on the **database** cache | One cache row per user and key, so users do not block each other; the same user in two tabs is serialised by a lock; a failed seen-list write never fails the page |
+| Impression writes on hot items | Increment existing rows first, in sorted key order (no lock-order or shared-lock upgrade deadlocks), one statement per commit, retried on deadlock; written after the response |
+| Score job vs impression writes | Both touch rows in the same sorted order |
 | Warm pile-up | `BuildFeed` `ShouldBeUnique` |
 | App-table deadlocks | Jobs only **SELECT** your interaction tables |
 
 Crash mid-slice: watermark / version activation → resume cleanly, no double-count.
+
+Verified under real concurrency (opt-in `ConcurrencyTest`, MariaDB, database cache store, impressions on): 24 processes × 300 pages while likes arrive and scores update — **0 deadlocks, 0 errors, ~300 pages/s**. Before the 0.8.2 write-order fix the same test produced 213 deadlocks in 1,800 pages on impression writes, so this is a regression test, not a guess.
 
 ## Memory
 
@@ -151,10 +157,10 @@ Not as pure ML. For sparse likes/views, item–item + rules is a proven baseline
 Request path doesn’t rank in SQL. Jobs are windowed, bulk, memory-guarded.
 
 **Need Redis?**  
-No. Any `LockProvider` store works. **Redis** is the best production default; **database** works on Laravel 11–13 with `cache_locks`; **array/file** are fine locally. See [reference → Cache](reference.md#cache-store--locks).
+No, and you do not have to choose: if your app has a working Redis store the package uses it automatically, otherwise your normal cache. The **database** cache is comfortable for small and medium apps (roughly tens of thousands of daily active users); `recommender:prune` keeps its table from growing. For heavy traffic add Redis to the app — no package change needed. See [reference → Cache](reference.md#cache-store--locks).
 
-**Will jobs deadlock us?**  
-Unlikely for the usual fear case — see deadlocks table above.
+**Will it deadlock under heavy load?**  
+Tested, not assumed: see the deadlocks table and the concurrency result above.
 
 **Will `build-neighbours` OOM?**  
 Shards + retry; previous graph stays live.

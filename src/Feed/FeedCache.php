@@ -218,7 +218,12 @@ final class FeedCache
                 }
             }
             if ($toCache !== []) {
-                $this->store()->putMany($toCache, $feed->int('card_ttl', 3600));
+                try {
+                    $this->store()->putMany($toCache, $feed->int('card_ttl', 3600));
+                } catch (\Throwable $e) {
+                    // Cards were rendered; failing to cache them must not fail the page.
+                    Log::warning("[recommender:{$feed->name}] card cache write failed: {$e->getMessage()}");
+                }
             }
         }
 
@@ -366,6 +371,51 @@ final class FeedCache
     public function key(FeedDefinition $feed, string $suffix): string
     {
         return config('recommender.prefix', 'rec').":{$feed->name}:{$suffix}";
+    }
+
+    /**
+     * Delete this package's expired rows from a *database* cache store.
+     * Laravel only removes an expired row when that same key is read again,
+     * so lists of users who never return would otherwise stay forever.
+     * Bulk chunks by key; returns 0 for Redis / file / array stores.
+     */
+    public function pruneExpired(int $chunk = 5000): int
+    {
+        $repository = $this->store();
+        $store = $repository instanceof CacheRepository ? $repository->getStore() : null;
+        if (! $store instanceof \Illuminate\Cache\DatabaseStore) {
+            return 0;
+        }
+
+        $name = $this->storeName() ?? config('cache.default');
+        $table = (string) (config("cache.stores.{$name}.table") ?: 'cache');
+        // LIKE without escaping (escape syntax differs per database); `_` in a
+        // prefix may match a little more, so keys are re-checked exactly below.
+        $prefix = $store->getPrefix().config('recommender.prefix', 'rec').':';
+        $db = $store->getConnection();
+        $deleted = 0;
+        $after = '';
+
+        do {
+            $keys = $db->table($table)
+                ->where('key', 'like', $prefix.'%')
+                ->where('key', '>', $after)
+                ->where('expiration', '<', time())
+                ->orderBy('key')
+                ->limit(max(1, $chunk))
+                ->pluck('key')
+                ->all();
+            if ($keys === []) {
+                break;
+            }
+            $after = (string) end($keys);
+            $ours = array_values(array_filter($keys, fn ($key) => str_starts_with((string) $key, $prefix)));
+            if ($ours !== []) {
+                $deleted += $db->table($table)->whereIn('key', $ours)->delete();
+            }
+        } while (count($keys) === $chunk);
+
+        return $deleted;
     }
 
     /** Resolved store name for this process (null = the app's default store). */

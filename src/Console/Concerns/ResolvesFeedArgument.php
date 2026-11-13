@@ -17,6 +17,8 @@ trait ResolvesFeedArgument
             return [$feed];
         }
 
-        return $recommender->feeds();
+        // All feeds, minus those switched off with 'enabled' => false.
+        // Naming a feed explicitly always runs it.
+        return array_values(array_filter($recommender->feeds(), fn (string $name) => (bool) (config("recommender.feeds.{$name}.enabled") ?? true)));
     }
 }

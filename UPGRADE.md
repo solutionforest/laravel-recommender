@@ -1,5 +1,11 @@
 # Upgrade guide
 
+## From 0.8.0 / 0.8.1 to 0.8.2
+
+Nothing to change. `RECOMMENDER_ENABLED=false` now also pauses the scheduled jobs and skips seen-list / impression writes (before, only personal ranking stopped); trending keeps serving from the last scores. On the database cache store, the next `recommender:prune` (daily, scheduled for you) removes the package's expired cache rows once — the first run may delete many.
+
+If the app has a working Redis store and you did not set `RECOMMENDER_CACHE_STORE`, the recommender uses Redis since 0.8.1; users may see a few repeats once while new seen lists fill. Set `RECOMMENDER_CACHE_STORE=database` to keep the previous store.
+
 ## From 0.7.x to 0.8.0
 
 Only if you use `'impressions' => true`:

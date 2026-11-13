@@ -7,6 +7,21 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.2] — 2026-11-13
+
+Safe under heavy load on the database cache.
+
+### Fixed
+- **Deadlocks on impression writes under concurrency.** `INSERT IGNORE` on existing rows took shared locks that concurrent requests then upgraded → MySQL deadlocks (213 in 1,800 pages in the new concurrency test). Now: increment existing rows first in sorted key order, insert only missing rows, one statement per commit, retry on deadlock. Score merges write in the same order. Same test: 0 deadlocks at 24 processes × 300 pages
+- A failed seen-list or card cache write no longer fails the page; it is logged and the feed is served
+
+### Added
+- **On / off switch**: `RECOMMENDER_ENABLED=false` switches the whole package off (trending only, no writes, `warm()` does nothing, scheduled jobs pause); `'enabled' => false` on a feed does the same for one feed (scheduled runs skip it). `Recommender::enabled($feed)`; `doctor` / dashboard show it
+- `recommender:prune` deletes the package's expired rows from a **database** cache store (Laravel only removes an expired row when that key is read again)
+- `doctor` / dashboard name the cache store in use, with a hint for the database store
+- Opt-in `tests/Feature/ConcurrencyTest.php` (`--group=concurrency`, MySQL + pcntl)
+- Docs: cache store choice, database-cache behaviour under load, and the measured results (reference, operations, CONTRIBUTING)
+
 ## [0.8.1] — 2026-11-13
 
 Less to configure.
@@ -302,7 +317,8 @@ First minor release: a feed is now **configuration only** — tell the package w
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.8.1...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.8.2...HEAD
+[0.8.2]: https://github.com/solutionforest/laravel-recommender/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/solutionforest/laravel-recommender/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/solutionforest/laravel-recommender/compare/v0.7.0...v0.7.1

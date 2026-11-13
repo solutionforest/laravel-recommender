@@ -123,9 +123,21 @@ class Recommender
         return array_keys((array) config('recommender.feeds', []));
     }
 
-    public function enabled(): bool
+    /**
+     * Is the package (and, when given, this feed) switched on?
+     *
+     * Off = everyone gets the shared trending list from the last computed
+     * scores; nothing personal is built, no seen lists or impressions are
+     * written, warm() does nothing and the scheduled jobs pause. Global:
+     * RECOMMENDER_ENABLED=false. One feed: 'enabled' => false on the feed.
+     */
+    public function enabled(?string $feed = null): bool
     {
-        return (bool) config('recommender.enabled', true);
+        if (! (bool) config('recommender.enabled', true)) {
+            return false;
+        }
+
+        return $feed === null || (bool) (config("recommender.feeds.{$feed}.enabled") ?? true);
     }
 
     /**
@@ -150,7 +162,7 @@ class Recommender
         $page = max(1, $page ?? Cursor::currentPage($feedName) ?? Paginator::resolveCurrentPage());
         $perPage = max(1, $perPage ?? $feed->int('page_size', 12));
 
-        if ($userId === null || ! $this->enabled()) {
+        if ($userId === null || ! $this->enabled($feedName)) {
             return $this->trendingPage($feed, $page, $perPage, $attributes);
         }
 
@@ -214,7 +226,14 @@ class Recommender
         }
 
         [$cards, $servedIds, $consumed] = $this->render($feed, $unseen, $perPage, $attributes);
-        $added = array_flip(array_map('strval', $this->cache->markSeen($feed, $userId, $consumed, $sv)));
+        try {
+            $added = array_flip(array_map('strval', $this->cache->markSeen($feed, $userId, $consumed, $sv)));
+        } catch (Throwable $e) {
+            // An overloaded cache must not fail the page: the user gets their
+            // items; at worst some repeat later and no impressions are counted.
+            $this->report($feed, 'seen-set write', $e);
+            $added = [];
+        }
         // Count an impression the first time an item is shown to this user
         // (within the seen window): refreshes, retries and the page-1
         // "allow seen items" fallback do not inflate it.
@@ -294,6 +313,9 @@ class Recommender
     public function warm(string $feedName, Authenticatable|int|string $user, array $attributes = []): void
     {
         $this->feed($feedName);
+        if (! $this->enabled($feedName)) {
+            return; // switched off: nothing to warm
+        }
         BuildFeed::dispatch(
             $feedName,
             $this->viewer($user)[0] ?? throw new InvalidArgumentException('Cannot warm a feed for a user without an id.'),
@@ -803,7 +825,7 @@ class Recommender
      */
     private function recordImpressions(FeedDefinition $feed, array $ids): void
     {
-        if ($ids === [] || ! $feed->get('impressions')) {
+        if ($ids === [] || ! $feed->get('impressions') || ! $this->enabled($feed->name)) {
             return;
         }
 
