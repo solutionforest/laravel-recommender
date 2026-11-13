@@ -156,6 +156,9 @@ Not as pure ML. For sparse likes/views, item–item + rules is a proven baseline
 **Slow DB when data grows?**  
 Request path doesn’t rank in SQL. Jobs are windowed, bulk, memory-guarded.
 
+**Laravel Octane?**  
+Works, nothing to configure. The package keeps no per-request state in statics; `Recommender` is a scoped binding, so each request (and each queue job) gets a fresh one that reads the current config. Impressions are written in Octane's terminate step, after the response is sent. `tests/Feature/OctaneTest.php` runs the feed through an Octane-style worker loop.
+
 **Need Redis?**  
 No, and you do not have to choose: if your app has a working Redis store the package uses it automatically, otherwise your normal cache. The **database** cache is comfortable for small and medium apps (roughly tens of thousands of daily active users); `recommender:prune` keeps its table from growing. For heavy traffic add Redis to the app — no package change needed. See [reference → Cache](reference.md#cache-store--locks).
 

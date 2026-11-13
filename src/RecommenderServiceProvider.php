@@ -12,7 +12,7 @@ class RecommenderServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__.'/../config/recommender.php', 'recommender');
 
-        $this->app->singleton(Recommender::class);
+        $this->app->scoped(Recommender::class);
         $this->app->singleton(Storage\StateStore::class);
         $this->app->singleton(Storage\ScoreStore::class);
         $this->app->singleton(Storage\NeighbourStore::class);

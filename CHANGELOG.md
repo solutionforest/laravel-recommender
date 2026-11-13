@@ -7,6 +7,16 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.4] — 2026-11-13
+
+Ready for Laravel Octane.
+
+### Fixed
+- **Long-lived workers (Laravel Octane, queue workers):** `Recommender` is now a scoped binding instead of a singleton, so a feed config changed at runtime (e.g. per tenant) is read in that request and does not stick for the rest of the worker's life
+
+### Added
+- `tests/Feature/OctaneTest.php`: serves pages through an Octane-style worker loop (no repeats across requests, impressions written on terminate, config isolated per request)
+
 ## [0.8.3] — 2026-11-13
 
 Cleaner inside; no behaviour change.

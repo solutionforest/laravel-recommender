@@ -1,5 +1,9 @@
 # Upgrade guide
 
+## From 0.8.3 to 0.8.4
+
+Nothing to change. `Recommender` is now a scoped binding (fresh per request / queue job). If you bound your own singleton over it, bind it with `scoped()` too.
+
 ## From 0.8.2 to 0.8.3
 
 Nothing to change. Internal refactor; the public API and the facade are the same. If you extended `Recommender` and overrode private methods, see the class map in CONTRIBUTING.md.
