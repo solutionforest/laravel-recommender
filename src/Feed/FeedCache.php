@@ -389,19 +389,29 @@ final class FeedCache
 
         $name = $this->storeName() ?? config('cache.default');
         $table = (string) (config("cache.stores.{$name}.table") ?: 'cache');
-        $like = str_replace(['%', '_'], ['\\%', '\\_'], $store->getPrefix().config('recommender.prefix', 'rec').':').'%';
+        // LIKE without escaping (escape syntax differs per database); `_` in a
+        // prefix may match a little more, so keys are re-checked exactly below.
+        $prefix = $store->getPrefix().config('recommender.prefix', 'rec').':';
         $db = $store->getConnection();
         $deleted = 0;
+        $after = '';
 
         do {
             $keys = $db->table($table)
-                ->where('key', 'like', $like)
+                ->where('key', 'like', $prefix.'%')
+                ->where('key', '>', $after)
                 ->where('expiration', '<', time())
+                ->orderBy('key')
                 ->limit(max(1, $chunk))
                 ->pluck('key')
                 ->all();
-            if ($keys !== []) {
-                $deleted += $db->table($table)->whereIn('key', $keys)->delete();
+            if ($keys === []) {
+                break;
+            }
+            $after = (string) end($keys);
+            $ours = array_values(array_filter($keys, fn ($key) => str_starts_with((string) $key, $prefix)));
+            if ($ours !== []) {
+                $deleted += $db->table($table)->whereIn('key', $ours)->delete();
             }
         } while (count($keys) === $chunk);
 
