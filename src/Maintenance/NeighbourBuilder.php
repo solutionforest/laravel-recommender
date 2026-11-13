@@ -66,8 +66,8 @@ final class NeighbourBuilder
                 continue;
             }
 
-            $this->store->activate($feed->name, $version, $feed->int('delete_chunk', 5000));
-            $this->cache->forgetNeighbourVersion($feed); // similar() switches to the new version now
+            // similar() switches to the new version before the old rows are deleted.
+            $this->store->activate($feed->name, $version, $feed->int('delete_chunk', 5000), fn () => $this->cache->forgetNeighbourVersion($feed));
             $this->state->put($shardKey, (string) $shards);
 
             return $result + ['version' => $version, 'shards' => $shards, 'peak_mb' => round(memory_get_peak_usage(true) / 1048576, 1)];

@@ -51,13 +51,22 @@ final class SimilarItems
             return [];
         }
 
-        $ids = $this->cache->similar(
-            $feed,
-            $id,
-            $version,
-            Variants::list($feed, $attributes),
-            fn () => $this->ids($feed, $id, $version, $attributes),
-        );
+        $variant = Variants::list($feed, $attributes);
+        $built = false;
+        $ids = $this->cache->similar($feed, $id, $version, $variant, function () use ($feed, $id, $version, $attributes, &$built) {
+            $built = true;
+
+            return $this->ids($feed, $id, $version, $attributes);
+        });
+
+        // A list just built empty may come from a cached version that a
+        // rebuild has since replaced (its rows are gone), e.g. when the
+        // builder runs with another cache store than this server. Recheck
+        // once: one query, only when building an empty list.
+        if ($built && $ids === [] && ($active = $this->neighbours->activeVersion($feed->name)) !== null && $active !== $version) {
+            $this->cache->forgetNeighbourVersion($feed);
+            $ids = $this->cache->similar($feed, $id, $active, $variant, fn () => $this->ids($feed, $id, $active, $attributes));
+        }
 
         return $this->render($feed, $ids, $limit, $attributes);
     }

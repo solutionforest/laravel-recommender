@@ -60,10 +60,17 @@ final class NeighbourStore
 
     /**
      * Switch readers to $version and delete every other version.
+     * $switched runs once readers use $version, before old rows go (so
+     * caches holding the old version can be dropped while it still exists).
+     *
+     * @param  ?callable(): void  $switched
      */
-    public function activate(string $feed, int $version, int $chunk = 5000): void
+    public function activate(string $feed, int $version, int $chunk = 5000, ?callable $switched = null): void
     {
         $this->state->put($this->versionKey($feed), (string) $version);
+        if ($switched !== null) {
+            $switched();
+        }
 
         // Old versions are removed in primary-key chunks: short statements,
         // no long lock on a large table.

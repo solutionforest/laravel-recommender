@@ -130,3 +130,30 @@ it('costs one neighbours row and one card query cold, and no query warm', functi
         ->and($cold)->toBeLessThanOrEqual(2)
         ->and($warm)->toBe(0);
 });
+
+it('switches to a new neighbour version even when the cached version was not forgotten', function () {
+    $other = Article::find(5);
+    expect(array_column($other->similar(), 'id'))->toBe([6]); // caches the current version
+
+    // A rebuild on a server whose cache this one does not share: the version
+    // changes in rec_state, the old rows go, but our cached version stays.
+    $cache = app(\SolutionForest\Recommender\Feed\FeedCache::class);
+    $feed = Recommender::feed('articles');
+    $stale = $cache->neighbourVersion($feed, fn () => null);
+    $store = app(\SolutionForest\Recommender\Storage\NeighbourStore::class);
+    $next = $store->nextVersion('articles');
+    $rows = $store->neighboursOf('articles', [1, 2, 4, 5, 6], $stale);
+    $store->write('articles', $next, $rows);
+    $store->activate('articles', $next);
+    expect($cache->neighbourVersion($feed, fn () => null))->toBe($stale);
+
+    expect(array_column(Article::find(1)->similar(), 'id'))->toBe([2, 4])
+        ->and($cache->neighbourVersion($feed, fn () => $store->activeVersion('articles')))->toBe($next);
+});
+
+it('reads no table on a warm call for an item without neighbours', function () {
+    $lonely = Article::find(8);
+    $lonely->similar();
+
+    expect(queriesDuring(fn () => $lonely->similar()))->toBe(0);
+});
