@@ -114,7 +114,7 @@ $query->where('tenant_id', $context->attribute('tenant'));
 'posts' => [..., 'list_vary_by' => ['tenant']],
 ```
 
-The ranked list, the shared trending list (guests and the fallback), `warm()` and `explain()` then keep one copy per value. The seen-set is split per `tenant` too (tenants have different items); `device` and `locale` keep one shared seen-set, so a user still sees no repeats across devices (override with `seen_vary_by`). Rules:
+The ranked list, the shared trending list (guests and the fallback), `warm()` and `explain()` then keep one copy per value. The seen-set is split per `tenant` too (tenants have different items); `device` and `locale` keep one shared seen-set by default (override with `seen_vary_by`). It is bounded, so sharing it reduces repeats but does not guarantee their absence. Rules:
 
 - List every attribute that changes the candidates; leaving one out is unsafe. Attributes that only change how a card looks belong in `cards_vary_by`.
 - A cache key is not authorization: your `recommendable` scope must still filter by tenant.
@@ -254,7 +254,7 @@ Recommender::stats('products', $product, days: 7);  // last 7 days
 $product->recommendationStats('products');
 ```
 
-`quality` (0..1) is the like rate adjusted for how much evidence there is — 1 like from 1 view does not beat 25 from 40. Turn on `'impressions' => true` and every served item counts as shown, so quality becomes "liked when shown" (counted once per user and item within the seen window). Details: [reference → how good is an item?](reference.md#how-good-is-an-item).
+`quality` (0..1) is the like rate adjusted for how much evidence there is — 1 like from 1 view does not beat 25 from 40. Turn on `'impressions' => true` to use approximate first serves within the seen window as the denominator; guests count per serve. Details and limitations: [reference → how good is an item?](reference.md#how-good-is-an-item).
 
 Use it for "top rated this week" lists, moderation queues (high exposure, low quality), or seller dashboards.
 

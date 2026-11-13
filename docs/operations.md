@@ -80,16 +80,28 @@ Package **never copies** your interaction rows (likes / views / shares / …). F
 | `rec_item_daily` | per-day positive / exposure / impressions (quality over time) | active items × days | `prune` + retention |
 | `rec_item_neighbours` | top-N similar ids | items with neighbours | versioned rebuild |
 | `rec_state` | watermarks, versions | handful of keys | overwrite |
-| Cache store (redis / database / …) | lists, seen, cards, locks | active users | TTLs |
+| Cache store (redis / database / …) | lists, seen, cards, locks | active users, items and configured variants | TTLs and cache eviction |
 
-~100 B/score row, ~400 B/neighbour row → 100k active items ≈ tens of MB. Redis ≈ 1.5 KB list + 1.5 KB seen per active user.
+Actual storage depends on database indexes, ID length, cache driver and serialization. Measure with representative data; cache can also use the database store. See below for the seen-set estimate.
+
+## Seen memory and impressions
+
+**Why remember seen items?** Your app's interaction tables remain the source of truth for likes and views. They do not necessarily say which items were returned on a feed page. For each signed-in user and feed, the package keeps a temporary list of served item IDs in the configured Laravel cache store. It normally skips those IDs when the ranking changes or the user loads another page, even across devices. This is a serving aid, not a permanent interaction history. Guests do not have a seen-set.
+
+By default `seen_max` is 200 IDs and `seen_ttl` is 259200 seconds (three days). Each nonempty update refreshes the TTL for the whole set, while the cap removes older IDs. Expiry, eviction, `forgetUser()`, a full set, concurrent requests, or the page-one fallback can bring an item back. With `list_vary_by` containing `tenant`, seen state is separated per tenant by default; `seen_vary_by` can change that. Configure candidate-changing attributes and authorization separately as explained in [advanced usage](advanced.md#passing-extra-context).
+
+For example, 200 six-digit numeric IDs pack into roughly 1.4 KB of ID text; 50,000 full sets would be about 70 MB of text alone. This is **not a Redis memory quote**: keys, serialization, allocator overhead, ID lengths (UUIDs are longer), feeds, variants, cached lists and cards all add to it. Measure your actual cache store. A database cache stores these entries in database tables, while a local cache is not shared across servers. Lower `seen_max` or `seen_ttl` to reduce retained state, accepting more repeats. Each page also reads and updates cache state and may acquire a lock; latency depends on the store and traffic.
+
+**Should I enable impressions?** They are off by default. Turn on `'impressions' => true` only when you want quality based on items served, and measure the additional load. For signed-in users, impressions reuse the seen-set to approximate the first serve per item within that bounded window. Guests count each served item on each page. Retries can serve new items; cache loss, lock timeouts or eviction can lead to duplicate counts, and failed writes can lose counts. This is not a billing or audit ledger.
+
+A nonempty impression batch issues four bulk database statements, updating `rec_item_scores` and `rec_item_daily`. HTTP requests schedule the writes on Laravel's terminating callback by default; console calls or `'impressions_after_response' => false` write inline. Deferred work still uses worker and database capacity. The daily table grows with active **feed × item × day** combinations, not users; score rows also store impression counters. The scheduled `recommender:prune` deletes daily rows older than `scores_retention_days` (180 by default) and removes idle score rows subject to their last activity. Run Laravel's scheduler, or run prune yourself if scheduling is disabled. See [impressions in the reference](reference.md#impressions-shown-not-just-viewed).
 
 ## Deadlocks & overlapping runs
 
 | Concern | Handling |
 |---|---|
 | Two score jobs | `withoutOverlapping()`; short per-slice transactions |
-| Score job vs live traffic | Hot path reads cache, not `rec_*` |
+| Score job vs live traffic | Serving reads cache; builds and opt-in impression writes can access `rec_*` |
 | Neighbour mid-request | New version → activate → chunked delete of old |
 | Two builds same user | Cache lock when store supports `LockProvider`; otherwise unlocked fallback (last write wins) |
 | Warm pile-up | `BuildFeed` `ShouldBeUnique` |
@@ -101,7 +113,7 @@ Crash mid-slice: watermark / version activation → resume cleanly, no double-co
 
 | Path | Behaviour |
 |---|---|
-| HTTP `page()` | Cache reads plus card queries; a cache miss can trigger a full feed build |
+| HTTP `page()` | Cache reads and seen update plus card queries; a miss can trigger a build; optional impressions write on termination |
 | `update-scores` | one time slice |
 | `build-neighbours` | shards; abort/retry under memory budget |
 | `prune` | `delete_chunk` id lists |
@@ -116,7 +128,7 @@ Tight host: lower `history_*`, raise shards, shorten `scores_slice_minutes`.
 | Feed build | active users | more builds, same size each |
 | `update-scores` | events / 10 min | bigger slices |
 | `build-neighbours` | users × capped history | more shards |
-| Cache (lists + seen) | active users | ~3 KB / active user |
+| Cache (lists + seen) | active users, ID sizes, feeds and variants | measure on the configured cache store |
 
 Writes are always bulk (`write_chunk` / `delete_chunk`). Asserted in `tests/Feature/ScaleTest.php`.
 
@@ -166,11 +178,11 @@ Neighbours never built / history short / `neighbours_min_co_count` too high.
 The initial window defaults to 30 days. Widen it before the first run, or run `recommender:rebuild-scores {feed} --days=…`.
 
 **Infinite feed?**  
-Yes for feeds with a `model`: ranked items, then trending, then the newest items the `recommendable` scope allows (`'tail' => true`, the default), until the catalog is exhausted. Clients can follow `next_cursor`. Personal paging skips the seen-set, so raise `seen_max` if users scroll through more than ~200 items in `seen_ttl`.
+Feeds with a `model` can continue from ranked items to trending and then the newest eligible items (`'tail' => true`, the default). Clients can follow `next_cursor`. Personal paging normally excludes IDs in the bounded seen-set; increasing `seen_max` can reduce repeats during longer sessions, at a cache cost. Empty pages and repeats remain possible.
 
 ## Roadmap / open ideas
 
-Done in 0.1–0.8: impressions counted once per user within the seen window and written after the response, an atomic seen-set (0.8); `recordInteraction` (0.7); per-tenant lists and simple-paginator JSON for signed-in feeds (0.7); fixes (0.6.x); `recommender:bootstrap` and named presets (0.5); impressions and quality over time (0.4); catalog tail and cursor pagination (0.3); config-only feeds, dashboard + `doctor`, guided `rebuild-scores`, explain with final / cached positions, card invalidation on model save, ids with commas, a config-only `make-feed`, per-item `stats()` (quality / popularity).
+Done in 0.1–0.8: best-effort impressions within the seen window and lock-protected seen updates (0.8); `recordInteraction` (0.7); per-tenant lists and simple-paginator JSON for signed-in feeds (0.7); fixes (0.6.x); `recommender:bootstrap` and named presets (0.5); impressions and quality over time (0.4); catalog tail and cursor pagination (0.3); config-only feeds, dashboard + `doctor`, guided `rebuild-scores`, explain with final / cached positions, card invalidation on model save, ids with commas, a config-only `make-feed`, per-item `stats()` (quality / popularity).
 
 Under consideration (open an issue if you need one):
 
