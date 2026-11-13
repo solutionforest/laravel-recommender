@@ -17,7 +17,7 @@ use SolutionForest\Recommender\Examples\Blog\Models\Post;
  */
 return [
     'enabled' => env('RECOMMENDER_ENABLED', true),
-    // empty → app CACHE_STORE. Prefer redis in prod; database OK with cache_locks (L11–13).
+    // empty → app CACHE_STORE. Prefer redis in prod; database OK with cache_locks (L10–13).
     'cache_store' => env('RECOMMENDER_CACHE_STORE') ?: null,
 
     'feeds' => [

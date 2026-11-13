@@ -70,7 +70,8 @@ flowchart LR
   M[Merge candidates] --> F[recommendable scope / ItemFilter]
   F --> BL[Blend]
   BL --> BO[Boosters]
-  BO --> EX[Interleave exploration]
+  BO --> JT[Jitter, optional]
+  JT --> EX[Interleave exploration]
   EX --> DV[Diversity]
   DV --> L[[cache: ranked ids]]
 ```
@@ -79,8 +80,9 @@ flowchart LR
 2. **Filter** — the model's `recommendable` scope (or your `ItemFilter`) checks *all* ids in one query.
 3. **Blend** — each source normalised to 0..1, then `Σ weight · score`.
 4. **Boost** — e.g. Wilson quality; boosters only touch existing candidates.
-5. **Explore** — `exploration_ratio` interleaves items from `exploration_sources` (the presets use trending).
-6. **Diversify** — e.g. max 1 post per author per page; overflow slides to later pages.
+5. **Jitter** (optional, off by default) — `jitter` mixes a random draw into the order once per build; `1` gives a random order of the candidates. Never applied to the shared trending list.
+6. **Explore** — `exploration_ratio` interleaves items from `exploration_sources` (the presets use trending).
+7. **Diversify** — e.g. max 1 post per author per page; overflow slides to later pages.
 
 ## Two algorithms (short)
 

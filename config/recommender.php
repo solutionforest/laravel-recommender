@@ -22,7 +22,7 @@ return [
     |
     | Any store that implements LockProvider works for build locks, including:
     |   - redis     (recommended in production — fast, atomic)
-    |   - database  (fine on Laravel 11–13 if cache + cache_locks tables exist)
+    |   - database  (fine on Laravel 10–13 if cache + cache_locks tables exist)
     |   - array/file (local / single-process; locks exist but are not multi-server)
     |
     | If the store cannot provide locks, the package falls back to building

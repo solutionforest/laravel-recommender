@@ -7,6 +7,16 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.10.2] — 2026-11-13
+
+Docs catch up with 0.9 and 0.10.
+
+### Docs
+- Removed the "Roadmap / open ideas" section from operations: everything it listed has shipped
+- Maths: `jitter` formula, and how similar items use the neighbours
+- How it works and README: `jitter` step in the feed pipeline
+- Laravel 10–13 everywhere it still said 11–13 (README, CONTRIBUTING, agent skill, config comments, cache reference, CI note in performance)
+
 ## [0.10.1] — 2026-11-13
 
 Similar items after a rebuild, and the docs.
@@ -381,7 +391,8 @@ First minor release: a feed is now **configuration only** — tell the package w
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.1...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.2...HEAD
+[0.10.2]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.1...v0.10.2
 [0.10.1]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.8.5...v0.9.0

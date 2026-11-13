@@ -8,12 +8,13 @@ Not a black-box neural ranker. Classic, explainable ideas you can show with `rec
 
 | Idea | Where | Classical lineage |
 |---|---|---|
-| Item–item CF | `build-neighbours`, `CoInteractionSource` | Amazon item-to-item CF (Linden et al.) |
+| Item–item CF | `build-neighbours`, `CoInteractionSource`, `similar()` | Amazon item-to-item CF (Linden et al.) |
 | Cosine on binary sets | Neighbour similarity | Standard IR / CF |
 | Exponential half-life | `half_life_days`, `hot` | HN / Reddit-style time decay |
 | Incremental log-sum-exp | `Math::logAddExp` / `hotTerm` | One number per item, *O(1)* updates |
 | Wilson lower bound | `QualityBooster` | Reddit ranking (Evan Miller / Wilson) |
 | Linear blend | `Blender` | Multi-objective `Σ w·s` |
+| Jitter (optional) | `Jitter`, `jitter` | Score + uniform noise, drawn once per cached list |
 | Exploration interleave | `Explorer` | Lightweight explore/exploit |
 | Diversity caps | `Diversifier` | Max N per shop/author per page |
 
@@ -32,6 +33,8 @@ At request time, `CoInteractionSource` loads the user’s recent items and score
 $$
 \mathrm{score}(c)=\sum_{i \in \mathrm{recent}} \mathrm{sim}(i,c)\cdot \frac{1}{1+0.1\cdot \mathrm{rank}(i)}
 $$
+
+**Similar items** (`$post->similar(n)`) use the same neighbours directly: the top *n* items *b* by $\mathrm{sim}(a,b)$ for the item *a*, that pass the feed's `recommendable` scope as a guest. No viewer is involved, so the result is the same for everyone and cached per item.
 
 ## 2. Trending `hot`
 
@@ -55,9 +58,16 @@ $$
 
 Then scale so the best candidate in the batch is `1.0`.
 
-## 4. Blend, explore, diversify
+## 4. Blend, jitter, explore, diversify
 
 - **Blend:** scores ÷ source max → `Σ weight · score`.
+- **Jitter** (optional, `jitter` = *j* in 0..1, default 0): once per list build, each candidate gets
+
+$$
+\mathrm{final}(c)=(1-j)\cdot\frac{\mathrm{score}(c)}{\max \mathrm{score}}+j\cdot u_c,\quad u_c\sim U(0,1)
+$$
+
+  and the list is re-sorted by it. $j=0$ keeps the ranking; $j=1$ is a uniform random order of the candidates; values in between keep strong items near the top while the order changes between builds. The order is fixed while the list is cached, so paging does not repeat. The shared trending list is never jittered.
 - **Explore:** interleave according to `exploration_ratio` when `exploration_sources` are configured (none are configured by default).
 - **Diversify:** greedy cap per group; overflow to later pages.
 
@@ -85,6 +95,6 @@ See `examples/events-advanced` (`JoinPreferences`, Event scopes, these helpers).
 
 ## What we are *not* claiming
 
-No deep learning, two-tower retrieval, or online bandits. For sparse first-party like/view data this interpretable baseline is often the right production default. You can still plug a learned `CandidateSource` later.
+No deep learning, two-tower retrieval, or online bandits (`jitter` is plain randomness, not a learned explore/exploit policy). For sparse first-party like/view data this interpretable baseline is often the right production default. You can still plug a learned `CandidateSource` later.
 
-Unit coverage: `tests/Unit/ScoringTest.php`.
+Unit coverage: `tests/Unit/ScoringTest.php`, `tests/Unit/JitterTest.php`.

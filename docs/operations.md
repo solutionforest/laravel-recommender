@@ -192,17 +192,6 @@ The initial window defaults to 30 days. Widen it before the first run, or run `r
 **Infinite feed?**  
 Feeds with a `model` can continue from ranked items to trending and then the newest eligible items (`'tail' => true`, the default). Clients can follow `next_cursor`. Personal paging normally excludes IDs in the bounded seen-set; increasing `seen_max` can reduce repeats during longer sessions, at a cache cost. Empty pages and repeats remain possible.
 
-## Roadmap / open ideas
-
-Done in 0.1–0.10: similar items from the existing neighbours (0.10); `jitter` and Laravel 10 (0.9); best-effort impressions within the seen window and lock-protected seen updates (0.8); `recordInteraction` (0.7); per-tenant lists and simple-paginator JSON for signed-in feeds (0.7); fixes (0.6.x); `recommender:bootstrap` and named presets (0.5); impressions and quality over time (0.4); catalog tail and cursor pagination (0.3); config-only feeds, dashboard + `doctor`, guided `rebuild-scores`, explain with final / cached positions, card invalidation on model save, ids with commas, a config-only `make-feed`, per-item `stats()` (quality / popularity).
-
-Under consideration (open an issue if you need one):
-
-| Item | Today |
-|---|---|
-| User–user / embedding (vector) sources | Add them as a `CandidateSource` with a weight. |
-| More presets (jobs, news, video) | Define your own under `presets`. |
-
 ## Limitations
 
 - Item-to-item collaborative filtering out of the box (add other models as sources)
