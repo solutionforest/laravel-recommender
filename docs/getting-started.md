@@ -26,7 +26,7 @@ The package does not collect views or likes. Your app needs item records and int
 ],
 ```
 
-Your app also decides which items may be shown (a `recommendable` scope on the model) and which fields a card contains (`toRecommendationCard()`). `php artisan recommender:bootstrap posts` writes this for you.
+Your app also decides which items may be shown (a `recommendable` scope on the model) and which fields a card contains (`toRecommendationCard()`). `php artisan recommender:bootstrap posts` configures the feed; add the optional model methods to apply your own rules and card fields.
 
 Background jobs — scheduled by the package, you only run Laravel's scheduler — read the interactions and store derived scores and neighbours. The first request for a user may build a ranked list, which is then cached. A guest uses a shared trending list. A new user may have little personal signal, and a new catalog may have no scored items yet.
 

@@ -27,7 +27,7 @@ flowchart LR
 
 During a list **build**, every custom source / booster / filter receives a **`Context`** (viewer id, feed config, clock) — not the HTTP request. See [reference.md → What is Context?](reference.md#what-is-context).
 
-The personal seen set is bounded by `seen_max` and `seen_ttl`, and can be reset. Repeats are therefore possible. Guests use offsets on the shared trending list. Cache misses and builds can query the database.
+Your interaction tables remain the source of truth for activity. The seen set is a separate, temporary cache of item IDs **served**, including items the user did not click. It helps avoid repeats when the ranked list changes; it is not a permanent history. By default it is shared across a user's devices, holds at most 200 IDs per feed, and expires after three days without an update. Repeats are possible after expiry, eviction, reset, concurrency or the page-one fallback. Guests use offsets on the shared trending list. Cache misses and builds can query the database. See [seen memory and impressions](operations.md#seen-memory-and-impressions) for the trade-offs.
 
 ## A request, step by step
 

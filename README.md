@@ -16,7 +16,7 @@ Your users view, like, or purchase things. This package reads those events from 
 Your interactions → scheduled score updates → ranked items → JSON or Blade
 ```
 
-**You provide:** item and interaction tables, visibility rules, and the fields to display. **The package provides:** ranking, cached lists, a shared trending feed, and tools to inspect results. It does not record interactions for you. New or sparse data may produce trending results or an empty feed.
+**You provide:** item and interaction tables, visibility rules, and the fields to display. **The package provides:** ranking, cached lists, a shared trending feed, and tools to inspect results. Your app decides when to record interactions; the package also offers an explicit write helper. New or sparse data may produce trending results or an empty feed.
 
 ## How we recommend
 
@@ -26,7 +26,7 @@ Imagine a reader likes post A. If other readers interacted with both A and B, po
 2. **Build a list:** sources suggest candidates; the package filters out disallowed items, combines their scores, and can apply optional boosts, exploration and diversity rules.
 3. **Serve the feed:** the ranked list and cards are cached. Guests use a shared trending list; users with little history may see mostly trending items. If there are no eligible items, the feed can be empty.
 
-Your app records the interactions (or lets `$post->recordInteraction($user, 'like')` write them with your feed's mapping) and controls visibility and card fields. Cards are shared across viewers, so add viewer-specific fields separately. The package stores derived scores, daily counters and neighbours in four `rec_*` tables. When ranked and trending items run out, feeds with a model continue with the newest items, so scrolling does not hit a wall. See [how it works](docs/how-it-works.md) for the full flow and [operations](docs/operations.md) for cache and production details.
+Your app records the interactions (or lets `$post->recordInteraction($user, 'like')` write them with your feed's mapping) and controls visibility and card fields. Cards are shared across viewers, so add viewer-specific fields separately. The package stores derived scores, daily counters and neighbours in four `rec_*` tables. When ranked and trending items run out, feeds with a model can continue with the newest eligible items. See [how it works](docs/how-it-works.md) for the full flow and [operations](docs/operations.md#seen-memory-and-impressions) for memory and impression costs.
 
 ## Your first feed
 

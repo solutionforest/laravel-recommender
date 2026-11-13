@@ -29,7 +29,7 @@ Serve it:
 Route::get('/articles/for-you', fn (Request $request) => Article::recommendedFor($request->user()));
 ```
 
-Returning the page gives Laravel's paginator JSON (`?page=` is read automatically). Schedule `recommender:update-scores` and `recommender:build-neighbours` as usual.
+Returning the page gives Laravel's paginator JSON (`?page=` is read automatically). Run Laravel's scheduler; the package schedules score and neighbour updates by default.
 
 | File | Role |
 |---|---|

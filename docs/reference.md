@@ -154,7 +154,7 @@ Add your own under `presets` in `config/recommender.php` (e.g. `'jobs' => ['even
 
 ### Infinite scroll: catalog tail and cursors
 
-For a feed with a `model`, a page continues seamlessly: **ranked items → trending → the newest items the `recommendable` scope allows**, never repeating what the user has seen, until the catalog is exhausted (`has_more: false`). Pages made only of catalog items have `origin: 'tail'`. Turn it off with `'tail' => false`; order it by another column with `'tail_order' => 'published_at'`.
+For a feed with a `model`, a page can continue through **ranked items → trending → the newest items the `recommendable` scope allows**. The bounded seen-set normally excludes recent items; repeats and empty pages are still possible, as described in [operations](operations.md#seen-memory-and-impressions). Pages made only of catalog items have `origin: 'tail'`. Turn it off with `'tail' => false`; order it by another column with `'tail_order' => 'published_at'`.
 
 Every response has a `next_cursor`. Infinite-scroll clients can follow it instead of counting pages:
 
@@ -165,7 +165,7 @@ GET /posts/recommended?cursor=eyJwIjoyfQ → { data, path, per_page, next_cursor
 
 With `?cursor=` the response uses Laravel's cursor-paginator shape. `FeedPage::nextCursor()` / `toCursorArray()` give the same in PHP. Page numbers keep working.
 
-A cursor means **"the next page of this feed for this user"**, not a frozen snapshot: personal paging follows the user's seen-set, which all their devices share, so items never repeat across devices. Cursors carry the feed name; a cursor from another feed is ignored (page 1).
+A cursor means **"the next page of this feed for this user"**, not a frozen snapshot: personal paging follows the user's bounded seen-set, shared across devices by default. Repeats can still occur. Cursors carry the feed name; a cursor from another feed is ignored (page 1).
 
 ### Recording interactions
 
@@ -206,7 +206,7 @@ Works for anything you recommend — products, events, posts, or comments if com
 
 #### Impressions (shown, not just viewed)
 
-Views your app records are only a proxy for "the user saw it". Turn on impressions and every item shown counts. The metric is **"first time shown to this user within the seen window"** (`seen_max` items or `seen_ttl`): a refresh, a retry or the page-1 "allow seen items" fallback does not count again, and an item can count again once it has left the seen window. Guests have no seen-set, so they count once per page served:
+Views your app records are only a proxy for "the user saw it". Impressions are **off by default**. When enabled, the metric is approximately **"first time served to this user within the seen window"**: a previously seen item is normally not counted again, but can count again after it leaves the bounded cache. A refresh or retry can serve and count *new* items. Guests have no seen-set, so each served item counts on each page:
 
 ```php
 'posts' => [
@@ -216,7 +216,7 @@ Views your app records are only a proxy for "the user saw it". Turn on impressio
 ],
 ```
 
-Only items shown for the first time cost anything: four small statements per page (insert missing rows, then atomic increments — safe under concurrent requests), written **after the response** when serving HTTP (`'impressions_after_response' => false` writes them inline). Two requests racing for the same user count an item once (the seen-set update is atomic where the cache store has locks). A failure is logged and never breaks the page. `QualityBooster` and `stats()` then rate items by how often they were liked *when shown*. `rebuild-scores` keeps impressions (they cannot be replayed from your tables); `prune` keeps items that are still being shown.
+For a nonempty batch to count, the package issues four bulk database statements, with work proportional to the batch size. HTTP writes are scheduled on Laravel's terminating callback by default; console calls and `'impressions_after_response' => false` write inline. Terminating work still consumes worker and database capacity. Failures are logged and do not break the page; the metric is best effort, not an audit log. A shared lock reduces concurrent duplicate counts, but a lock timeout falls back to an unlocked update. `QualityBooster` and `stats()` then use impressions as the denominator. `rebuild-scores` keeps impressions (they cannot be replayed from your tables); `prune` retains recently shown score rows. See [operations](operations.md#seen-memory-and-impressions) for storage and retention.
 
 ### Hiding an item (visibility changes)
 
@@ -307,7 +307,7 @@ Per feed (defaults, overridable in `feeds.*`):
 | `card_ttl` | 3600 | card cache |
 | `cards_vary_by` | `[]` | cache cards per attribute, e.g. `['locale']` (`locale` defaults to the app locale) |
 | `list_vary_by` | `[]` | keep the ranked list, trending list and background build per attribute value, e.g. `['tenant']` (see [advanced](advanced.md#passing-extra-context)) |
-| `seen_vary_by` | `tenant` if in `list_vary_by`, else none | split the seen-set per attribute; `device` / `locale` stay shared so there are no repeats across devices |
+| `seen_vary_by` | `tenant` if in `list_vary_by`, else none | split the seen-set per attribute; `device` / `locale` stay shared by default |
 | `tail` / `tail_order` | `true` / created_at | catalog tail after ranked + trending items (feeds with a `model`) |
 | `impressions` | `false` | count served items; quality uses positive ÷ impressions |
 | `build_lock_seconds` / `build_lock_wait` | 10 / 2 | per-user build lock |

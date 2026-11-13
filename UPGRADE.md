@@ -4,7 +4,7 @@
 
 Only if you use `'impressions' => true`:
 
-- An impression now means **first time shown to this user within the seen window**. New counts accumulate more slowly than the old "every serve" counts and `rate` / `quality` move up. Existing numbers are not rewritten; to compare feeds fairly, compare periods after the upgrade. (Impressions cannot be replayed from your tables, so `rebuild-scores` keeps them.)
+- An impression now approximates **the first serve to this user within the seen window**; guests count per serve. New counts generally accumulate more slowly than the old "every serve" counts, affecting `rate` / `quality`. Existing numbers are not rewritten; to compare feeds fairly, compare periods after the upgrade. Impressions cannot be replayed from your tables, so `rebuild-scores` keeps them. See [limitations and costs](docs/operations.md#seen-memory-and-impressions).
 - Writes happen after the response in HTTP requests. Set `'impressions_after_response' => false` to keep them inline.
 - Nothing else to change.
 
