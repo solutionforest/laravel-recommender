@@ -118,7 +118,7 @@ it('applies a custom filter class (as a guest)', function () {
     expect(array_column(Recommender::similar('articles', 1), 'id'))->toBe([4]);
 });
 
-it('costs one neighbours row and one card query cold, and no query warm', function () {
+it('costs one neighbours row, one filter query and one card query cold, and no query warm', function () {
     $article = Article::find(1);
     $other = Article::find(5);
 
@@ -126,8 +126,8 @@ it('costs one neighbours row and one card query cold, and no query warm', functi
     $cold = queriesDuring(fn () => $other->similar());
     $warm = queriesDuring(fn () => $article->similar());
 
-    expect($first)->toBeLessThanOrEqual(3)
-        ->and($cold)->toBeLessThanOrEqual(2)
+    expect($first)->toBeLessThanOrEqual(4)
+        ->and($cold)->toBeLessThanOrEqual(3)
         ->and($warm)->toBe(0);
 });
 

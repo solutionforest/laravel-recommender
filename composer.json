@@ -67,7 +67,7 @@
             }
         },
         "branch-alias": {
-            "dev-main": "0.8.x-dev"
+            "dev-main": "0.10.x-dev"
         }
     },
     "scripts": {

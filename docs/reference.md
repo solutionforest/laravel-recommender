@@ -211,13 +211,13 @@ Recommender::similar('posts', $post, 6, ['locale' => 'en']);   // cards_vary_by 
 @endif
 ```
 
-- **The same for every viewer.** No seen-memory and no viewer filter (the `recommendable` scope runs as a guest, like cards), so the result is cached per item and its cost does not grow with users. It is not a personal feed: use `page()` for that.
+- **The same for every viewer.** No seen-memory and no viewer filter (the `recommendable` scope, or your `filter`, runs as a guest with the `list_vary_by` attributes you pass, e.g. `tenant`), so the result is cached per item and its cost does not grow with users. It is not a personal feed: use `page()` for that.
 - **Nothing new is stored.** It reads the item's one `rec_item_neighbours` row. The list of showable ids is cached per item for `similar_ttl` (3600 s) and keyed by the neighbour version, so a rebuild switches over at once.
-- **Cost:** warm, cache reads only; cold, one neighbours row and one card query (plus one filter query when the feed has a custom `filter` class). The first call after a rebuild also reads the active neighbour version once per feed.
+- **Cost:** warm, cache reads only; cold, one neighbours row, one filter query (the `recommendable` scope or your `filter`) and one card query for cards not cached yet. The first call after a rebuild also reads the active neighbour version once per feed.
 - **Hidden items** are left out when the list is built. An item hidden later drops out when its card is forgotten (`Recommendable` does that on save); until the list expires it costs one card query per call.
 - **Empty** until the item has neighbours (new items, or too few co-interactions: `neighbours_min_co_count`). Hide the block, or fall back to your own query (e.g. newest posts in the same category). `$limit` is capped at `neighbours_max` (30).
 - **After a rebuild** the next call uses the new neighbours. A server whose cache the builder does not share notices on its next cold call for an item without a cached list.
-- **Pass a loaded model or a validated id.** Every id gets its own cache entry for `similar_ttl`, so passing a raw request parameter (`Recommender::similar('posts', $request->id)`) lets callers fill the cache with made-up ids.
+- **Pass a loaded model or a validated id.** Every id gets its own cache entry. An empty result (an unknown id, or an item without neighbours yet) is kept for 60 s only, but passing a raw request parameter (`Recommender::similar('posts', $request->id)`) still lets callers write cache entries for made-up ids.
 - **The on/off switch does not turn it off.** With `RECOMMENDER_ENABLED=false` (or `'enabled' => false` on the feed) `similar()` keeps serving the last built neighbours, which get older while the scheduled jobs are paused. Hide the block yourself if that matters.
 
 ### How good is an item?

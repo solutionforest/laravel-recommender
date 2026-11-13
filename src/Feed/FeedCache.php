@@ -26,6 +26,9 @@ use SolutionForest\Recommender\Support\Ids;
  */
 final class FeedCache
 {
+    /** Seconds an empty similar() list is cached. */
+    public const SIMILAR_EMPTY_TTL = 60;
+
     public function __construct(private readonly CacheFactory $cache)
     {
     }
@@ -340,7 +343,10 @@ final class FeedCache
         }
 
         $ids = $build();
-        $this->putQuietly($feed, $key, self::pack($ids), $feed->int('similar_ttl', 3600));
+        // Empty lists (unknown ids, items without neighbours yet) are kept
+        // briefly only, so arbitrary ids cannot fill the store for an hour.
+        $ttl = $feed->int('similar_ttl', 3600);
+        $this->putQuietly($feed, $key, self::pack($ids), $ids === [] ? min($ttl, self::SIMILAR_EMPTY_TTL) : $ttl);
 
         return $ids;
     }

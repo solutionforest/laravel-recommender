@@ -24,7 +24,7 @@ Deliberately small. A normal production server will be faster.
 | Memory | 32 GB |
 | PHP | 8.4.27 (CLI, no OPcache JIT) |
 | Databases | SQLite 3.40.1 (in memory); MariaDB 10.11.19 (local, `innodb_buffer_pool_size=2G`) |
-| Package | v0.8.4, run on 2026-11-13 |
+| Package | v0.8.4, run on 2026-11-13 (similar items: v0.10.3) |
 
 Each concurrency worker is a forked PHP process. All of them share the one CPU with MariaDB, so pages/s there is a floor, not a ceiling.
 
@@ -61,10 +61,10 @@ SQLite gives the same numbers at 100k and 500k events (scale 1 and 5): **serving
 
 | Users | Cold p95 | Warm p95 | Max queries cold / warm |
 |---|---|---|---|
-| 2,000 | 0.64 ms | 0.07 ms | 2 / 0 |
-| 10,000 | 0.80 ms | 0.07 ms | 2 / 0 |
+| 2,000 | 1.45 ms | 0.11 ms | 3 / 0 |
+| 10,000 | 1.89 ms | 0.11 ms | 3 / 0 |
 
-Nothing is stored per user, so the cost follows items, not users. Asserted: the same query count at both sizes (cold ≤ 2, warm 0) and no large latency jump.
+Re-measured for v0.10.3, where a cold build also runs the `recommendable` scope (one query). Nothing is stored per user, so the cost follows items, not users. Asserted: the same query count at both sizes (cold ≤ 3, warm 0) and no large latency jump.
 
 ## 2. Interaction frequency: `StressTest`
 

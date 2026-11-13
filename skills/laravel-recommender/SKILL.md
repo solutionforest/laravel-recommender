@@ -138,7 +138,7 @@ Sponsored pattern: **Source** (inject) + **Booster** (push) + diversity cap. See
 - Bulk writes only inside package code; in apps, use package commands/jobs.
 - Empty feed / only trending → jobs not run or backfill too short.
 - No CoInteraction in `explain` → neighbours empty → run `build-neighbours`.
-- "Related / you may also like" → `$model->similar($n)` (or `Recommender::similar($feed, $model, $n)`), not a hand-written co-occurrence query or a user × item table. It is not personal (no seen-set, viewer rules not applied); use `page()` for a for-you feed. Pass a loaded model or a validated id, never a raw request value (each unknown id leaves a cache entry). Empty for new items → hide the block or fall back to your own query.
+- "Related / you may also like" → `$model->similar($n)` (or `Recommender::similar($feed, $model, $n)`), not a hand-written co-occurrence query or a user × item table. It is not personal (no seen-set, viewer rules not applied); use `page()` for a for-you feed. Pass a loaded model or a validated id, never a raw request value (each unknown id leaves a short-lived cache entry). Empty for new items → hide the block or fall back to your own query.
 - Keep README thin; depth stays in `docs/`.
 
 ## Install this skill in an app (Cursor)
