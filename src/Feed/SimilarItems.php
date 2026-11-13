@@ -21,12 +21,14 @@ use SolutionForest\Recommender\Support\Ids;
  *  - nothing new is stored: it reads the one rec_item_neighbours row of the item;
  *  - the list of showable ids is cached per item and neighbour version, so
  *    the nightly rebuild switches it over on its own;
- *  - warm: cache reads only; cold: one neighbours row + one card query
- *    (+ one filter query for a custom `filter` class).
+ *  - warm: cache reads only; cold: one neighbours row + one filter query
+ *    (the `recommendable` scope or a custom `filter`, as a guest) + one card
+ *    query for cards not cached yet.
  *
- * For feeds with a `model` and no custom `filter`, visibility is applied by
- * the model's `recommendable` scope (as a guest) when cards render, so no
- * separate filter query runs.
+ * The filter always runs on a cold build. Cards come from the shared card
+ * cache, so rendering them cannot be relied on to apply the scope: a card
+ * cached for one `list_vary_by` value (e.g. another tenant) would otherwise
+ * pass for every value.
  */
 final class SimilarItems
 {
@@ -92,10 +94,10 @@ final class SimilarItems
             return [];
         }
 
-        // Model feeds without a custom filter: the recommendable scope runs
-        // (as a guest) when cards render, so a separate filter query would
-        // check the same rule twice.
-        if (($feed->get('filter') || ! $feed->get('model')) && ($filter = $this->bindings->filter($feed)) !== null) {
+        // Always filter here, also with the default ModelFilter: cards come
+        // from the shared card cache, so the scope does not run for an item
+        // whose card another variant (e.g. tenant) has already cached.
+        if (($filter = $this->bindings->filter($feed)) !== null) {
             $allowed = array_flip(array_map('strval', $filter->allowed(new Context($feed, null, [], $attributes, CarbonImmutable::now()), $ids)));
             $ids = array_values(array_filter($ids, fn ($candidate) => isset($allowed[(string) $candidate])));
         }

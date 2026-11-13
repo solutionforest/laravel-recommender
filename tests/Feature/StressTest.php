@@ -218,8 +218,8 @@ it('serves similar items at the same query cost and latency with 5x the users', 
     perfNote(sprintf('similar (200 items): %s users cold p95 %.2f ms / warm p95 %.2f ms; %s users cold p95 %.2f ms / warm p95 %.2f ms; queries cold %d / warm %d',
         number_format(2000 * stressScale()), $small['cold_p95'], $small['warm_p95'], number_format(10000 * stressScale()), $large['cold_p95'], $large['warm_p95'], $large['cold'], $large['warm']));
 
-    // One neighbours row + one card query cold, cache only warm — at both sizes.
-    expect($small['cold'])->toBeLessThanOrEqual(2)
+    // One neighbours row + one filter query + one card query cold, cache only warm — at both sizes.
+    expect($small['cold'])->toBeLessThanOrEqual(3)
         ->and($large['cold'])->toBe($small['cold'])
         ->and($small['warm'])->toBe(0)
         ->and($large['warm'])->toBe(0)

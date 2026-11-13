@@ -30,7 +30,7 @@ Your app records the interactions (or lets `$post->recordInteraction($user, 'lik
 
 ## Your first feed
 
-Requires PHP 8.3+ and Laravel 10, 11, 12, or 13. In an app with a `Post` model and interaction tables (`post_likes`, `post_views` with `user_id`, `post_id`, `created_at`):
+Requires PHP 8.3+ and Laravel 10, 11, 12, or 13. Laravel 10 is past its end of life (no more security fixes from Laravel), so its support here is best-effort and will be dropped in a future minor release; plan your upgrade. In an app with a `Post` model and interaction tables (`post_likes`, `post_views` with `user_id`, `post_id`, `created_at`):
 
 **1. Install and set up**
 

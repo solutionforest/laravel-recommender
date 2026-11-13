@@ -7,6 +7,22 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.10.3] — 2026-11-13
+
+Security fix for `similar()`. Upgrade if your `recommendable` scope or `filter` reads an attribute (tenant, region, locale).
+
+### Security
+- **`similar()` could show items the `recommendable` scope hides** (since 0.10.0). For a feed with a `model` and no custom `filter`, the scope was only applied when cards rendered, and cards come from the shared card cache. So an item whose card was already cached (e.g. by another tenant) passed for every `list_vary_by` value: with a tenant-scoped feed, tenant 1 could see tenant 2's items in a related block. The filter now always runs when the list is built (one more query cold; warm reads still use no query). `page()` was not affected. Workaround on 0.10.0–0.10.2: add the attribute to `cards_vary_by`
+- `similar()` keeps an empty result (unknown id, or an item without neighbours) for 60 s instead of `similar_ttl`, so made-up ids cannot fill the cache store for an hour
+
+### Docs
+- `SECURITY.md`: 0.10.x is the supported line
+- README: Laravel 10 support is best-effort (Laravel 10 no longer gets security fixes)
+- Performance: similar-items numbers re-measured (cold 3 queries)
+
+### Changed
+- `composer.json` branch alias: `dev-main` is `0.10.x-dev`
+
 ## [0.10.2] — 2026-11-13
 
 Docs catch up with 0.9 and 0.10.
@@ -391,7 +407,8 @@ First minor release: a feed is now **configuration only** — tell the package w
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.2...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.3...HEAD
+[0.10.3]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.2...v0.10.3
 [0.10.2]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.1...v0.10.2
 [0.10.1]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.9.0...v0.10.0
