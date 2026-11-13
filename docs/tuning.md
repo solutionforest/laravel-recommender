@@ -71,6 +71,22 @@ Your own sources and boosters: see [advanced usage](advanced.md).
 
 Raising freshness a lot makes **every cohort look the same**. Prefer recipe A for segment demos.
 
+**D. Classic "random from the shops I looked at" feed**
+
+Keep one rule source and randomise the order. The list is shuffled once per build (`feed_ttl`) and stays stable while cached, so paging never repeats and the database never runs `ORDER BY RAND()`.
+
+```php
+'sources' => [
+    RelatedShopSource::class => 1.0,    // your CandidateSource: reviews of recently viewed / related shops
+],
+'boosters' => [],
+'exploration_ratio' => 0.0,
+'jitter' => 1.0,                        // uniform random order, like the old feed
+'source_limit' => 600,                  // more of each shop's reviews to shuffle from
+```
+
+Lower `jitter` (e.g. `0.3`) or add `CoInteractionSource` later to move gradually from "random" to "personal".
+
 **C. Cold start / guests** — guests use `trending_sources`; an authenticated user can have trending candidates in a personal list. Keep a guest-compatible source and enough eligible scored items. Neither case guarantees a nonempty feed.
 
 ## How to tune
@@ -93,6 +109,7 @@ Recommender::forgetTrending('reviews');
 | Knob | Effect |
 |---|---|
 | `exploration_ratio` | Controls interleaving from configured exploration sources (empty by default) |
+| `jitter` | Randomness per list build (0 … 1). `1` = uniform random order of the candidates, like a classic `ORDER BY RAND()` feed; `0.3` keeps the best near the top but varies the order between builds |
 | `half_life_days` | How fast trending forgets old events |
 | `history_days` / `neighbours_min_co_count` | Neighbour graph density |
 | `recent_items` | How many recent items seed co-interaction |

@@ -9,6 +9,7 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 - **Laravel 10 support** (PHP 8.3+ unchanged). No runtime code changes were needed; CI now runs Laravel 10 on PHP 8.3 and 8.4.
+- **`jitter`** feed option (0 … 1): mixes randomness into the ranking once per list build — `(1 − j) · score / max + j · U(0,1)`. `1` gives a uniform random order of the candidates (a classic "random" feed without `ORDER BY RAND()`); the order stays stable while the list is cached, so pages never repeat. Never applied to the shared trending list. Default `0` (no change).
 
 ### Changed
 - Example models declare casts with the `$casts` property instead of the Laravel 11+ `casts()` method, so the examples run on Laravel 10–13.

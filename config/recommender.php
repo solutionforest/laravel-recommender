@@ -137,6 +137,7 @@ return [
         'exploration_sources' => [], // [CandidateSource::class, ...]
         'exploration_ratio' => 0.15, // share of slots reserved for exploration (interleave, not a blend weight)
         'diversity' => [],           // ['shop' => 2, 'writer' => 1] max per page
+        'jitter' => 0.0,             // randomness per list build: 0 = pure ranking … 1 = uniform random order
 
         // Interaction weighting (used by update-scores)
         // Any event strings your InteractionSource yields (not only view/like) — e.g. add 'share' => 6.0.
