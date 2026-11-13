@@ -3,9 +3,9 @@ name: laravel-recommender
 description: >-
   Wire solutionforest/laravel-recommender into a Laravel app: config-only feeds
   (model + interaction tables), recommendations() helper, config weights, scores /
-  neighbours jobs, recommender:doctor, the /recommender dashboard, item stats, cache locks. Use when adding a
-  recommendation engine, for-you feed, personalised ranking, co-interaction /
-  trending, inspiration or blog recommendations, or replacing RAND()/Personalize.
+  neighbours jobs, similar items ($post->similar()), recommender:doctor, the /recommender dashboard, item stats,
+  cache locks. Use when adding a recommendation engine, for-you feed, personalised ranking, related posts /
+  "you may also like", co-interaction / trending, inspiration or blog recommendations, or replacing RAND()/Personalize.
 ---
 
 # Laravel Recommender — simple recommendation engine
@@ -77,6 +77,9 @@ Route::get('/posts/for-you', fn (Request $request) => Post::recommendedFor($requ
 
 // Same thing: Recommender::page('posts', $request->user())
 // Livewire: Recommender::page('posts', $user)->toPaginator()
+
+// Related posts on a post page (same for every viewer, cached per item):
+$related = $post->similar(4);   // cards, most similar first; [] until the post has neighbours
 ```
 
 6. **Schedule**: automatic (scores ~every 10 min · neighbours nightly · prune daily) — just run Laravel's scheduler; `RECOMMENDER_SCHEDULE=false` to do it yourself. Queue `recommender`. Cache store with locks: **redis** (preferred) or **database** + `cache_locks` (L11–13). Override: `RECOMMENDER_CACHE_STORE`.
@@ -135,6 +138,7 @@ Sponsored pattern: **Source** (inject) + **Booster** (push) + diversity cap. See
 - Bulk writes only inside package code; in apps, use package commands/jobs.
 - Empty feed / only trending → jobs not run or backfill too short.
 - No CoInteraction in `explain` → neighbours empty → run `build-neighbours`.
+- "Related / you may also like" → `$model->similar($n)` (or `Recommender::similar($feed, $model, $n)`), not a hand-written co-occurrence query or a user × item table. It is not personal (no seen-set, viewer rules not applied); use `page()` for a for-you feed. Pass a loaded model or a validated id, never a raw request value (each unknown id leaves a cache entry). Empty for new items → hide the block or fall back to your own query.
 - Keep README thin; depth stays in `docs/`.
 
 ## Install this skill in an app (Cursor)

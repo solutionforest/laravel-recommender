@@ -1,5 +1,13 @@
 # Upgrade guide
 
+## From 0.10.0 to 0.10.1
+
+Nothing to change. `similar()` switches to new neighbours reliably after `build-neighbours`, also when web servers do not share the builder's cache store.
+
+## From 0.9.0 to 0.10.0
+
+Nothing to change. `$post->similar(6)` / `Recommender::similar()` are new and optional; they read the neighbours `build-neighbours` already stores (no migration).
+
 ## From 0.8.5 to 0.9.0
 
 Nothing to change. Laravel 10 apps can now install the package. `jitter` defaults to `0`, so existing feeds keep their order.

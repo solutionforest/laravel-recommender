@@ -32,7 +32,8 @@ vendor/bin/pest tests/Feature/BlogExampleTest.php
 1. Merge the feed from `config/recommender.php` into yours (`model` → your model class).
 2. Copy the model's `scopeRecommendable()` and `toRecommendationCard()` into your model, and add `use Recommendable;`.
 3. Route: `Route::get('/posts/recommended', fn (Request $r) => Post::recommendedFor($r->user()));`
-4. Check it: `php artisan recommender:doctor posts`. The scoring jobs are scheduled by the package — keep Laravel's scheduler running.
+4. Related posts on a post page: `$post->similar(4)` (cards of the posts liked together with this one; empty until `build-neighbours` found any)
+5. Check it: `php artisan recommender:doctor posts`. The scoring jobs are scheduled by the package — keep Laravel's scheduler running.
 
 ## Lab ideas
 

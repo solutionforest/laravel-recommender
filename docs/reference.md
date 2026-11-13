@@ -159,7 +159,7 @@ Add your own under `presets` in `config/recommender.php` (e.g. `'jobs' => ['even
 | `RECOMMENDER_ENABLED=false` | The whole package is off: every page serves the shared trending list (from the last computed scores), nothing personal is built, no seen lists or impressions are written, `warm()` does nothing and the scheduled jobs pause. Routes keep working. |
 | `'enabled' => false` on a feed | The same for that feed only. Scheduled jobs skip it; running a command with the feed name still works. |
 
-Remove the switch to turn it back on — nothing else to do. `doctor`, `status` and the dashboard show when something is off. `Recommender::enabled('posts')` tells your code.
+Remove the switch to turn it back on — nothing else to do. `doctor`, `status` and the dashboard show when something is off. `Recommender::enabled('posts')` tells your code. `similar()` keeps serving the last built neighbours while off; check `Recommender::enabled()` if a related block should hide too.
 
 ### Infinite scroll: catalog tail and cursors
 
@@ -216,6 +216,9 @@ Recommender::similar('posts', $post, 6, ['locale' => 'en']);   // cards_vary_by 
 - **Cost:** warm, cache reads only; cold, one neighbours row and one card query (plus one filter query when the feed has a custom `filter` class). The first call after a rebuild also reads the active neighbour version once per feed.
 - **Hidden items** are left out when the list is built. An item hidden later drops out when its card is forgotten (`Recommendable` does that on save); until the list expires it costs one card query per call.
 - **Empty** until the item has neighbours (new items, or too few co-interactions: `neighbours_min_co_count`). Hide the block, or fall back to your own query (e.g. newest posts in the same category). `$limit` is capped at `neighbours_max` (30).
+- **After a rebuild** the next call uses the new neighbours. A server whose cache the builder does not share notices on its next cold call for an item without a cached list.
+- **Pass a loaded model or a validated id.** Every id gets its own cache entry for `similar_ttl`, so passing a raw request parameter (`Recommender::similar('posts', $request->id)`) lets callers fill the cache with made-up ids.
+- **The on/off switch does not turn it off.** With `RECOMMENDER_ENABLED=false` (or `'enabled' => false` on the feed) `similar()` keeps serving the last built neighbours, which get older while the scheduled jobs are paused. Hide the block yourself if that matters.
 
 ### How good is an item?
 
