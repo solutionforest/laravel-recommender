@@ -11,6 +11,7 @@ use SolutionForest\Recommender\Feed\FeedCache;
 use SolutionForest\Recommender\Feed\FeedRegistry;
 use SolutionForest\Recommender\Feed\FeedServer;
 use SolutionForest\Recommender\Feed\ListBuilder;
+use SolutionForest\Recommender\Feed\SimilarItems;
 use SolutionForest\Recommender\Feed\Variants;
 use SolutionForest\Recommender\Insights\ItemStats;
 use SolutionForest\Recommender\Interactions\DatabaseInteractions;
@@ -34,6 +35,7 @@ use Carbon\CarbonImmutable;
  *  - ListBuilder    build + cache ranked lists
  *  - Ranker         sources → filter → blend → boosters → exploration → diversity
  *  - ItemStats      "how good is this item?"
+ *  - SimilarItems   "more like this item" (neighbours as cards)
  */
 class Recommender
 {
@@ -46,6 +48,7 @@ class Recommender
         private readonly ListBuilder $lists,
         private readonly FeedServer $server,
         private readonly ItemStats $itemStats,
+        private readonly SimilarItems $similarItems,
     ) {
         $this->registry = new FeedRegistry(); // per instance: forgetInstance() re-reads config
     }
@@ -202,6 +205,31 @@ class Recommender
         }
 
         return $source->record($userId, $itemId, $event, $once, $table, $at);
+    }
+
+    /**
+     * Items similar to $item (people who interacted with it also interacted
+     * with these), as cards, most similar first — e.g. a related-posts block:
+     * `Recommender::similar('posts', $post, 6)`.
+     *
+     * Read from the neighbours build-neighbours computes; nothing new is
+     * stored. The same for every viewer, so it is cached per item: warm
+     * calls are cache reads only. Hidden items are left out (the model's
+     * `recommendable` scope runs as a guest, or the feed's `filter`). Empty
+     * until the item has neighbours — hide the block, or fall back to your
+     * own query. `$limit` is capped at `neighbours_max`.
+     *
+     * @param  array<string, mixed>  $attributes  `list_vary_by` / `cards_vary_by` values (e.g. tenant, locale)
+     * @return list<array<string, mixed>>
+     */
+    public function similar(string $feedName, Model|int|string $item, int $limit = 6, array $attributes = []): array
+    {
+        $id = $item instanceof Model ? $item->getKey() : $item;
+        if (! is_int($id) && ! is_string($id)) {
+            throw new InvalidArgumentException('Cannot find similar items for an item without a key.');
+        }
+
+        return $this->similarItems->for($this->feed($feedName), $id, $limit, $attributes);
     }
 
     /** Drop a cached card, e.g. after the item was edited or hidden. */

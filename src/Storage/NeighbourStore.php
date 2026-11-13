@@ -89,11 +89,12 @@ final class NeighbourStore
 
     /**
      * @param  list<int|string>  $itemIds
+     * @param  ?int  $version  the active version when the caller already has it (saves a query)
      * @return array<int|string, list<array{0: int|string, 1: float}>>
      */
-    public function neighboursOf(string $feed, array $itemIds): array
+    public function neighboursOf(string $feed, array $itemIds, ?int $version = null): array
     {
-        $version = $this->activeVersion($feed);
+        $version ??= $this->activeVersion($feed);
         if ($version === null || $itemIds === []) {
             return [];
         }

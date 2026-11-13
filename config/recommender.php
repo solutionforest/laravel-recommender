@@ -164,6 +164,7 @@ return [
         'neighbours_min_co_count' => 2,
         'neighbours_memory_limit_mb' => 512, // per pass; above it the job restarts with 2x shards
         'neighbours_max_shards' => 64,
+        'similar_ttl' => 3600,           // similar(): cached ids per item (a rebuild switches over at once)
 
         // Batch sizes for bulk writes / deletes (never row by row)
         'write_chunk' => 500,

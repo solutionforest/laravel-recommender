@@ -5,6 +5,7 @@ namespace SolutionForest\Recommender\Maintenance;
 use Carbon\CarbonImmutable;
 use SolutionForest\Recommender\Contracts\InteractionSource;
 use SolutionForest\Recommender\Support\Bindings;
+use SolutionForest\Recommender\Feed\FeedCache;
 use SolutionForest\Recommender\Storage\NeighbourStore;
 use SolutionForest\Recommender\Storage\StateStore;
 use SolutionForest\Recommender\Support\FeedDefinition;
@@ -33,6 +34,7 @@ final class NeighbourBuilder
         private readonly Bindings $bindings,
         private readonly NeighbourStore $store,
         private readonly StateStore $state,
+        private readonly FeedCache $cache,
     ) {
     }
 
@@ -65,6 +67,7 @@ final class NeighbourBuilder
             }
 
             $this->store->activate($feed->name, $version, $feed->int('delete_chunk', 5000));
+            $this->cache->forgetNeighbourVersion($feed); // similar() switches to the new version now
             $this->state->put($shardKey, (string) $shards);
 
             return $result + ['version' => $version, 'shards' => $shards, 'peak_mb' => round(memory_get_peak_usage(true) / 1048576, 1)];
