@@ -7,6 +7,10 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.5] — 2026-11-13
+
+Measured, and written down.
+
 ### Added
 - **[docs/performance.md](docs/performance.md)**: every performance test with measured results and how to reproduce them:
   - page latency (warm 0.2 ms, cold 5–8 ms p50);
