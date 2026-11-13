@@ -1,5 +1,9 @@
 # Upgrade guide
 
+## From 0.10.1 to 0.10.2
+
+Nothing to change (docs and config comments only).
+
 ## From 0.10.0 to 0.10.1
 
 Nothing to change. `similar()` switches to new neighbours reliably after `build-neighbours`, also when web servers do not share the builder's cache store.
