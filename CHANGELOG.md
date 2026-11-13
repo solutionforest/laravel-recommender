@@ -7,6 +7,10 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.10.0] — 2026-11-13
+
+Similar items.
+
 ### Added
 - **Similar items**: `$post->similar(6)` / `Recommender::similar('posts', $post, 6)` return cards of the items most often liked together with this one (the neighbours `build-neighbours` already computes), e.g. for a related-posts block. Viewer-independent and cached per item (`similar_ttl`, keyed by neighbour version so a rebuild switches over at once); nothing new is stored. Warm calls are cache reads only, cold calls one neighbours row + one card query; the stress test shows the same cost at 2,000 and 10,000 users
 - `NeighbourStore::neighboursOf()` accepts the active version when the caller already has it
