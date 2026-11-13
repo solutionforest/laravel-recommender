@@ -7,6 +7,15 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **[docs/performance.md](docs/performance.md)**: every performance test with measured results and how to reproduce them:
+  - page latency (warm 0.2 ms, cold 5–8 ms p50);
+  - score throughput (64k–165k events/s);
+  - 1M events from 500k users in 10 minutes (exact counts, 0 errors);
+  - concurrency up to 48 processes on the database cache (0 deadlocks);
+  - every-minute streams and bursts, Octane.
+- `RECOMMENDER_PERF=1` makes the stress tests print what they measure; the heavy test also reports page p50 / p95
+
 ## [0.8.4] — 2026-11-13
 
 Ready for Laravel Octane.

@@ -16,7 +16,7 @@ Run against MySQL / MariaDB like CI does:
 RECOMMENDER_TEST_DB=mysql DB_HOST=127.0.0.1 DB_PORT=3306 DB_DATABASE=rec_test DB_USERNAME=root vendor/bin/pest
 ```
 
-Stress tests run in the normal suite; run them alone or larger with `RECOMMENDER_STRESS_SCALE=5 vendor/bin/pest --group=stress`.
+Stress tests run in the normal suite; run them alone or larger with `RECOMMENDER_STRESS_SCALE=5 vendor/bin/pest --group=stress`. Add `RECOMMENDER_PERF=1` to print the measured times, queries and memory. Update [docs/performance.md](docs/performance.md) when they change noticeably.
 
 Opt-in, on MySQL / MariaDB:
 

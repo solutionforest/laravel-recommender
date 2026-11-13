@@ -415,9 +415,9 @@ composer analyse
 | `tests/Feature/DashboardTest.php` | dashboard gate, health/checks/trending/explain, `recommender:doctor` |
 | `tests/Feature/StressTest.php` | **volume**: 100k events / 2k users / 1k items — exact counts, bounded memory & queries, constant serving cost · **frequency**: per-minute score runs with bursts and boundary events (no loss, no double count), rapid-fire paging (no repeats, throttled rebuilds), edits between requests |
 | `tests/Feature/HeavyStressTest.php` | **heavy, opt-in** (`RECOMMENDER_HEAVY=1 vendor/bin/pest --group=heavy`, ~13 min on SQLite): 1M views / likes / shares from 500k users inside 10 minutes, then live bursts while scores update, the neighbour graph rebuilds and members load feeds. Fails on any exception, any warning-or-worse log line, a wrong count, a repeated item or runaway queries / memory |
-
 | `tests/Feature/ConcurrencyTest.php` | **concurrency, opt-in** (`RECOMMENDER_CONCURRENCY=1 RECOMMENDER_TEST_DB=mysql … vendor/bin/pest --group=concurrency`, needs `pcntl`): many forked processes serve feeds at the same moment on the database cache with impressions on, while one process adds likes and updates scores. Fails on any exception, deadlock or warning log. `RECOMMENDER_CONCURRENCY_WORKERS` / `_REQUESTS` change the load |
+| `tests/Feature/OctaneTest.php` | Octane-style worker loop: no repeats across requests, impressions on terminate, config isolated per request |
 
-Stress tests run in the normal suite (~10 s on SQLite). Run them alone or bigger with `RECOMMENDER_STRESS_SCALE=5 vendor/bin/pest --group=stress`.
+Stress tests run in the normal suite (~10 s on SQLite). Run them alone or bigger with `RECOMMENDER_STRESS_SCALE=5 vendor/bin/pest --group=stress`. Add `RECOMMENDER_PERF=1` to print the numbers. Measured results for all of these: [performance](performance.md).
 
 CI: PHPStan + PHP 8.3–8.4 × Laravel 11–13 (SQLite) + Laravel 13 / MySQL 8.
