@@ -368,8 +368,56 @@ final class FeedCache
         return config('recommender.prefix', 'rec').":{$feed->name}:{$suffix}";
     }
 
+    /** Resolved store name for this process (null = the app's default store). */
+    private ?string $resolved = null;
+
+    private bool $isResolved = false;
+
     private function store(): Repository
     {
-        return $this->cache->store(config('recommender.cache_store'));
+        return $this->cache->store($this->storeName());
+    }
+
+    /**
+     * The cache store the package uses. RECOMMENDER_CACHE_STORE wins; when it
+     * is not set, Redis is used if the app has a working Redis store (best for
+     * the per-user seen-list: fast, atomic locks, free expiry), otherwise the
+     * app's default store. The probe result is remembered for an hour in the
+     * default store, so an unreachable Redis costs at most one probe an hour.
+     */
+    public function storeName(): ?string
+    {
+        if ($this->isResolved) {
+            return $this->resolved;
+        }
+        $this->isResolved = true;
+
+        $configured = config('recommender.cache_store');
+        if (is_string($configured) && $configured !== '' && $configured !== 'auto') {
+            return $this->resolved = $configured;
+        }
+
+        $default = config('cache.default');
+        if ($default === 'redis' || ! is_array(config('cache.stores.redis'))) {
+            return $this->resolved = null;
+        }
+
+        try {
+            $verdict = $this->cache->store()->remember('recommender:store-probe', 3600, function () {
+                try {
+                    $this->cache->store('redis')->get('recommender:probe');
+
+                    return 'redis';
+                } catch (\Throwable $e) {
+                    Log::info('[recommender] Redis is configured but not reachable; using the default cache store. Set RECOMMENDER_CACHE_STORE to choose one.', ['exception' => $e->getMessage()]);
+
+                    return 'default';
+                }
+            });
+        } catch (\Throwable) {
+            $verdict = 'default';
+        }
+
+        return $this->resolved = $verdict === 'redis' ? 'redis' : null;
     }
 }

@@ -50,7 +50,7 @@ final class Health
      */
     public function overview(): array
     {
-        $configured = config('recommender.cache_store');
+        $configured = $this->cache->storeName();
 
         return [
             'enabled' => $this->recommender->enabled(),
