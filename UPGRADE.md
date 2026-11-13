@@ -1,5 +1,9 @@
 # Upgrade guide
 
+## From 0.8.5 to 0.9.0
+
+Nothing to change. Laravel 10 apps can now install the package. `jitter` defaults to `0`, so existing feeds keep their order.
+
 ## From 0.8.4 to 0.8.5
 
 Nothing to change (docs and test output only).
