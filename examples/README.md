@@ -1,6 +1,6 @@
 # Examples
 
-These integrations are exercised by Pest. Every example is a **config-only feed** — `model` + `interactions` in the config, a `recommendable` scope and `toRecommendationCard()` on the model — plus custom sources and boosters where the product needs its own rules. Each picks a named `preset` (`catalog`, `social` or `events`) and only overrides what it needs; `simple` uses the package defaults. Controllers are one line: `return Post::recommendedFor($request->user());`. Adapt schemas, namespaces and weights before using them in your application. Writing your own sources and boosters: [advanced usage](../docs/advanced.md).
+These integrations are exercised by Pest. Every example is a **config-only feed** — `model` + `interactions` in the config, a `recommendable` scope and `toRecommendationCard()` on the model — plus custom sources and boosters where the product needs its own rules. Each picks a named `preset` (`catalog`, `social` or `events`) and only overrides what it needs; `simple` uses the package defaults. Controllers are one line: `return Post::recommendedFor($request->user());`. Related-items blocks are one call too: `$post->similar(6)`. Adapt schemas, namespaces and weights before using them in your application. Writing your own sources and boosters: [advanced usage](../docs/advanced.md).
 
 | Example | Shows | Test |
 |---|---|---|

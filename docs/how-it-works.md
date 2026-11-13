@@ -4,7 +4,7 @@
 
 1. Users **view / like** items in *your* tables — this package does not copy those rows.
 2. Every **~10 minutes** a job updates a small “how hot is this item?” score.
-3. **Once a night** another job stores “people who liked *this* also liked *what?*” (neighbours).
+3. **Once a night** another job stores “people who liked *this* also liked *what?*” (neighbours). The same neighbours also answer `$post->similar()` for related-posts blocks, read per item and cached.
 4. When they open “for you”, the package builds a personal ranked list, remembers what they saw, and serves the next page from cache.
 5. **Guests** get a shared trending list. A new user may receive trending candidates in a personal list.
 6. When ranked and trending items run out, feeds with a `model` continue with the **newest** items the user may see (the catalog tail), so scrolling does not hit a wall.

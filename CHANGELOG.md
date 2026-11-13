@@ -7,6 +7,19 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.10.1] — 2026-11-13
+
+Similar items after a rebuild, and the docs.
+
+### Fixed
+- `similar()` could return an empty list right after `build-neighbours`: the cached neighbour version was dropped only after the old rows were deleted, and never on servers that do not share the builder's cache store. The version is now dropped as soon as the new one is active, and an empty list that was just built rechecks the active version once
+- `NeighbourStore::activate()` takes an optional callback that runs after the switch and before old rows are deleted
+
+### Docs
+- Similar items in the agent skill (`skills/laravel-recommender/SKILL.md`), `AGENTS.md`, the tutorial, how it works, operations (storage table, FAQ, roadmap), the blog example and the class map in CONTRIBUTING
+- Reference: `similar()` keeps serving while the package is switched off; pass a loaded model or a validated id (each id gets its own cache entry)
+- UPGRADE entries for 0.10.0 and 0.10.1
+
 ## [0.10.0] — 2026-11-13
 
 Similar items.
@@ -368,7 +381,9 @@ First minor release: a feed is now **configuration only** — tell the package w
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.1...HEAD
+[0.10.1]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.0...v0.10.1
+[0.10.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.8.5...v0.9.0
 [0.8.5]: https://github.com/solutionforest/laravel-recommender/compare/v0.8.4...v0.8.5
 [0.8.4]: https://github.com/solutionforest/laravel-recommender/compare/v0.8.3...v0.8.4

@@ -25,7 +25,7 @@ Human docs live under [`docs/`](docs/). Prefer linking there over pasting walls 
 1. `composer require solutionforest/laravel-recommender` → `php artisan recommender:bootstrap {feed}` (migrate + register + build + doctor), or `php artisan migrate` and continue below
 2. Simplest: config-only feed — `'model' => Post::class, 'interactions' => ['post_likes' => 'like', …]` (see `examples/simple`). `php artisan recommender:make-feed posts` writes it for you; `--classes` scaffolds InteractionSource / ItemFilter / CardTransformer for custom queries
 3. `recommender:doctor` → `update-scores` → `build-neighbours` → `explain {feed} {userId}`; watch `/recommender`; `Recommender::stats($feed, $item)` for per-item quality
-4. Serve with `Post::recommendedFor($request->user())` (model with `use Recommendable`) or `recommendations('posts', $user)` — return it directly for paginator JSON
+4. Serve with `Post::recommendedFor($request->user())` (model with `use Recommendable`) or `recommendations('posts', $user)` — return it directly for paginator JSON. Related items: `$post->similar(6)` (cards; viewer-independent, cached per item)
 5. Jobs schedule themselves (`schedule` config) — just run Laravel's scheduler; cache with locks (`redis` or `database`+`cache_locks`)
 
 Copy the Cursor skill into the app so agents auto-load it:
@@ -46,6 +46,7 @@ Do **not** invent an external ML service for this package’s job. Prefer packag
 - `list_vary_by` (e.g. `['tenant']`) → required when an attribute passed via `attributes:` changes which items appear: lists, trending and `warm()` are kept per value (the `recommendable` scope must still enforce tenancy)
 - Signed-in feeds are sequential (a refresh advances the feed; JSON is the simple paginator, no `total`) → follow `next_cursor`
 - `$model->recordInteraction($user, 'like', once: true)` → writes the row with the feed's table/columns (plain insert; `once` only for unique (user, item) like tables, never views; ambiguous event → pass `table:`)
+- `similar()` reads the nightly neighbours (no new table); `similar_ttl` caches the id list per item and neighbour version; capped at `neighbours_max`; empty until the item has neighbours
 - `tail` (default on) → newest items after ranked + trending · `impressions` (opt-in) → best-effort first serve within the bounded seen window (guests per page), normally written on HTTP termination → quality uses impressions as denominator
 - After changes: `Recommender::forgetUser` / `forgetTrending`
 

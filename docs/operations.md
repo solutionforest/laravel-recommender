@@ -79,9 +79,9 @@ Package **never copies** your interaction rows (likes / views / shares / …). F
 |---|---|---|---|
 | `rec_item_scores` | `hot`, counters, impressions | recently active / shown items | `prune` + retention |
 | `rec_item_daily` | per-day positive / exposure / impressions (quality over time) | active items × days | `prune` + retention |
-| `rec_item_neighbours` | top-N similar ids | items with neighbours | versioned rebuild |
+| `rec_item_neighbours` | top-N similar ids (feeds and `similar()`) | items with neighbours | versioned rebuild |
 | `rec_state` | watermarks, versions | handful of keys | overwrite |
-| Cache store (redis / database / …) | lists, seen, cards, locks | active users, items and configured variants | TTLs and cache eviction |
+| Cache store (redis / database / …) | lists, seen, cards, locks, `similar()` id lists | active users, items and configured variants | TTLs and cache eviction |
 
 Actual storage depends on database indexes, ID length, cache driver and serialization. Measure with representative data; cache can also use the database store. See below for the seen-set estimate.
 
@@ -186,12 +186,15 @@ Neighbours never built / history short / `neighbours_min_co_count` too high.
 **Imported old events, still empty?**  
 The initial window defaults to 30 days. Widen it before the first run, or run `recommender:rebuild-scores {feed} --days=…`.
 
+**Related posts / "you may also like"?**
+`$post->similar(6)` reads the nightly neighbours, the same for every viewer and cached per item, so it does not grow with users. After `build-neighbours` it switches to the new version at once. New items have no neighbours yet: hide the block or fall back to your own query. See [reference → similar items](reference.md#similar-items-related-posts).
+
 **Infinite feed?**  
 Feeds with a `model` can continue from ranked items to trending and then the newest eligible items (`'tail' => true`, the default). Clients can follow `next_cursor`. Personal paging normally excludes IDs in the bounded seen-set; increasing `seen_max` can reduce repeats during longer sessions, at a cache cost. Empty pages and repeats remain possible.
 
 ## Roadmap / open ideas
 
-Done in 0.1–0.8: best-effort impressions within the seen window and lock-protected seen updates (0.8); `recordInteraction` (0.7); per-tenant lists and simple-paginator JSON for signed-in feeds (0.7); fixes (0.6.x); `recommender:bootstrap` and named presets (0.5); impressions and quality over time (0.4); catalog tail and cursor pagination (0.3); config-only feeds, dashboard + `doctor`, guided `rebuild-scores`, explain with final / cached positions, card invalidation on model save, ids with commas, a config-only `make-feed`, per-item `stats()` (quality / popularity).
+Done in 0.1–0.10: similar items from the existing neighbours (0.10); `jitter` and Laravel 10 (0.9); best-effort impressions within the seen window and lock-protected seen updates (0.8); `recordInteraction` (0.7); per-tenant lists and simple-paginator JSON for signed-in feeds (0.7); fixes (0.6.x); `recommender:bootstrap` and named presets (0.5); impressions and quality over time (0.4); catalog tail and cursor pagination (0.3); config-only feeds, dashboard + `doctor`, guided `rebuild-scores`, explain with final / cached positions, card invalidation on model save, ids with commas, a config-only `make-feed`, per-item `stats()` (quality / popularity).
 
 Under consideration (open an issue if you need one):
 
