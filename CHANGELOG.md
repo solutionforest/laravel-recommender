@@ -7,6 +7,14 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.1] — 2026-11-13
+
+Less to configure.
+
+### Added
+- **Automatic cache store**: without `RECOMMENDER_CACHE_STORE`, the package uses Redis when the app has a working Redis store, otherwise the app's default store (probe remembered for an hour; `recommender:status` / the dashboard show the choice)
+- `RECOMMENDER_SEEN_MAX` and `RECOMMENDER_SEEN_TTL` env variables for the seen-list size and lifetime (defaults unchanged: 200 ids, 3 days)
+
 ## [0.8.0] — 2026-11-12
 
 Impressions that mean "first shown".
@@ -294,7 +302,8 @@ First minor release: a feed is now **configuration only** — tell the package w
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.8.1...HEAD
+[0.8.1]: https://github.com/solutionforest/laravel-recommender/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/solutionforest/laravel-recommender/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.6.3...v0.7.0

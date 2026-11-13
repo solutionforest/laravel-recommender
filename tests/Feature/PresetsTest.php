@@ -39,3 +39,17 @@ it('names the available presets when one is unknown', function () {
     expect(fn () => feedWith(['preset' => 'shopz']))
         ->toThrow(InvalidArgumentException::class, 'unknown preset [shopz]. Available: catalog, social, events.');
 });
+
+it('reads the seen-list size and lifetime from env variables', function () {
+    putenv('RECOMMENDER_SEEN_MAX=50');
+    putenv('RECOMMENDER_SEEN_TTL=3600');
+    try {
+        $defaults = (require __DIR__.'/../../config/recommender.php')['defaults'];
+    } finally {
+        putenv('RECOMMENDER_SEEN_MAX');
+        putenv('RECOMMENDER_SEEN_TTL');
+    }
+
+    expect($defaults['seen_max'])->toBe(50)->and($defaults['seen_ttl'])->toBe(3600)
+        ->and((require __DIR__.'/../../config/recommender.php')['defaults']['seen_max'])->toBe(200); // unchanged without env
+});

@@ -122,3 +122,37 @@ it('uses redis cache with locks when redis is available', function () {
 
     assertFeedWorksWithLocks(7004);
 });
+
+function freshCache(): \SolutionForest\Recommender\Feed\FeedCache
+{
+    app()->forgetInstance(\SolutionForest\Recommender\Feed\FeedCache::class);
+    app('cache')->forgetDriver(['redis']);
+
+    return app(\SolutionForest\Recommender\Feed\FeedCache::class);
+}
+
+it('picks Redis automatically when the app has a working Redis store', function () {
+    config(['recommender.cache_store' => null, 'cache.stores.redis' => ['driver' => 'array']]); // stands in for a reachable Redis
+
+    expect(freshCache()->storeName())->toBe('redis')
+        ->and(Cache::get('recommender:store-probe'))->toBe('redis'); // remembered for an hour
+});
+
+it('falls back to the default store when Redis is configured but unreachable', function () {
+    config([
+        'recommender.cache_store' => null,
+        'cache.stores.redis' => ['driver' => 'redis', 'connection' => 'nowhere'],
+        'database.redis.nowhere' => ['host' => '127.0.0.1', 'port' => 1, 'timeout' => 0.2],
+    ]);
+
+    expect(freshCache()->storeName())->toBeNull()
+        ->and(Cache::get('recommender:store-probe'))->toBe('default')
+        ->and(Recommender::page('reviews', 7)->items)->toBeArray(); // still serves
+});
+
+it('uses the store you set and never probes', function () {
+    config(['recommender.cache_store' => 'array', 'cache.stores.redis' => ['driver' => 'array']]);
+
+    expect(freshCache()->storeName())->toBe('array')
+        ->and(Cache::get('recommender:store-probe'))->toBeNull();
+});

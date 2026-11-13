@@ -31,6 +31,7 @@ return [
     |   RECOMMENDER_CACHE_STORE=database
     |   (omit) → use CACHE_STORE
     */
+    // null / 'auto' = Redis when the app has a working Redis store, else CACHE_STORE.
     'cache_store' => env('RECOMMENDER_CACHE_STORE') ?: null,
 
     /* Prefix for every cache key the package writes (easy to flush). */
@@ -90,8 +91,8 @@ return [
         'source_limit' => 200,       // max candidates asked from each source
 
         // "Already seen" set per user (replaces session based exclusion)
-        'seen_ttl' => 259200,        // 3 days
-        'seen_max' => 200,           // most recent N ids kept (stored packed, ~1.5 KB)
+        'seen_ttl' => (int) env('RECOMMENDER_SEEN_TTL', 259200), // seconds, 3 days
+        'seen_max' => (int) env('RECOMMENDER_SEEN_MAX', 200),    // most recent N ids kept (packed, ~1.5 KB)
 
         // Shared fallback list (guests, kill switch, build failures)
         'trending_sources' => [      // sources that work without a user

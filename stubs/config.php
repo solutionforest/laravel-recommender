@@ -12,8 +12,13 @@ return [
 
     'enabled' => env('RECOMMENDER_ENABLED', true),
 
-    // null = your CACHE_STORE. Use a store with locks in production (redis / database).
+    // Leave empty: Redis is used automatically when your app has a working Redis
+    // store (best: fast, atomic locks, free expiry), otherwise your CACHE_STORE.
+    // Set RECOMMENDER_CACHE_STORE=redis|database|… only to force one.
     'cache_store' => env('RECOMMENDER_CACHE_STORE') ?: null,
+
+    // How many served ids to remember per user (no repeats) and for how long.
+    // Env: RECOMMENDER_SEEN_MAX (default 200), RECOMMENDER_SEEN_TTL (seconds, default 3 days).
 
     // Jobs are scheduled for you; set RECOMMENDER_SCHEDULE=false to do it yourself.
     // 'schedule' => ['scores' => '*/10 * * * *', 'neighbours' => '30 3 * * *', 'prune' => '30 4 * * *'],
