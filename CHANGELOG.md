@@ -7,6 +7,10 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.4] — 2026-11-13
+
+Ready for Laravel Octane.
+
 ### Fixed
 - **Long-lived workers (Laravel Octane, queue workers):** `Recommender` is now a scoped binding instead of a singleton, so a feed config changed at runtime (e.g. per tenant) is read in that request and does not stick for the rest of the worker's life
 
