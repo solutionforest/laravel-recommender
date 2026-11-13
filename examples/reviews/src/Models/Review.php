@@ -22,12 +22,9 @@ class Review extends Model
 
     protected $guarded = [];
 
-    protected function casts(): array
-    {
-        return [
+    protected $casts = [
             'published' => 'boolean',
-        ];
-    }
+    ];
 
     /**
      * Published, has a cover, its shop is open, and not written by the viewer.

@@ -102,7 +102,8 @@ it('walks the interactive scaffold wizard', function () {
     ];
 
     $this->artisan('recommender:make-feed', ['--force' => true])
-        ->expectsChoice('Choose a starting preset', 'blog', $presets)
+        // Laravel 10's console test helper also lists the keys of associative choices.
+        ->expectsChoice('Choose a starting preset', 'blog', version_compare(app()->version(), '11.0', '<') ? array_merge(array_values($presets), array_keys($presets)) : $presets)
         ->expectsQuestion('Feed name', 'posts')
         ->expectsQuestion('Eloquent model', 'App\\Models\\Post')
         ->expectsQuestion('Likes table', 'post_likes')

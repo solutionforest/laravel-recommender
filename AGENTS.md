@@ -1,6 +1,6 @@
 # Agent guidelines — solutionforest/laravel-recommender
 
-**Simple recommendation engine for Laravel** (PHP 8.3+ · Laravel 11–13). Self-hosted for-you feeds: collaborative filtering + trending + custom sources — not Personalize / not `ORDER BY RAND()`.
+**Simple recommendation engine for Laravel** (PHP 8.3+ · Laravel 10–13). Self-hosted for-you feeds: collaborative filtering + trending + custom sources — not Personalize / not `ORDER BY RAND()`.
 
 Human docs live under [`docs/`](docs/). Prefer linking there over pasting walls of text into chat.
 

@@ -24,13 +24,10 @@ class Event extends Model
 
     protected $guarded = [];
 
-    protected function casts(): array
-    {
-        return [
+    protected $casts = [
             'published' => 'boolean',
             'starts_at' => 'datetime',
-        ];
-    }
+    ];
 
     /** Visible to guests and members.
      *
