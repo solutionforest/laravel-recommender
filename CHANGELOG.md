@@ -7,6 +7,14 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.3] — 2026-11-13
+
+Cleaner inside; no behaviour change.
+
+### Changed
+- `Recommender` is now a thin entry point (≈300 lines, was ≈1,000) that hands off to small single-job classes: `FeedRegistry`, `FeedServer`, `ListBuilder`, `Variants`, `ImpressionRecorder`, `Ranker`, `ItemStats`. Public API and facade unchanged. Map in CONTRIBUTING.md
+- The concurrency test drops leftover `cache` tables before it starts
+
 ## [0.8.2] — 2026-11-13
 
 Safe under heavy load on the database cache.

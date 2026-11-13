@@ -1,5 +1,9 @@
 # Upgrade guide
 
+## From 0.8.2 to 0.8.3
+
+Nothing to change. Internal refactor; the public API and the facade are the same. If you extended `Recommender` and overrode private methods, see the class map in CONTRIBUTING.md.
+
 ## From 0.8.0 / 0.8.1 to 0.8.2
 
 Nothing to change. `RECOMMENDER_ENABLED=false` now also pauses the scheduled jobs and skips seen-list / impression writes (before, only personal ranking stopped); trending keeps serving from the last scores. On the database cache store, the next `recommender:prune` (daily, scheduled for you) removes the package's expired cache rows once — the first run may delete many.
