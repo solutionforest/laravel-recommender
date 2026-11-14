@@ -10,7 +10,7 @@ description: >-
 
 # Laravel Recommender — simple recommendation engine
 
-Package: `solutionforest/laravel-recommender` (PHP **8.3–8.5**, Laravel **10–13**; Laravel 10 and 11 no longer get Laravel security fixes and are dropped in the first release after 31 March 2027 — see README → Supported versions).
+Package: `solutionforest/laravel-recommender` (PHP **8.3–8.5**, Laravel **10–13**; Laravel 10, 11 and 12 are dropped in the first release after 31 March 2027 (Laravel's own security fixes for them end by Feb 2027) — see README → Supported versions).
 
 Self-hosted “for you” feeds: item–item collaborative filtering + time-decayed trending + optional custom sources. **Not** a neural net / AWS Personalize.
 
