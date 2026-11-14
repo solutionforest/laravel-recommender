@@ -1,5 +1,9 @@
 # Upgrade guide
 
+## From 0.10.7 to 0.10.8
+
+Nothing to change (CI and docs only).
+
 ## From 0.10.6 to 0.10.7
 
 Nothing to change. If a feed points `filter`, `cards`, `groups` or `interactions` at a class that does not implement the matching contract, you now get an `InvalidArgumentException` with the feed name instead of a `TypeError`.

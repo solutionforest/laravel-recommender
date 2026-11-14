@@ -10,6 +10,14 @@ composer test       # Pest (SQLite)
 composer analyse    # PHPStan level 10 (max)
 ```
 
+Security checks, as in CI (`.github/workflows/security.yml`):
+
+```bash
+composer audit --no-dev
+composer require --dev vimeo/psalm psalm/plugin-laravel   # not kept in composer.json
+vendor/bin/psalm --config=psalm-taint.xml --taint-analysis # look for Tainted* issues
+```
+
 Run against MySQL / MariaDB like CI does:
 
 ```bash
