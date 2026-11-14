@@ -50,7 +50,7 @@ composer require solutionforest/laravel-recommender
 php artisan recommender:bootstrap posts
 ```
 
-`bootstrap` migrates, asks for your tables, writes the feed, builds the first scores and checks everything:
+`bootstrap` migrates, asks for your tables, writes the feed, builds the first scores, checks everything (tables, columns, indexes, classes) and times each part once on real data, so a slow scope or a missing index shows up before any user hits it:
 
 ![recommender:bootstrap](art/screenshots/terminal-bootstrap.png)
 
@@ -123,7 +123,7 @@ It is open in the `local` environment. In production, choose who can see it:
 Gate::define('viewRecommender', fn ($user) => $user->is_admin);
 ```
 
-`php artisan recommender:doctor` runs the same checks in the terminal and fails a deploy when something is wrong:
+`php artisan recommender:doctor` runs the same checks in the terminal and fails a deploy when something is wrong. Both also warn about **slow parts in your own code** — a source, a `recommendable` scope or cards slower than 200 ms, SQL slower than 1 s while the jobs run, or an interaction table without the indexes the jobs need; add `--probe` to time every part once before going live:
 
 ![recommender:doctor](art/screenshots/terminal-doctor.png)
 

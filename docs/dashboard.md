@@ -30,6 +30,8 @@ Each bar is the item's score split by source (the parts add up to the score). **
 
 ![Failing checks](../art/screenshots/dashboard-checks.png)
 
+Here: a missing table, a wrong column and a missing cards class (failures), plus an event without a weight, an interaction table without the indexes the jobs need, and a source that took 840 ms (warnings). The **Serving** step turns amber because of the slow source.
+
 | Check | Fails / warns when |
 |---|---|
 | Model | `model` is not an Eloquent model, or its table does not exist |
@@ -92,6 +94,10 @@ php artisan recommender:doctor posts --probe   # + run each part once on real da
 It prints the same checks and exits with a non-zero code when any check fails, so you can run it in a deploy script or CI after migrations.
 
 ![recommender:doctor](../art/screenshots/terminal-doctor.png)
+
+With `--probe` it also runs each part once on real data — the job reads, a personal and a guest list with every source, the catalog tail, the `recommendable` scope and the cards — and times it. Read-only; `recommender:bootstrap` runs it for you. See [operations → slow queries](operations.md#slow-queries-in-your-code).
+
+![recommender:doctor --probe](../art/screenshots/terminal-probe.png)
 
 The jobs and `recommender:status` print what they did and the raw numbers:
 
