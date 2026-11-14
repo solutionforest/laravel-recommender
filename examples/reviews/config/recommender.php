@@ -7,7 +7,7 @@ use SolutionForest\Recommender\Sources\TrendingSource;
 use SolutionForest\Recommender\Examples\Reviews\Models\Review;
 
 /*
- * Inspiration-style reviews feed — personalisation + pet-type rule source.
+ * Reviews feed — personalisation + a same-pet-type rule source (PetTypeMatchSource).
  */
 return [
     'enabled' => env('RECOMMENDER_ENABLED', true),

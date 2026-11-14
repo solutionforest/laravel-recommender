@@ -40,14 +40,14 @@ Commands register outside CLI so Ops panels work. Prefer queued jobs in producti
 GitHub Releases are automated: push a `v*.*.*` tag → [`.github/workflows/release.yml`](../.github/workflows/release.yml) creates/updates the Release using the matching `## [x.y.z]` section from [`CHANGELOG.md`](../CHANGELOG.md).
 
 1. Move notes out of `## [Unreleased]` into a new `## [x.y.z] — YYYY-MM-DD` section (Keep a Changelog).
-2. Add upgrade steps to [`UPGRADE.md`](../UPGRADE.md) for anything that changes behaviour, and bump `extra.branch-alias` in `composer.json` on a new minor (`0.2.x-dev`).
+2. Add upgrade steps to [`UPGRADE.md`](../UPGRADE.md) for anything that changes behaviour, and bump `extra.branch-alias` in `composer.json` on a new minor (e.g. `0.11.x-dev`).
 3. Commit on `main`, wait for [tests](../.github/workflows/tests.yml) to go green.
 4. Tag and push:
 
 ```bash
-git tag -a v0.1.1 -m "v0.1.1"
+git tag -a v0.10.4 -m "v0.10.4"
 git push origin main
-git push origin v0.1.1
+git push origin v0.10.4
 ```
 
 5. Confirm the Release on GitHub (notes = that CHANGELOG section). Re-run from **Actions → release → Run workflow** if you only need to refresh notes for an existing tag.
@@ -95,7 +95,7 @@ For example, 200 six-digit numeric IDs pack into roughly 1.4 KB of ID text; 50,0
 
 **Should I enable impressions?** They are off by default. Turn on `'impressions' => true` only when you want quality based on items served, and measure the additional load. For signed-in users, impressions reuse the seen-set to approximate the first serve per item within that bounded window. Guests count each served item on each page. Retries can serve new items; cache loss, lock timeouts or eviction can lead to duplicate counts, and failed writes can lose counts. This is not a billing or audit ledger.
 
-A nonempty impression batch issues four bulk database statements, updating `rec_item_scores` and `rec_item_daily`. HTTP requests schedule the writes on Laravel's terminating callback by default; console calls or `'impressions_after_response' => false` write inline. Deferred work still uses worker and database capacity. The daily table grows with active **feed × item × day** combinations, not users; score rows also store impression counters. The scheduled `recommender:prune` deletes daily rows older than `scores_retention_days` (180 by default) and removes idle score rows subject to their last activity. Run Laravel's scheduler, or run prune yourself if scheduling is disabled. See [impressions in the reference](reference.md#impressions-shown-not-just-viewed).
+A nonempty impression batch issues two bulk `UPDATE` statements, on `rec_item_scores` and `rec_item_daily`, plus a lookup, an insert and another update per table for items that have no row there yet. HTTP requests schedule the writes on Laravel's terminating callback by default; console calls or `'impressions_after_response' => false` write inline. Deferred work still uses worker and database capacity. The daily table grows with active **feed × item × day** combinations, not users; score rows also store impression counters. The scheduled `recommender:prune` deletes daily rows older than `scores_retention_days` (180 by default) and removes idle score rows subject to their last activity. Run Laravel's scheduler, or run prune yourself if scheduling is disabled. See [impressions in the reference](reference.md#impressions-shown-not-just-viewed).
 
 ## Deadlocks & overlapping runs
 
@@ -140,13 +140,13 @@ Writes are always bulk (`write_chunk` / `delete_chunk`). Asserted in `tests/Feat
 
 ### Your SQL matters
 
-Measured (MariaDB 10.11, 1M rows) — newest reviews of 30 shops:
+A custom source that wants the newest items of 30 owners (e.g. the shops or authors a user follows), measured on MariaDB 10.11 with 1M rows:
 
 | Query | Time |
 |---|---|
-| `WHERE shop_id IN (…) ORDER BY created_at DESC LIMIT 200` | ~470 ms |
+| `WHERE owner_id IN (…) ORDER BY created_at DESC LIMIT 200` | ~470 ms |
 | Same + index still sorts every row | ~468 ms |
-| `UNION ALL` of 30 × `(shop_id = ? … LIMIT 14)` | **~3.6 ms** |
+| `UNION ALL` of 30 × `(owner_id = ? … LIMIT 14)` | **~3.6 ms** |
 
 ## FAQ
 
@@ -177,8 +177,8 @@ Controller chooses who gets `Recommender::page()`.
 **Add a learned model later?**  
 Implement `CandidateSource` + weight.
 
-**Same cards for all cohorts?**  
-Freshness too high, or peer source matches multi-segment writers. See [tuning](tuning.md).
+**Everyone gets the same items?**  
+Personal sources weigh too little next to trending / fresh sources or `exploration_ratio`, or neighbours are missing (see the next question). See [tuning](tuning.md).
 
 **No CoInteraction in explain?**  
 Neighbours never built / history short / `neighbours_min_co_count` too high.

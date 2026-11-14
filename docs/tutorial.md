@@ -131,7 +131,7 @@ Route::get('/posts/recommended', fn (Request $request) => Post::recommendedFor($
 // or, without the trait: recommendations('posts', $request->user())
 ```
 
-Visit `/posts/recommended`. The JSON is Laravel's simple-paginator shape for a signed-in user (`data`, `current_page`, `next_page_url`, …; guests get the full paginator with `total` and `links`) plus `origin` (`personal` or `trending`), `has_more` and `next_cursor`; `?page=` is read automatically. `Recommender::page('posts', $request->user())` does the same and returns a `FeedPage` you can also turn into `toPaginator()` for Blade. The exact cards depend on your transformer and data. A guest gets trending. An authenticated user's list can contain trending candidates even when its origin is `personal`.
+Visit `/posts/recommended`. The JSON is Laravel's simple-paginator shape for a signed-in user (`data`, `current_page`, `next_page_url`, …; guests get the full paginator with `total` and `links`) plus `origin` (`personal`, `trending` or `tail`), `has_more` and `next_cursor`; `?page=` is read automatically. `Recommender::page('posts', $request->user())` does the same and returns a `FeedPage` you can also turn into `toPaginator()` for Blade. The exact cards depend on your transformer and data. A guest gets trending. An authenticated user's list can contain trending candidates even when its origin is `personal`.
 
 On a post's own page, `$post->similar(4)` returns the cards of the posts most often liked together with it: the same for every viewer, cached per post, and empty until `build-neighbours` has found neighbours for it. See [reference → similar items](reference.md#similar-items-related-posts).
 

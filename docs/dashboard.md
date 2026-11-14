@@ -39,7 +39,7 @@ Each bar is the item's score split by source (the parts add up to the score). **
 | Cards | the feed has neither `model` nor `cards` |
 | Scores | `update-scores` never ran, or is more than 1 hour behind (warning) |
 | Neighbours | `build-neighbours` never ran, or produced an empty graph (warning) |
-| Cache | the cache store cannot lock, so concurrent builds are last-write-wins (warning) |
+| Cache | the cache store cannot lock (concurrent builds are last-write-wins) or does not persist between requests (`array` / `null`) (warning) |
 
 Dark mode follows the operating system; the **Theme** button overrides it and is remembered:
 

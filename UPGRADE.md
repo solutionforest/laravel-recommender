@@ -1,5 +1,9 @@
 # Upgrade guide
 
+## From 0.10.3 to 0.10.4
+
+Nothing to change (docs and comments). If you copied the blog example's `SponsoredShopSource` / `SponsoredShopBooster`, they are now `SponsoredAuthorSource` / `SponsoredAuthorBooster` and read `sponsored_author_ids` only.
+
 ## From 0.10.2 to 0.10.3
 
 Nothing to change. A cold `similar()` build now runs one more query (the `recommendable` scope or your `filter`); warm calls still use none. If you added an attribute to `cards_vary_by` only as a workaround for the `similar()` leak, you can remove it.

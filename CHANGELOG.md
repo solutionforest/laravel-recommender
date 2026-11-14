@@ -7,6 +7,22 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.10.4] — 2026-11-14
+
+Docs checked against the code. No package code changes.
+
+### Docs
+- **Tuning:** removed content from an app-specific feed (pet / shop classes that do not exist in the package, "lessons from a real inspiration feed", video posters). Recipes now use package classes plus clearly marked classes you write; new "Common pitfalls" table; recipes in A–D order
+- **Maths:** neighbour cut-offs (`neighbours_min_co_count`, `neighbours_max`, `history_per_user`), what `rank(i)` means, booster term in the blend, the exact exploration interleave rule, relaxed diversity caps, `Math::fromAge` is `exp(−age / halfLife)` (≈ 0.37 after `halfLife`, not a true half-life)
+- **Reference:** `origin` can also be `'tail'`; queued `warm()` carries the attributes you pass (not the user model); impression writes described correctly (two bulk updates, more for new rows); ~270 pages/s matches the measured run
+- **Operations:** generic FAQ and SQL example (no app-specific wording); current version in the release example
+- **Performance:** cold `similar()` is 3 queries in the summary table too; page title
+- **Tutorial / how it works / CONTRIBUTING / AGENTS / agent skill:** `origin` values, `FeedPage` fields, storage classes, Laravel ^10–^13, `locks: fallback` wording, app-specific lines removed
+- **Config comments:** `cache_store` null means Redis when reachable, else `CACHE_STORE`; links point to `docs/tuning.md` and `docs/operations.md`
+
+### Changed
+- `examples/blog`: `SponsoredShopSource` / `SponsoredShopBooster` renamed to `SponsoredAuthorSource` / `SponsoredAuthorBooster`; they read only `sponsored_author_ids` (the `sponsored_shop_ids` fallback is gone)
+
 ## [0.10.3] — 2026-11-13
 
 Security fix for `similar()`. Upgrade if your `recommendable` scope or `filter` reads an attribute (tenant, region, locale).
@@ -407,7 +423,8 @@ First minor release: a feed is now **configuration only** — tell the package w
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.3...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.4...HEAD
+[0.10.4]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.3...v0.10.4
 [0.10.3]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.2...v0.10.3
 [0.10.2]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.1...v0.10.2
 [0.10.1]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.0...v0.10.1

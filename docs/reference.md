@@ -21,7 +21,7 @@ public function candidates(Context $context, int $limit): array
 |---|---|
 | `$context->userId` | the user given to `recommendations('posts', $user)` / `Recommender::page('posts', $user)` (`null` = guest) |
 | `$context->feed` | Feed config for this name (`feeds.posts` in `config/recommender.php`) |
-| `$context->feed->get('sponsored_shop_ids')` | Custom keys you put on that feed |
+| `$context->feed->get('sponsored_author_ids')` | Custom keys you put on that feed |
 | `$context->seen` | Ids already served (usually ignore inside sources) |
 | `$context->attribute('user')` | the user model, when you pass a model (or `attributes: ['user' => $user]`) |
 | `$context->now()` | Clock for “last 7 days / upcoming” (injectable in tests) |
@@ -33,7 +33,7 @@ Wire the user once at the edge:
 recommendations('posts', $request->user()); // id → $context->userId, model → $context->attribute('user')
 ```
 
-Then sources read `$context->userId` (or `$context->attribute('user')` when they need the full model). Queued `warm()` has **no** `attributes` — only `userId`.
+Then sources read `$context->userId` (or `$context->attribute('user')` when they need the full model). Queued `warm()` carries only `userId` and the `attributes` you pass to it — not the user model, so `$context->attribute('user')` is `null` there.
 
 ## Contracts
 
@@ -100,7 +100,7 @@ $result->items;     // cards
 $result->ids;
 $result->hasMore;
 $result->total();   // for toPaginator() (a count of what was served so far, not a catalog total)
-$result->origin;    // 'personal' | 'trending'
+$result->origin;    // 'personal' | 'trending' | 'tail'
 
 $paginator = $result->toPaginator(['path' => request()->url()]);
 return response()->json($result->toPaginatorArray(['path' => request()->url()]));
@@ -253,7 +253,7 @@ Views your app records are only a proxy for "the user saw it". Impressions are *
 ],
 ```
 
-For a nonempty batch to count, the package issues four bulk database statements, with work proportional to the batch size. HTTP writes are scheduled on Laravel's terminating callback by default; console calls and `'impressions_after_response' => false` write inline. Terminating work still consumes worker and database capacity. Failures are logged and do not break the page; the metric is best effort, not an audit log. A shared lock reduces concurrent duplicate counts, but a lock timeout falls back to an unlocked update. `QualityBooster` and `stats()` then use impressions as the denominator. `rebuild-scores` keeps impressions (they cannot be replayed from your tables); `prune` retains recently shown score rows. See [operations](operations.md#seen-memory-and-impressions) for storage and retention.
+For a nonempty batch to count, the package issues two bulk `UPDATE` statements (one on `rec_item_scores`, one on `rec_item_daily`) when every item already has rows, plus a lookup, an insert and another update per table for items that do not yet; work is proportional to the batch size. HTTP writes are scheduled on Laravel's terminating callback by default; console calls and `'impressions_after_response' => false` write inline. Terminating work still consumes worker and database capacity. Failures are logged and do not break the page; the metric is best effort, not an audit log. A shared lock reduces concurrent duplicate counts, but a lock timeout falls back to an unlocked update. `QualityBooster` and `stats()` then use impressions as the denominator. `rebuild-scores` keeps impressions (they cannot be replayed from your tables); `prune` retains recently shown score rows. See [operations](operations.md#seen-memory-and-impressions) for storage and retention.
 
 ### Hiding an item (visibility changes)
 
@@ -422,7 +422,7 @@ RECOMMENDER_CACHE_STORE=redis
 
 Verify: `php artisan recommender:status` (shows store name + locks yes/fallback).
 
-**Under load the page never fails because of the cache.** If saving the seen list fails (overloaded database, lock timeout), the page is still served and a warning is logged; at worst an item repeats later. Impression writes increment in a fixed row order, commit per statement and retry on deadlocks. Measured with the opt-in concurrency test below: 24 processes × 300 pages on MariaDB with the **database** cache store and impressions on, while likes arrive and scores update — 0 errors, 0 deadlocks, ~300 pages/s.
+**Under load the page never fails because of the cache.** If saving the seen list fails (overloaded database, lock timeout), the page is still served and a warning is logged; at worst an item repeats later. Impression writes increment in a fixed row order, commit per statement and retry on deadlocks. Measured with the opt-in concurrency test below: 24 processes × 300 pages on MariaDB with the **database** cache store and impressions on, while likes arrive and scores update — 0 errors, 0 deadlocks, ~270 pages/s.
 
 ## Testing the package
 

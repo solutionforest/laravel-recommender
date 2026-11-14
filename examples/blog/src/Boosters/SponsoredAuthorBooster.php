@@ -7,12 +7,12 @@ use SolutionForest\Recommender\Support\Context;
 use SolutionForest\Recommender\Examples\Blog\Models\Post;
 
 /**
- * Boost candidates that belong to sponsored authors/shops.
+ * Boost candidates written by sponsored authors (`sponsored_author_ids`).
  *
  * Booster only re-scores existing candidates — combine with
- * {@see SponsoredShopSource} to also inject them into the pool.
+ * {@see SponsoredAuthorSource} to also inject them into the pool.
  */
-class SponsoredShopBooster implements Booster
+class SponsoredAuthorBooster implements Booster
 {
     public function boost(Context $context, array $ids): array
     {
@@ -22,7 +22,7 @@ class SponsoredShopBooster implements Booster
 
         $sponsored = array_flip(array_map(
             'intval',
-            (array) $context->feed->get('sponsored_author_ids', $context->feed->get('sponsored_shop_ids', []))
+            (array) $context->feed->get('sponsored_author_ids', [])
         ));
 
         if ($sponsored === []) {

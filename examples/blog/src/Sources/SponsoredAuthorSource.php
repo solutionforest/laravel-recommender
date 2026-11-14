@@ -7,21 +7,18 @@ use SolutionForest\Recommender\Support\Context;
 use SolutionForest\Recommender\Examples\Blog\Models\Post;
 
 /**
- * Inject posts whose author (or shop) is on a paid / campaign list.
- *
- * Lab pattern: config key `sponsored_author_ids` (or rename to shop ids in
- * a reviews feed). Pair with {@see SponsoredShopBooster} so injected items
- * also rank higher. Diversity caps still limit how many appear per page.
- *
- * This blog example treats "sponsor" as author_id for simplicity.
+ * Inject posts whose author is on a paid / campaign list
+ * (config key `sponsored_author_ids`). Pair with {@see SponsoredAuthorBooster}
+ * so injected items also rank higher. Diversity caps still limit how many
+ * appear per page. The same pattern works for any owner column (brand, shop).
  */
-class SponsoredShopSource implements CandidateSource
+class SponsoredAuthorSource implements CandidateSource
 {
     public function candidates(Context $context, int $limit): array
     {
         $ids = array_values(array_unique(array_map(
             'intval',
-            (array) $context->feed->get('sponsored_author_ids', $context->feed->get('sponsored_shop_ids', []))
+            (array) $context->feed->get('sponsored_author_ids', [])
         )));
 
         if ($ids === []) {

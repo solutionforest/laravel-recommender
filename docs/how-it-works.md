@@ -55,7 +55,7 @@ sequenceDiagram
     R->>K: SET MANY card:{id}
   end
   R->>K: SET seen:{user} (append, capped)
-  R-->>API: FeedPage(items, hasMore, total)
+  R-->>API: FeedPage(items, hasMore, origin)
   API-->>C: JSON (paginator shape)
 ```
 
