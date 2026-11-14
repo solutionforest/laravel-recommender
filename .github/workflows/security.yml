@@ -29,9 +29,9 @@ jobs:
           composer update --no-dev --prefer-dist --no-interaction --no-progress
       - name: composer audit
         run: |
-          if [ "${{ matrix.laravel }}" = "10.*" ]; then
-            # Laravel 10 is past end of life and has advisories nobody will fix: report, don't fail.
-            composer audit --no-dev || echo "::warning title=Laravel 10 advisories::Laravel 10 is end of life and has known advisories (support is best-effort)."
+          if [ "${{ matrix.laravel }}" = "10.*" ] || [ "${{ matrix.laravel }}" = "11.*" ]; then
+            # Laravel 10 and 11 no longer get security fixes, so their advisories stay open: report, don't fail.
+            composer audit --no-dev || echo "::warning title=Laravel ${{ matrix.laravel }} advisories::This Laravel version is end of life and has known advisories that will not be fixed."
           else
             composer audit --no-dev
           fi

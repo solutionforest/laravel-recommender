@@ -12,12 +12,13 @@ This project uses [Semantic Versioning](https://semver.org/).
 Security checks in CI. No behaviour changes.
 
 ### Added
-- **Security workflow** (every PR, `main`, weekly): `composer audit` of the runtime dependencies for Laravel 10–13 (Laravel 10 report-only, it is end of life), and **Psalm taint analysis** of `src/` that fails on any `Tainted*` finding. See [SECURITY.md](SECURITY.md#automated-checks)
+- **Security workflow** (every PR, `main`, weekly): `composer audit` of the runtime dependencies for Laravel 10–13 (Laravel 10 and 11 report-only: both are end of life and have advisories that will not be fixed, e.g. CVE-2026-48019), and **Psalm taint analysis** of `src/` that fails on any `Tainted*` finding. See [SECURITY.md](SECURITY.md#automated-checks)
 - Dependabot updates for the CI actions; on the repository: Dependabot alerts and security updates, secret scanning with push protection
 
 ### Changed
 - Feed names are validated in one place (`FeedDefinition::validName()`), which the taint analysis recognises. Its first run flagged the dashboard's `?feed=` reaching a query: not exploitable (the value must name a configured feed, names are limited to `[A-Za-z0-9_-.]`, and it is a bound parameter), now provably so
 - CI: `actions/checkout@v5` (v4 ran on a deprecated Node version)
+- README supported-versions table: Laravel 11 no longer gets security fixes from Laravel (since March 2026); Laravel 12 needs 12.60+ for Laravel's own fixes
 
 ## [0.10.7] — 2026-11-14
 

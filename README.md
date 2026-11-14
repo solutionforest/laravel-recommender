@@ -33,8 +33,8 @@ Your app records the interactions (or lets `$post->recordInteraction($user, 'lik
 | Laravel | PHP 8.3 | PHP 8.4 | PHP 8.5 | Support |
 |---|:---:|:---:|:---:|---|
 | 13.x | ✅ | ✅ | ✅ | Full. Also tested on MySQL 8 and with a Redis cache store |
-| 12.x | ✅ | ✅ | ✅ | Full |
-| 11.x | ✅ | ✅ | ✅ | Full. On PHP 8.5, Laravel 11 itself prints deprecation notices; the package works |
+| 12.x | ✅ | ✅ | ✅ | Full (use 12.60 or newer for Laravel's own security fixes) |
+| 11.x | ✅ | ✅ | ✅ | Works and fully tested, but Laravel 11 has had **no security fixes since March 2026** (`composer audit` reports open advisories); plan an upgrade to 12 or 13. On PHP 8.5, Laravel 11 itself prints deprecation notices |
 | 10.x | ✅ | ✅ | ⚠️ | Best-effort until the first release after **31 March 2027**. Laravel 10 gets no security fixes. On PHP 8.5 CI only checks that the package installs and loads: Laravel 10's test tools do not run on PHP 8.5 |
 
 ✅ = the full test suite runs in [CI](.github/workflows/tests.yml) on every push (SQLite). PHP 8.2 and older are not supported. Other databases (PostgreSQL, MariaDB) and cache stores with locks should work but are not tested in CI.
