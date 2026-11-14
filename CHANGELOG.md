@@ -7,6 +7,16 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.10.10] — 2026-11-14
+
+Support dates and CI actions. No package changes.
+
+### Docs
+- **Laravel 12 support ends with the first release after 31 March 2027**, together with Laravel 10 and 11 (Laravel's own security fixes for 12 end on 24 February 2027). From then on the package supports Laravel 13 and newer
+
+### Changed
+- CI: `actions/checkout@v7`, `softprops/action-gh-release@v3` (Dependabot)
+
 ## [0.10.9] — 2026-11-14
 
 Support dates. No package changes.
@@ -482,7 +492,8 @@ First minor release: a feed is now **configuration only** — tell the package w
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.9...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.10...HEAD
+[0.10.10]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.9...v0.10.10
 [0.10.9]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.8...v0.10.9
 [0.10.8]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.7...v0.10.8
 [0.10.7]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.6...v0.10.7
