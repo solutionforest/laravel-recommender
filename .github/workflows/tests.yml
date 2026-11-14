@@ -121,6 +121,8 @@ jobs:
           coverage: none
       - run: |
           composer config audit.block-insecure false
+          # the dev tools (larastan, Testbench, Pest) have no Laravel 10 + PHP 8.5 release
+          composer remove --dev larastan/larastan phpstan/phpstan orchestra/testbench pestphp/pest --no-update --no-interaction
           composer require "laravel/framework:10.*" --no-update --no-interaction
           composer update --no-dev --prefer-dist --no-interaction --no-progress
       - run: |
