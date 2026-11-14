@@ -339,6 +339,9 @@ Per feed (defaults, overridable in `feeds.*`). `seen_max` / `seen_ttl` also read
 | `feed_ttl` | 1800 | seconds before rebuild |
 | `min_rebuild_interval` | 60 | throttle exhausted page-1 rebuilds |
 | `source_limit` | 200 | candidates per source |
+| `slow_ms` | 200 | a call into your code (source, booster, scope / filter, cards, groups, tail) slower than this is reported by `doctor` / the dashboard |
+| `slow_query_ms` | 1000 | a SQL query slower than this while `update-scores` / `build-neighbours` run is reported |
+| `slow_scores_seconds` / `slow_neighbours_seconds` | 300 / 1800 | warn when the last job run took longer |
 | `seen_ttl` / `seen_max` | 3 days / 200 | seen-set |
 | `trending_sources` | `[TrendingSource => 1]` | guest / fallback |
 | `trending_size` / `trending_ttl` | 200 / 600 | shared list |

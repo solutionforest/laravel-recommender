@@ -2,6 +2,7 @@
 
 namespace SolutionForest\Recommender\Feed;
 
+use SolutionForest\Recommender\Insights\SlowWatch;
 use Carbon\CarbonImmutable;
 use SolutionForest\Recommender\Eloquent\ModelCards;
 use SolutionForest\Recommender\Storage\NeighbourStore;
@@ -36,6 +37,7 @@ final class SimilarItems
         private readonly NeighbourStore $neighbours,
         private readonly FeedCache $cache,
         private readonly Bindings $bindings,
+        private readonly SlowWatch $watch,
     ) {
     }
 
@@ -98,7 +100,7 @@ final class SimilarItems
         // from the shared card cache, so the scope does not run for an item
         // whose card another variant (e.g. tenant) has already cached.
         if (($filter = $this->bindings->filter($feed)) !== null) {
-            $allowed = array_flip(array_map('strval', $filter->allowed(new Context($feed, null, [], $attributes, CarbonImmutable::now()), $ids)));
+            $allowed = array_flip(array_map('strval', $this->watch->measure($feed, 'filter', SlowWatch::name($feed, $filter), fn () => $filter->allowed(new Context($feed, null, [], $attributes, CarbonImmutable::now()), $ids))));
             $ids = array_values(array_filter($ids, fn ($candidate) => isset($allowed[(string) $candidate])));
         }
 
@@ -150,6 +152,6 @@ final class SimilarItems
             $transformer = $transformer->withAttributes($attributes);
         }
 
-        return $this->cache->cards($feed, $ids, fn (array $missing) => $transformer->cards($missing), $variant);
+        return $this->cache->cards($feed, $ids, fn (array $missing) => $this->watch->measure($feed, 'cards', SlowWatch::name($feed, $transformer), fn () => $transformer->cards($missing)), $variant);
     }
 }

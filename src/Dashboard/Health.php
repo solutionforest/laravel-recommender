@@ -12,6 +12,7 @@ use SolutionForest\Recommender\Contracts\DiversityGroups;
 use SolutionForest\Recommender\Contracts\InteractionSource;
 use SolutionForest\Recommender\Contracts\ItemFilter;
 use SolutionForest\Recommender\Feed\FeedCache;
+use SolutionForest\Recommender\Insights\SlowWatch;
 use SolutionForest\Recommender\Recommender;
 use SolutionForest\Recommender\Storage\NeighbourStore;
 use SolutionForest\Recommender\Storage\ScoreStore;
@@ -43,6 +44,7 @@ final class Health
         private readonly ScoreStore $scores,
         private readonly FeedCache $cache,
         private readonly DatabaseManager $db,
+        private readonly SlowWatch $slow,
     ) {
     }
 
@@ -134,6 +136,7 @@ final class Health
         $checks = [
             ...$this->bindingChecks($feed),
             ...$this->pipelineChecks($feed, $this->metrics($feed, $now)),
+            ...$this->speedChecks($feed),
         ];
         if (! $this->recommender->enabled($feed->name)) {
             $checks[] = self::warn(
@@ -308,6 +311,46 @@ final class Health
             $checks[] = self::warn('Neighbour graph is empty', 'Too little shared history; widen history_days or lower neighbours_min_co_count.', 'neighbours');
         } else {
             $checks[] = self::ok(number_format($m['neighbours']).' items have neighbours', 'neighbours');
+        }
+
+        return $checks;
+    }
+
+    /**
+     * Slow app code / SQL seen recently, and how long the last job runs took.
+     *
+     * @return list<array{level: string, label: string, hint: ?string, stage: string}>
+     */
+    private function speedChecks(FeedDefinition $feed): array
+    {
+        $checks = [];
+        $hints = [
+            'source' => 'A source should be one or two indexed queries with a LIMIT. See docs/operations.md#your-sql-matters.',
+            'booster' => 'A booster runs on every build: one indexed whereIn over the candidate ids, no per-item queries.',
+            'filter' => 'Runs on every build for all candidates: keep the scope to indexed columns; avoid whereHas on large relations (join or a denormalised column instead).',
+            'cards' => 'Eager-load what the card needs (cards are rendered in one query per page), or cache heavy fields on the model.',
+            'groups' => 'Groups read one attribute per item; use a column on the model, not a relationship.',
+            'tail' => 'The catalog tail runs the recommendable scope ordered by tail_order: index that column together with the scope\'s columns.',
+            'query' => 'Slow SQL while the job ran: usually an interaction table without an index on (timestamp) and (user, timestamp), or a heavy query in a custom InteractionSource. Slow jobs run longer, overlap and wait on locks.',
+        ];
+        foreach ($this->slow->entries($feed) as $e) {
+            $what = $e['kind'] === 'query' ? "SQL during {$e['stage']}: {$e['name']}" : "{$e['kind']} {$e['name']}";
+            $checks[] = self::warn(
+                sprintf('Slow %s — up to %s ms (%d× in 7 days, last %s ago)', $what, number_format($e['max_ms']), $e['count'], self::human(max(0, time() - $e['last_at']))),
+                $hints[$e['kind']] ?? null,
+                $e['stage'] === 'serving' ? 'serving' : $e['stage'],
+            );
+        }
+
+        foreach (['update-scores' => ['scores', 'slow_scores_seconds', 300], 'build-neighbours' => ['neighbours', 'slow_neighbours_seconds', 1800]] as $job => [$stage, $key, $default]) {
+            $run = $this->slow->lastRun($feed, $job);
+            if ($run === null) {
+                continue;
+            }
+            $took = self::human((int) round($run['seconds']));
+            $checks[] = $run['seconds'] > $feed->int($key, $default)
+                ? self::warn("Last {$job} run took {$took}", "Over {$key} ({$feed->int($key, $default)} s). Look for slow SQL above; long runs overlap with the next one and wait on locks.", $stage)
+                : self::ok(sprintf('Last %s run took %s', $job, $run['seconds'] < 1 ? number_format($run['seconds'] * 1000).' ms' : $took), $stage);
         }
 
         return $checks;

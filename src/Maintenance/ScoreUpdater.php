@@ -2,6 +2,7 @@
 
 namespace SolutionForest\Recommender\Maintenance;
 
+use SolutionForest\Recommender\Insights\SlowWatch;
 use Carbon\CarbonImmutable;
 use SolutionForest\Recommender\Contracts\InteractionSource;
 use SolutionForest\Recommender\Support\Bindings;
@@ -25,6 +26,7 @@ final class ScoreUpdater
         private readonly Bindings $bindings,
         private readonly ScoreStore $scores,
         private readonly StateStore $state,
+        private readonly SlowWatch $watch,
     ) {
     }
 
@@ -32,6 +34,17 @@ final class ScoreUpdater
      * @return array{from: string, to: string, events: int, items: int}  items = row upserts (per slice)
      */
     public function run(FeedDefinition $feed, ?CarbonImmutable $now = null, bool $rebuilding = false): array
+    {
+        // Rebuilds replay a long window on purpose: their duration is not a regular run's.
+        return $rebuilding
+            ? $this->update($feed, $now, true)
+            : $this->watch->job($feed, 'update-scores', fn () => $this->update($feed, $now, false));
+    }
+
+    /**
+     * @return array{from: string, to: string, events: int, items: int}  items = row upserts (per slice)
+     */
+    private function update(FeedDefinition $feed, ?CarbonImmutable $now, bool $rebuilding): array
     {
         if (! $rebuilding && $this->state->get(ScoreRebuilder::markerKey($feed->name)) !== null) {
             throw new \RuntimeException("Feed [{$feed->name}] has an unfinished score rebuild; run `php artisan recommender:rebuild-scores {$feed->name}` again to finish it.");

@@ -2,6 +2,7 @@
 
 namespace SolutionForest\Recommender\Maintenance;
 
+use SolutionForest\Recommender\Insights\SlowWatch;
 use Carbon\CarbonImmutable;
 use SolutionForest\Recommender\Contracts\InteractionSource;
 use SolutionForest\Recommender\Support\Bindings;
@@ -35,6 +36,7 @@ final class NeighbourBuilder
         private readonly NeighbourStore $store,
         private readonly StateStore $state,
         private readonly FeedCache $cache,
+        private readonly SlowWatch $watch,
     ) {
     }
 
@@ -42,6 +44,14 @@ final class NeighbourBuilder
      * @return array{users: int, items: int, version: int, shards: int, peak_mb: float}
      */
     public function run(FeedDefinition $feed, ?CarbonImmutable $now = null): array
+    {
+        return $this->watch->job($feed, 'build-neighbours', fn () => $this->rebuild($feed, $now));
+    }
+
+    /**
+     * @return array{users: int, items: int, version: int, shards: int, peak_mb: float}
+     */
+    private function rebuild(FeedDefinition $feed, ?CarbonImmutable $now): array
     {
         $source = $this->bindings->interactions($feed)
             ?? throw new \RuntimeException("Feed [{$feed->name}] has no 'interactions' configured.");

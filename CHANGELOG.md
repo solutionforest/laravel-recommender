@@ -7,6 +7,13 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.11.0] — 2026-11-14
+
+Find slow queries in your own code.
+
+### Added
+- **Speed checks in `doctor` and the dashboard.** The package now times every call into app code while serving (sources, boosters, the `recommendable` scope or `filter`, cards, groups, catalog tail) and every SQL query while `update-scores` / `build-neighbours` run, and records how long each job run took. Anything slower than `slow_ms` (200 ms), `slow_query_ms` (1000 ms), `slow_scores_seconds` (300) or `slow_neighbours_seconds` (1800) shows up as a warning with the part's name (e.g. `recommendable scope (Post)` or the SQL) and what usually fixes it, and is logged at most once an hour. Only slow events are stored (cache, 7 days, max 20 per feed); the timers add no measurable cost (stress numbers unchanged). See [operations → slow queries](docs/operations.md#slow-queries-in-your-code)
+
 ## [0.10.10] — 2026-11-14
 
 Support dates and CI actions. No package changes.
@@ -492,7 +499,8 @@ First minor release: a feed is now **configuration only** — tell the package w
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.10...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.10...v0.11.0
 [0.10.10]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.9...v0.10.10
 [0.10.9]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.8...v0.10.9
 [0.10.8]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.7...v0.10.8
