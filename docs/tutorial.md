@@ -1,6 +1,6 @@
 # Create your first feed
 
-This walkthrough uses a `posts` feed in an existing Laravel application. Replace its table and column names with yours. You need PHP 8.3+, Laravel 10–13, a working database and an item model such as `App\Models\Post`.
+This walkthrough uses a `posts` feed in an existing Laravel application. Replace its table and column names with yours. You need PHP 8.3+, Laravel 10–13 ([supported versions](../README.md#supported-versions)), a working database and an item model such as `App\Models\Post`.
 
 ## 1. Check your data
 

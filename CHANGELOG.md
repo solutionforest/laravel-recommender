@@ -7,8 +7,16 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.10.6] — 2026-11-14
+
+Supported versions in one table; no package code changes.
+
 ### Docs
+- README: **Supported versions** table (Laravel 10–13 × PHP 8.3–8.5), showing what CI tests and the Laravel 10 end date
 - Release steps: `main` is protected (all CI checks must pass before merge, no direct pushes); releases go through a pull request, then the merge commit is tagged
+
+### Changed
+- CI: the full suite also runs on PHP 8.5 with Laravel 11 and 12
 
 ## [0.10.5] — 2026-11-14
 
@@ -442,7 +450,8 @@ First minor release: a feed is now **configuration only** — tell the package w
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.5...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.6...HEAD
+[0.10.6]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.5...v0.10.6
 [0.10.5]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.4...v0.10.5
 [0.10.4]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.3...v0.10.4
 [0.10.3]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.2...v0.10.3

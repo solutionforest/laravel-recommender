@@ -1,5 +1,9 @@
 # Upgrade guide
 
+## From 0.10.5 to 0.10.6
+
+Nothing to change (docs only).
+
 ## From 0.10.4 to 0.10.5
 
 - **App timezone not UTC, on Laravel 11–13:** stored scores were counted wrongly (too high east of UTC, events missing west of UTC). Rebuild them once per feed after upgrading: `php artisan recommender:rebuild-scores {feed} --days=30` (use the window you need). Impressions are kept. Laravel 10 apps and UTC apps need nothing.
