@@ -1,5 +1,9 @@
 # Upgrade guide
 
+## From 0.10.8 to 0.10.9
+
+Nothing to change (docs only). If you are on Laravel 10 or 11, plan your upgrade: both are dropped in the first release after 31 March 2027.
+
 ## From 0.10.7 to 0.10.8
 
 Nothing to change (CI and docs only).
