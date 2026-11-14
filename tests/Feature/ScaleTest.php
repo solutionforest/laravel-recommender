@@ -90,9 +90,9 @@ it('writes neighbours with bulk inserts, not one row at a time', function () {
     $writes = countWrites(fn () => app(NeighbourBuilder::class)->run($feed, CarbonImmutable::parse('2026-11-08')));
     $rows = DB::table('rec_item_neighbours')->count();
 
-    // 50 items / 20 per insert = 3 inserts for neighbours (+1 state upsert).
+    // 50 items / 20 per insert = 3 inserts for neighbours (+1 state upsert, +1 run-duration upsert).
     expect($rows)->toBe(50)
-        ->and($writes['insert'])->toBeLessThanOrEqual((int) ceil($rows / 20) + 2);
+        ->and($writes['insert'])->toBeLessThanOrEqual((int) ceil($rows / 20) + 3);
 });
 
 it('merges scores with one upsert per chunk', function () {

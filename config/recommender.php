@@ -90,6 +90,15 @@ return [
         // Per-user ranked list
         'feed_size' => 200,          // ids kept per user
         'feed_ttl' => 1800,          // seconds before the list is rebuilt
+        // Speed checks (doctor + dashboard): app code slower than slow_ms per call
+        // (sources, boosters, recommendable scope / filter, cards, groups, tail),
+        // SQL slower than slow_query_ms while the jobs run, and job runs longer
+        // than these limits are reported. Only slow events are stored (7 days).
+        'slow_ms' => 200,
+        'slow_query_ms' => 1000,
+        'slow_scores_seconds' => 300,      // update-scores is scheduled every 10 minutes
+        'slow_neighbours_seconds' => 1800,
+
         'min_rebuild_interval' => 60, // page 1 may rebuild an exhausted list at most this often
         'source_limit' => 200,       // max candidates asked from each source
 

@@ -5,6 +5,7 @@ namespace SolutionForest\Recommender\Ranking;
 use Illuminate\Contracts\Container\Container;
 use SolutionForest\Recommender\Contracts\Booster;
 use SolutionForest\Recommender\Contracts\CandidateSource;
+use SolutionForest\Recommender\Insights\SlowWatch;
 use SolutionForest\Recommender\Scoring\Blender;
 use SolutionForest\Recommender\Scoring\Diversifier;
 use SolutionForest\Recommender\Scoring\Explorer;
@@ -28,6 +29,7 @@ final class Ranker
     public function __construct(
         private readonly Container $container,
         private readonly Bindings $bindings,
+        private readonly SlowWatch $watch,
         private readonly Blender $blender = new Blender(),
         private readonly Explorer $explorer = new Explorer(),
         private readonly Diversifier $diversifier = new Diversifier(),
@@ -63,7 +65,7 @@ final class Ranker
             try {
                 /** @var CandidateSource $source */
                 $source = $this->container->make($class);
-                $results[$class] = $source->candidates($context, $limit);
+                $results[$class] = $this->watch->measure($feed, 'source', class_basename($source), fn () => $source->candidates($context, $limit));
             } catch (Throwable $e) {
                 Report::failure($feed, "source {$class}", $e); // a broken source must not break the feed
                 $results[$class] = [];
@@ -96,7 +98,7 @@ final class Ranker
                 try {
                     /** @var Booster $booster */
                     $booster = $this->container->make($class);
-                    $boosts[$class] = $booster->boost($context, $candidateIds);
+                    $boosts[$class] = $this->watch->measure($feed, 'booster', class_basename($booster), fn () => $booster->boost($context, $candidateIds));
                 } catch (Throwable $e) {
                     Report::failure($feed, "booster {$class}", $e);
                 }
@@ -147,7 +149,8 @@ final class Ranker
             foreach ($diversity as $group => $max) {
                 $maxPerGroup[(string) $group] = Value::int($max);
             }
-            $ids = $this->diversifier->apply($ids, $groups->groups($ids), $maxPerGroup, $feed->int('page_size', 12));
+            $groupOf = $this->watch->measure($feed, 'groups', SlowWatch::name($feed, $groups), fn () => $groups->groups($ids));
+            $ids = $this->diversifier->apply($ids, $groupOf, $maxPerGroup, $feed->int('page_size', 12));
         }
 
         return Ids::normalizeAll($ids);
@@ -166,7 +169,7 @@ final class Ranker
         }
         $filter = $this->bindings->filter($context->feed);
 
-        return $filter === null ? $ids : $filter->allowed($context, Ids::normalizeAll($ids));
+        return $filter === null ? $ids : $this->watch->measure($context->feed, 'filter', SlowWatch::name($context->feed, $filter), fn () => $filter->allowed($context, Ids::normalizeAll($ids)));
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace SolutionForest\Recommender;
 
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use SolutionForest\Recommender\Support\Value;
@@ -18,6 +19,7 @@ class RecommenderServiceProvider extends ServiceProvider
         $this->app->singleton(Storage\ScoreStore::class);
         $this->app->singleton(Storage\NeighbourStore::class);
         $this->app->singleton(Feed\FeedCache::class);
+        $this->app->singleton(Insights\SlowWatch::class);
     }
 
     public function boot(): void
@@ -25,6 +27,13 @@ class RecommenderServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         $this->registerDashboard();
         $this->registerSchedule();
+
+        // Slow SQL while update-scores / build-neighbours run (cheap no-op otherwise).
+        $this->app->make(\Illuminate\Contracts\Events\Dispatcher::class)->listen(QueryExecuted::class, function (QueryExecuted $event): void {
+            if ($this->app->resolved(Insights\SlowWatch::class)) {
+                $this->app->make(Insights\SlowWatch::class)->query($event);
+            }
+        });
 
         // Register outside runningInConsole() so Artisan::call() from HTTP/Livewire works.
         $this->commands([

@@ -40,6 +40,7 @@ Each bar is the item's score split by source (the parts add up to the score). **
 | Scores | `update-scores` never ran, or is more than 1 hour behind (warning) |
 | Neighbours | `build-neighbours` never ran, or produced an empty graph (warning) |
 | Cache | the cache store cannot lock (concurrent builds are last-write-wins) or does not persist between requests (`array` / `null`) (warning) |
+| Speed | in the last 7 days, a call into your code was slower than `slow_ms` (source, booster, `recommendable` scope / filter, cards, groups, catalog tail), or a SQL query took longer than `slow_query_ms` while `update-scores` / `build-neighbours` ran, or the last job run took longer than `slow_scores_seconds` / `slow_neighbours_seconds` (warning, with what to fix). See [operations → slow queries](operations.md#slow-queries-in-your-code) |
 
 Dark mode follows the operating system; the **Theme** button overrides it and is remembered:
 

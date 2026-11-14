@@ -356,6 +356,26 @@ final class FeedCache
         return $version;
     }
 
+    /**
+     * A small diagnostics value (e.g. slow parts seen recently).
+     *
+     * @return array<mixed>
+     */
+    public function diagnostics(FeedDefinition $feed, string $name): array
+    {
+        $value = $this->store()->get($this->key($feed, "diag:{$name}"));
+
+        return is_array($value) ? $value : [];
+    }
+
+    /**
+     * @param  array<mixed>  $value
+     */
+    public function putDiagnostics(FeedDefinition $feed, string $name, array $value, int $ttl): void
+    {
+        $this->putQuietly($feed, $this->key($feed, "diag:{$name}"), $value, $ttl);
+    }
+
     public function forgetNeighbourVersion(FeedDefinition $feed): void
     {
         $this->store()->forget($this->key($feed, 'neighbours-version'));

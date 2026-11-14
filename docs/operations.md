@@ -148,6 +148,20 @@ A custom source that wants the newest items of 30 owners (e.g. the shops or auth
 | Same + index still sorts every row | ~468 ms |
 | `UNION ALL` of 30 × `(owner_id = ? … LIMIT 14)` | **~3.6 ms** |
 
+### Slow queries in your code
+
+The package's own queries are bounded and measured ([performance](performance.md)). What it cannot control is the code you plug in: a source with a `whereHas` on a big relationship, a `recommendable` scope that joins three tables, cards that lazy-load relations, or interaction tables without indexes. These stay invisible until pages get slow — or until `update-scores` runs so long that the next run overlaps and they wait on each other's locks.
+
+So the package watches them for you, at the cost of one timer per call:
+
+| What | Reported when | Where |
+|---|---|---|
+| Each call into your code while serving (sources, boosters, `recommendable` scope / `filter`, cards, groups, catalog tail) | slower than `slow_ms` (200 ms) | `doctor`, dashboard, one log warning per hour |
+| Every SQL query while `update-scores` / `build-neighbours` run (your interaction tables, a custom `InteractionSource`) | slower than `slow_query_ms` (1000 ms) | same |
+| Each job run | longer than `slow_scores_seconds` (300) / `slow_neighbours_seconds` (1800) | same; the last run time is always shown |
+
+Only slow events are stored (cache, 7 days, at most 20 per feed). The warning names the part (e.g. `recommendable scope (Post)` or the SQL text) and says what usually fixes it: an index on `(timestamp)` and `(user, timestamp)` for interaction tables, one indexed query with a `LIMIT` per source, eager loading for cards, a column instead of a relationship for diversity groups.
+
 ## FAQ
 
 **Better than AWS Personalize?**  

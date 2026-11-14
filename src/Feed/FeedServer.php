@@ -2,6 +2,7 @@
 
 namespace SolutionForest\Recommender\Feed;
 
+use SolutionForest\Recommender\Insights\SlowWatch;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
@@ -32,6 +33,7 @@ final class FeedServer
         private readonly Ranker $ranker,
         private readonly Bindings $bindings,
         private readonly ImpressionRecorder $impressions,
+        private readonly SlowWatch $watch,
     ) {
     }
 
@@ -105,7 +107,7 @@ final class FeedServer
         $origin = 'trending';
         if (count($window) < $perPage + 1 && ($tail = $this->tail($feed)) !== null) {
             $context = new Context($feed, null, [], $attributes, CarbonImmutable::now());
-            $more = $tail->ids($context, $ids, $perPage + 1 - count($window), max(0, $offset - count($ids)));
+            $more = $this->watch->measure($feed, 'tail', SlowWatch::name($feed, $tail), fn () => $tail->ids($context, $ids, $perPage + 1 - count($window), max(0, $offset - count($ids))));
             $origin = $window === [] && $more !== [] ? 'tail' : $origin;
             $window = array_merge($window, $more);
         }
@@ -145,7 +147,7 @@ final class FeedServer
             $need = $perPage - count($cards);
             $batch = array_slice($ids, $offset, $need + ($round === 0 ? 0 : $need));
             $offset += count($batch);
-            $rendered = $this->cache->cards($feed, $batch, fn (array $missing) => $transformer->cards($missing), $variant);
+            $rendered = $this->cache->cards($feed, $batch, fn (array $missing) => $this->watch->measure($feed, 'cards', SlowWatch::name($feed, $transformer), fn () => $transformer->cards($missing)), $variant);
             foreach ($batch as $id) {
                 $consumed[] = $id;
                 if (isset($rendered[$id]) && count($cards) < $perPage) {
@@ -189,7 +191,7 @@ final class FeedServer
         }
 
         try {
-            $more = $tail->ids($context, array_merge(Ids::normalizeAll(array_keys($seenSet)), $queue), $need);
+            $more = $this->watch->measure($context->feed, 'tail', SlowWatch::name($context->feed, $tail), fn () => $tail->ids($context, array_merge(Ids::normalizeAll(array_keys($seenSet)), $queue), $need));
             $before = count($queue);
             // The model scope already applied visibility; a custom filter class still gets its say.
             $queue = $context->feed->get('filter')
