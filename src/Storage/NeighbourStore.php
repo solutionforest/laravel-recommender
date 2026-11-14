@@ -4,7 +4,9 @@ namespace SolutionForest\Recommender\Storage;
 
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\DatabaseManager;
+use Illuminate\Database\Query\Builder;
 use SolutionForest\Recommender\Support\Ids;
+use SolutionForest\Recommender\Support\Value;
 
 /**
  * rec_item_neighbours: versioned so a rebuild never exposes half-written data.
@@ -74,15 +76,18 @@ final class NeighbourStore
 
         // Old versions are removed in primary-key chunks: short statements,
         // no long lock on a large table.
-        $this->deleteWhere(fn ($q) => $q->where('feed', $feed)->where('version', '<>', $version), $chunk);
+        $this->deleteWhere(fn (Builder $q) => $q->where('feed', $feed)->where('version', '<>', $version), $chunk);
     }
 
     /** Remove one (unfinished) version. */
     public function deleteVersion(string $feed, int $version, int $chunk = 5000): void
     {
-        $this->deleteWhere(fn ($q) => $q->where('feed', $feed)->where('version', $version), $chunk);
+        $this->deleteWhere(fn (Builder $q) => $q->where('feed', $feed)->where('version', $version), $chunk);
     }
 
+    /**
+     * @param  callable(Builder): Builder  $scope
+     */
     private function deleteWhere(callable $scope, int $chunk): void
     {
         do {
@@ -114,11 +119,15 @@ final class NeighbourStore
 
         $out = [];
         foreach ($rows as $row) {
-            $decoded = json_decode((string) $row->neighbours, true) ?: [];
-            $out[Ids::normalize($row->item_id)] = array_values(array_map(
-                fn ($pair) => [Ids::normalize($pair[0]), (float) $pair[1]],
-                $decoded,
-            ));
+            $decoded = json_decode(Value::string($row->neighbours), true);
+            $neighbours = [];
+            foreach (is_array($decoded) ? $decoded : [] as $pair) {
+                $id = is_array($pair) ? Value::id($pair[0] ?? null) : null;
+                if ($id !== null) {
+                    $neighbours[] = [Ids::normalize($id), Value::float($pair[1] ?? null)];
+                }
+            }
+            $out[Ids::normalize(Value::string($row->item_id))] = $neighbours;
         }
 
         return $out;
@@ -131,6 +140,6 @@ final class NeighbourStore
 
     private function connection(): ConnectionInterface
     {
-        return $this->db->connection(config('recommender.database_connection'));
+        return $this->db->connection(Value::nullableString(config('recommender.database_connection')));
     }
 }

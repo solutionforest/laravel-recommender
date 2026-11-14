@@ -4,6 +4,7 @@ namespace SolutionForest\Recommender\Storage;
 
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\DatabaseManager;
+use SolutionForest\Recommender\Support\Value;
 
 final class StateStore
 {
@@ -15,7 +16,7 @@ final class StateStore
     {
         $value = $this->connection()->table('rec_state')->where('key', $key)->value('value');
 
-        return $value === null ? null : (string) $value;
+        return Value::nullableString($value);
     }
 
     public function put(string $key, ?string $value): void
@@ -29,6 +30,6 @@ final class StateStore
 
     private function connection(): ConnectionInterface
     {
-        return $this->db->connection(config('recommender.database_connection'));
+        return $this->db->connection(Value::nullableString(config('recommender.database_connection')));
     }
 }

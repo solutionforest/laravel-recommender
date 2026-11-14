@@ -48,10 +48,16 @@ final class ListBuilder
         $variant = Variants::list($feed, $attributes);
 
         try {
-            return $this->cache->lock($feed, $userId, $variant)->block(
+            // block() returns the callback's result untyped; take it from the closure instead.
+            $ids = null;
+            $this->cache->lock($feed, $userId, $variant)->block(
                 $feed->int('build_lock_wait', 2),
-                fn () => $this->personal($feed, $userId, $seen, $attributes),
+                function () use ($feed, $userId, $seen, $attributes, &$ids): void {
+                    $ids = $this->personal($feed, $userId, $seen, $attributes);
+                },
             );
+
+            return $ids;
         } catch (LockTimeoutException) {
             return $this->cache->list($feed, $userId, $variant)['ids'] ?? null; // someone else is building
         } catch (Throwable $e) {

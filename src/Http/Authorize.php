@@ -15,6 +15,9 @@ use Symfony\Component\HttpFoundation\Response;
  */
 final class Authorize
 {
+    /**
+     * @param  Closure(Request): Response  $next
+     */
     public function handle(Request $request, Closure $next): Response
     {
         if (app()->environment('local') || Gate::allows('viewRecommender', [$request->user()])) {

@@ -2,6 +2,7 @@
 
 namespace SolutionForest\Recommender\Eloquent;
 
+use Illuminate\Database\Eloquent\Model;
 use SolutionForest\Recommender\Recommender;
 
 /**
@@ -20,7 +21,7 @@ trait Recommendable
 {
     public static function bootRecommendable(): void
     {
-        $forget = static function ($model): void {
+        $forget = static function (Model $model): void {
             app(Recommender::class)->forgetModel($model);
         };
 

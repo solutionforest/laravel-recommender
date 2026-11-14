@@ -10,6 +10,7 @@ use SolutionForest\Recommender\Storage\ScoreStore;
 use SolutionForest\Recommender\Storage\StateStore;
 use SolutionForest\Recommender\Support\FeedDefinition;
 use SolutionForest\Recommender\Support\Interaction;
+use SolutionForest\Recommender\Support\Value;
 
 /**
  * Incrementally folds new interactions into rec_item_scores.
@@ -89,8 +90,8 @@ final class ScoreUpdater
     private function aggregate(FeedDefinition $feed, InteractionSource $source, CarbonImmutable $from, CarbonImmutable $to): array
     {
         $weights = (array) $feed->get('events', []);
-        $positive = array_flip((array) $feed->get('positive_events', []));
-        $exposure = array_flip((array) $feed->get('exposure_events', []));
+        $positive = array_flip($feed->list('positive_events'));
+        $exposure = array_flip($feed->list('exposure_events'));
         $halfLife = $feed->float('half_life_days', 7);
 
         $deltas = [];
@@ -99,7 +100,7 @@ final class ScoreUpdater
 
         /** @var Interaction $interaction */
         foreach ($source->between($from, $to) as $interaction) {
-            $weight = (float) ($weights[$interaction->event] ?? 0);
+            $weight = Value::float($weights[$interaction->event] ?? 0);
             if ($weight <= 0) {
                 continue;
             }

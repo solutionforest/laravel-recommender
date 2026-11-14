@@ -23,6 +23,7 @@ use SolutionForest\Recommender\Support\Cursor;
 use SolutionForest\Recommender\Support\FeedDefinition;
 use SolutionForest\Recommender\Support\FeedPage;
 use SolutionForest\Recommender\Support\Ids;
+use SolutionForest\Recommender\Support\Value;
 use SolutionForest\Recommender\Support\Viewer;
 use Carbon\CarbonImmutable;
 
@@ -268,11 +269,12 @@ class Recommender
      */
     public function forgetModel(Model $model): void
     {
-        if ($model->getKey() === null) {
+        $key = Value::id($model->getKey());
+        if ($key === null) {
             return;
         }
         foreach ($this->registry->forModel($model::class) as $name) {
-            $this->forgetCard($name, $model->getKey());
+            $this->forgetCard($name, $key);
         }
     }
 

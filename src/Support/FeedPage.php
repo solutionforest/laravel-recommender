@@ -61,7 +61,7 @@ final class FeedPage implements JsonSerializable, Responsable
         $position = array_flip(array_map('strval', $this->ids));
 
         return $this->model::query()->findMany($this->ids)
-            ->sortBy(fn (\Illuminate\Database\Eloquent\Model $m) => $position[(string) $m->getKey()] ?? PHP_INT_MAX)
+            ->sortBy(fn (\Illuminate\Database\Eloquent\Model $m) => $position[Value::string($m->getKey())] ?? PHP_INT_MAX)
             ->values();
     }
 
@@ -126,7 +126,7 @@ final class FeedPage implements JsonSerializable, Responsable
             ? array_replace($this->toSimplePaginator($options)->toArray(), ['prev_page_url' => null])
             : $this->toPaginator($options)->toArray();
 
-        return $base + [
+        return Value::map($base) + [
             'origin' => $this->origin,
             'has_more' => $this->hasMore,
             'next_cursor' => $this->nextCursor(),

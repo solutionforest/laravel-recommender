@@ -32,7 +32,7 @@ class FavoriteHostSource implements CandidateSource
 
         return Math::scoreInOrder(
             $events,
-            fn (Event $event) => $favoriteHosts[$event->host_id] ?? 0.1,
+            fn (mixed $event): float => $event instanceof Event ? ($favoriteHosts[$event->host_id] ?? 0.1) : 0.1,
         );
     }
 }

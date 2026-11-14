@@ -14,6 +14,7 @@ use SolutionForest\Recommender\Support\Bindings;
 use SolutionForest\Recommender\Support\Context;
 use SolutionForest\Recommender\Support\Ids;
 use SolutionForest\Recommender\Support\Report;
+use SolutionForest\Recommender\Support\Value;
 use Throwable;
 
 /**
@@ -142,7 +143,11 @@ final class Ranker
         $diversity = (array) $feed->get('diversity', []);
         $groups = $diversity !== [] && $ids !== [] ? $this->bindings->groups($feed) : null;
         if ($groups !== null) {
-            $ids = $this->diversifier->apply($ids, $groups->groups($ids), $diversity, $feed->int('page_size', 12));
+            $maxPerGroup = [];
+            foreach ($diversity as $group => $max) {
+                $maxPerGroup[(string) $group] = Value::int($max);
+            }
+            $ids = $this->diversifier->apply($ids, $groups->groups($ids), $maxPerGroup, $feed->int('page_size', 12));
         }
 
         return Ids::normalizeAll($ids);

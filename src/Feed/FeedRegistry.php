@@ -5,6 +5,7 @@ namespace SolutionForest\Recommender\Feed;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use SolutionForest\Recommender\Support\FeedDefinition;
+use SolutionForest\Recommender\Support\Value;
 
 /**
  * Reads feeds from config: package defaults < app `defaults` < preset < feed.
@@ -27,8 +28,8 @@ final class FeedRegistry
 
         // Merged here (not only via mergeConfigFrom, which is shallow) so a
         // published config that lists only a few defaults still gets every key.
-        $defaults = array_replace(self::packageConfig('defaults'), (array) config('recommender.defaults', []));
-        $feed = (array) $feeds[$name];
+        $defaults = array_replace(self::packageConfig('defaults'), Value::map(config('recommender.defaults', [])));
+        $feed = Value::map($feeds[$name]);
 
         if (isset($feed['preset']) && $feed['preset'] !== '') {
             $presets = $this->presets();
@@ -36,7 +37,7 @@ final class FeedRegistry
             if (! isset($presets[$preset])) {
                 throw new InvalidArgumentException("Recommender feed [{$name}] uses unknown preset [{$preset}]. Available: ".implode(', ', array_keys($presets)).'.');
             }
-            $defaults = array_replace($defaults, (array) $presets[$preset]);
+            $defaults = array_replace($defaults, Value::map($presets[$preset]));
         }
 
         return $this->definitions[$name] = FeedDefinition::make($name, $defaults, $feed);
@@ -91,7 +92,7 @@ final class FeedRegistry
      */
     public function presets(): array
     {
-        return array_replace(self::packageConfig('presets'), (array) config('recommender.presets', []));
+        return array_replace(self::packageConfig('presets'), Value::map(config('recommender.presets', [])));
     }
 
     /**
@@ -111,9 +112,10 @@ final class FeedRegistry
      */
     private static function packageConfig(string $key): array
     {
+        /** @var array<string, mixed>|null $config */
         static $config = null;
-        $config ??= (array) require __DIR__.'/../../config/recommender.php';
+        $config ??= Value::map(require __DIR__.'/../../config/recommender.php');
 
-        return (array) ($config[$key] ?? []);
+        return Value::map($config[$key] ?? []);
     }
 }

@@ -23,7 +23,9 @@ class PreferredTypeBooster implements Booster
             return [];
         }
 
-        $typeById = Event::query()->whereIn('id', $ids)->pluck('type_id', 'id')->all();
+        $typeById = Event::query()->whereIn('id', $ids)->get(['id', 'type_id'])
+            ->mapWithKeys(fn (Event $event) => [$event->id => $event->type_id])
+            ->all();
 
         return Math::preferRanked($ids, $favoriteTypes, $typeById);
     }

@@ -38,12 +38,12 @@ final class FeedDefinition
 
     public function int(string $key, int $default = 0): int
     {
-        return (int) ($this->config[$key] ?? $default);
+        return Value::int($this->config[$key] ?? $default, $default);
     }
 
     public function float(string $key, float $default = 0.0): float
     {
-        return (float) ($this->config[$key] ?? $default);
+        return Value::float($this->config[$key] ?? $default, $default);
     }
 
     /**
@@ -55,22 +55,24 @@ final class FeedDefinition
         foreach ((array) ($this->config[$key] ?? []) as $class => $weight) {
             if (is_int($class)) {
                 // listed without a weight
-                $out[(string) $weight] = 1.0;
+                $out[Value::string($weight)] = 1.0;
 
                 continue;
             }
-            $out[(string) $class] = (float) $weight;
+            $out[$class] = Value::float($weight);
         }
 
         return $out;
     }
 
     /**
-     * @return list<class-string>
+     * Non-empty string entries of a list setting (class names, attribute keys).
+     *
+     * @return list<string>
      */
     public function list(string $key): array
     {
-        return array_values(array_filter((array) ($this->config[$key] ?? [])));
+        return array_values(array_filter((array) ($this->config[$key] ?? []), fn ($item) => is_string($item) && $item !== ''));
     }
 
     /**

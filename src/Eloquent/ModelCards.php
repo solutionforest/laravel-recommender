@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use SolutionForest\Recommender\Contracts\CardTransformer;
 use SolutionForest\Recommender\Support\Context;
 use SolutionForest\Recommender\Support\FeedDefinition;
+use SolutionForest\Recommender\Support\Value;
 
 /**
  * Default cards for feeds with a `model`: loads the ids in one query and
@@ -46,9 +47,13 @@ final class ModelCards implements CardTransformer
         $context = new Context($this->feed, null, [], $this->attributes);
         foreach (RecommendableQuery::for($instance, $context)->whereKey($ids)->get() as $item) {
             /** @var Model $item */
-            $out[$item->getKey()] = method_exists($item, 'toRecommendationCard')
+            $key = Value::id($item->getKey());
+            if ($key === null) {
+                continue;
+            }
+            $out[$key] = Value::map(method_exists($item, 'toRecommendationCard')
                 ? $item->toRecommendationCard($context) // the context may be ignored
-                : $item->toArray();
+                : $item->toArray());
         }
 
         return $out;

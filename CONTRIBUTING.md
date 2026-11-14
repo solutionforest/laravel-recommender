@@ -7,7 +7,7 @@ Thanks for helping. Issues and pull requests are welcome on [GitHub](https://git
 ```bash
 composer install
 composer test       # Pest (SQLite)
-composer analyse    # PHPStan level 8
+composer analyse    # PHPStan level 10 (max)
 ```
 
 Run against MySQL / MariaDB like CI does:
