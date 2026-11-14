@@ -111,7 +111,9 @@ final class FeedServer
         }
 
         [$cards, $servedIds, $consumed] = $this->render($feed, $window, $perPage, $attributes);
-        if ($countImpressions) {
+        // Guests have no seen-set, so every reload would count again and
+        // anyone could push an item's quality down: opt-in only.
+        if ($countImpressions && (bool) $feed->get('impressions_guests', false)) {
             $this->impressions->record($feed, $servedIds);
         }
         $this->hintIfEmpty($feed, $page, $servedIds);

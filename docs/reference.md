@@ -232,7 +232,7 @@ $product->recommendationStats('products');          // with the Recommendable tr
 | Key | Meaning |
 |---|---|
 | `positive` / `exposure` | counts of your `positive_events` (likes, joins, purchases, comments…) and `exposure_events` (views) |
-| `impressions` | times the item was shown (when `'impressions' => true`): a signed-in user counts once per item within the seen window, a guest once per page served |
+| `impressions` | times the item was shown (when `'impressions' => true`): a signed-in user counts once per item within the seen window; guest pages count only with `'impressions_guests' => true` (once per page served) |
 | `rate` | positive ÷ exposure — or ÷ impressions when impressions are on (capped at 1 when likes outnumber recorded views); `null` when the denominator is 0 |
 | `quality` | Wilson lower bound of the rate (0..1): a *confident* "how good". One like from one view (0.21) ranks below 25 from 40 (0.47) — the same score `QualityBooster` uses |
 | `popularity` | time-decayed activity (`half_life_days`) relative to the hottest item right now (0..1) |
@@ -250,10 +250,11 @@ Views your app records are only a proxy for "the user saw it". Impressions are *
     'model' => Post::class,
     'interactions' => [...],
     'impressions' => true,   // + quality = positive ÷ impressions
+    // 'impressions_guests' => true,   // also count guest pages (off by default)
 ],
 ```
 
-For a nonempty batch to count, the package issues two bulk `UPDATE` statements (one on `rec_item_scores`, one on `rec_item_daily`) when every item already has rows, plus a lookup, an insert and another update per table for items that do not yet; work is proportional to the batch size. HTTP writes are scheduled on Laravel's terminating callback by default; console calls and `'impressions_after_response' => false` write inline. Terminating work still consumes worker and database capacity. Failures are logged and do not break the page; the metric is best effort, not an audit log. A shared lock reduces concurrent duplicate counts, but a lock timeout falls back to an unlocked update. `QualityBooster` and `stats()` then use impressions as the denominator. `rebuild-scores` keeps impressions (they cannot be replayed from your tables); `prune` retains recently shown score rows. See [operations](operations.md#seen-memory-and-impressions) for storage and retention.
+For a nonempty batch to count, the package issues two bulk `UPDATE` statements (one on `rec_item_scores`, one on `rec_item_daily`) when every item already has rows, plus a lookup, an insert and another update per table for items that do not yet; work is proportional to the batch size. HTTP writes are scheduled on Laravel's terminating callback by default; console calls and `'impressions_after_response' => false` write inline. Terminating work still consumes worker and database capacity. **Guest pages are not counted by default:** guests have no seen-set, so every reload would count again and anonymous traffic (or a crawler) could push an item's quality down. Turn them on with `'impressions_guests' => true` only behind a rate limit. Failures are logged and do not break the page; the metric is best effort, not an audit log. A shared lock reduces concurrent duplicate counts, but a lock timeout falls back to an unlocked update. `QualityBooster` and `stats()` then use impressions as the denominator. `rebuild-scores` keeps impressions (they cannot be replayed from your tables); `prune` retains recently shown score rows. See [operations](operations.md#seen-memory-and-impressions) for storage and retention.
 
 ### Hiding an item (visibility changes)
 
@@ -342,12 +343,14 @@ Per feed (defaults, overridable in `feeds.*`). `seen_max` / `seen_ttl` also read
 | `trending_sources` | `[TrendingSource => 1]` | guest / fallback |
 | `trending_size` / `trending_ttl` | 200 / 600 | shared list |
 | `card_ttl` | 3600 | card cache |
+| `card_variants_max` | 20 | `cards_vary_by` variants kept per card; the oldest is dropped. Validate attribute values from requests (e.g. a `locale` whitelist) |
 | `similar_ttl` | 3600 | `similar()` id list per item (keyed by neighbour version, so a rebuild switches over at once) |
 | `cards_vary_by` | `[]` | cache cards per attribute, e.g. `['locale']` (`locale` defaults to the app locale) |
 | `list_vary_by` | `[]` | keep the ranked list, trending list and background build per attribute value, e.g. `['tenant']` (see [advanced](advanced.md#passing-extra-context)) |
 | `seen_vary_by` | `tenant` if in `list_vary_by`, else none | split the seen-set per attribute; `device` / `locale` stay shared by default |
 | `tail` / `tail_order` | `true` / created_at | catalog tail after ranked + trending items (feeds with a `model`) |
 | `impressions` | `false` | count served items; quality uses positive ÷ impressions |
+| `impressions_guests` | `false` | also count guest pages (no de-duplication: every reload counts) |
 | `build_lock_seconds` / `build_lock_wait` | 10 / 2 | per-user build lock |
 | `sources` | `CoInteractionSource` 0.6, `TrendingSource` 0.4 | `class => weight` |
 | `boosters` | – | `class => weight` |
@@ -436,7 +439,8 @@ composer analyse
 |---|---|
 | `tests/Unit/ScoringTest.php` | blend, explore, diversity, Wilson, decay |
 | `tests/Feature/RecommenderPageTest.php` | paging, cache, filters, guests, kill switch, unlocked lock fallback |
-| `tests/Feature/CacheStoreTest.php` | array / file / database / redis stores provide locks + serve pages |
+| `tests/Feature/CacheStoreTest.php` | array / file / database / redis stores provide locks + serve pages. The whole suite also runs on a real Redis cache store with `RECOMMENDER_TEST_CACHE=redis REDIS_HOST=127.0.0.1` |
+| `tests/Feature/TimezoneTest.php` | `update-scores` counts each event once in UTC, east and west of UTC |
 | `tests/Feature/MaintenanceTest.php` | scores, neighbours, versions, event weight → `hot` order |
 | `tests/Feature/ScaleTest.php` | shards, memory, bulk writes |
 | `tests/Feature/BlogExampleTest.php` | sample app E2E + sponsored source/booster |
@@ -450,4 +454,4 @@ composer analyse
 
 Stress tests run in the normal suite (~10 s on SQLite). Run them alone or bigger with `RECOMMENDER_STRESS_SCALE=5 vendor/bin/pest --group=stress`. Add `RECOMMENDER_PERF=1` to print the numbers. Measured results for all of these: [performance](performance.md).
 
-CI: PHPStan + PHP 8.3–8.4 × Laravel 10–13 (SQLite) + Laravel 13 / MySQL 8.
+CI: PHPStan + PHP 8.3–8.4 × Laravel 10–13 (SQLite) + PHP 8.5 × Laravel 10 and 13 + Laravel 13 / MySQL 8 + Laravel 13 / Redis cache.

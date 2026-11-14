@@ -1,5 +1,11 @@
 # Upgrade guide
 
+## From 0.10.4 to 0.10.5
+
+- **App timezone not UTC, on Laravel 11–13:** stored scores were counted wrongly (too high east of UTC, events missing west of UTC). Rebuild them once per feed after upgrading: `php artisan recommender:rebuild-scores {feed} --days=30` (use the window you need). Impressions are kept. Laravel 10 apps and UTC apps need nothing.
+- **Guest impressions:** with `'impressions' => true`, guest pages are no longer counted. To keep the old behaviour set `'impressions_guests' => true`, and rate-limit the guest feed route. Counts already inflated by guest reloads are not changed by `rebuild-scores`.
+- **`cards_vary_by`:** at most `card_variants_max` (20) variants are cached per card. Raise it if you really serve more locales / tenants per card.
+
 ## From 0.10.3 to 0.10.4
 
 Nothing to change (docs and comments). If you copied the blog example's `SponsoredShopSource` / `SponsoredShopBooster`, they are now `SponsoredAuthorSource` / `SponsoredAuthorBooster` and read `sponsored_author_ids` only.

@@ -40,9 +40,9 @@ beforeEach(function () {
     $this->artisan('recommender:rebuild-scores', ['feed' => 'articles', '--days' => 30, '--force' => true])->assertSuccessful();
 });
 
-function enableImpressions(): void
+function enableImpressions(bool $guests = false): void
 {
-    config(['recommender.feeds.articles.impressions' => true]);
+    config(['recommender.feeds.articles.impressions' => true, 'recommender.feeds.articles.impressions_guests' => $guests]);
     app()->forgetInstance(RecommenderService::class);
 }
 
@@ -53,8 +53,8 @@ it('does not count impressions unless enabled', function () {
         ->and(DB::table('rec_item_daily')->sum('impressions'))->toEqual(0);
 });
 
-it('counts each served item once per page, for guests and members', function () {
-    enableImpressions();
+it('counts each served item once per page, for guests (opt-in) and members', function () {
+    enableImpressions(guests: true);
 
     $guest = Recommender::page('articles', null);
     Recommender::page('articles', null);                       // same page again
@@ -94,7 +94,7 @@ it('reports a recent window and the trend next to lifetime numbers', function ()
 });
 
 it('keeps impressions through a score rebuild', function () {
-    enableImpressions();
+    enableImpressions(guests: true);
     $ids = Recommender::page('articles', null)->ids;
 
     $this->artisan('recommender:rebuild-scores', ['feed' => 'articles', '--days' => 30, '--force' => true])->assertSuccessful();
@@ -143,13 +143,24 @@ it('counts an impression only once when two requests race on the seen-set', func
         ->and($cache->seen($feed, 5))->toBe([10, 11, 12]);
 });
 
-it('keeps counting every serve for guests', function () {
-    enableImpressions();
+it('keeps counting every serve for guests when impressions_guests is on', function () {
+    enableImpressions(guests: true);
     $ids = Recommender::page('articles', null)->ids;
     Recommender::page('articles', null);
 
     expect($ids)->not->toBeEmpty()
         ->and((int) DB::table('rec_item_scores')->sum('impressions'))->toBe(2 * count($ids));
+});
+
+it('does not count guest pages by default, so reloads cannot lower quality', function () {
+    enableImpressions();
+    $before = Recommender::stats('articles', [1, 2]);
+    foreach (range(1, 50) as $i) {
+        Recommender::page('articles', null, 1, 1);
+    }
+
+    expect((int) DB::table('rec_item_scores')->sum('impressions'))->toBe(0)
+        ->and(Recommender::stats('articles', [1, 2]))->toBe($before);
 });
 
 it('serves the page even when the impression write fails', function () {

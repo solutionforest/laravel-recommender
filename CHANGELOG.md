@@ -7,6 +7,22 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.10.5] — 2026-11-14
+
+Correct scores outside UTC, and safer impressions. **If your app timezone is not UTC, run `recommender:rebuild-scores` after upgrading** (see UPGRADE).
+
+### Fixed
+- **Scores in apps whose timezone is not UTC (Laravel 11–13).** `update-scores` read its stored watermark back in UTC (Carbon 3) while interaction tables hold app-local times. East of UTC (e.g. `Asia/Hong_Kong`) each run re-read the last hours and counted events again; west of UTC (e.g. `America/New_York`) new events could be skipped. The watermark is now read in the app timezone (also in the dashboard and `rebuild-scores`). Laravel 10 (Carbon 2) was not affected. Present since 0.0.1
+- **Redis cache store:** the cached neighbour version came back as a string, so it was never reused and every `similar()` call ran an extra query. Found by the new Redis CI job
+
+### Security
+- **Guest pages no longer count impressions by default** (only with `'impressions' => true`). Guests have no seen-set, so every reload counted again and anonymous traffic could push an item's quality down, which `rebuild-scores` cannot undo. Opt back in with `'impressions_guests' => true`, behind a rate limit
+- **`cards_vary_by` variants are capped per card** (`card_variants_max`, default 20, oldest dropped), so unvalidated attribute values cannot grow one cache entry without limit
+
+### Changed
+- CI: PHP 8.5 with Laravel 10 and 13, and a job that runs the whole suite on a real Redis cache store (`RECOMMENDER_TEST_CACHE=redis`)
+- README: Laravel 10 support ends with the first release after 31 March 2027
+
 ## [0.10.4] — 2026-11-14
 
 Docs checked against the code. No package code changes.
@@ -423,7 +439,8 @@ First minor release: a feed is now **configuration only** — tell the package w
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.4...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.5...HEAD
+[0.10.5]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.4...v0.10.5
 [0.10.4]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.3...v0.10.4
 [0.10.3]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.2...v0.10.3
 [0.10.2]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.1...v0.10.2

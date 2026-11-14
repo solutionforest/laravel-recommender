@@ -10,6 +10,7 @@ beforeEach(function () {
 });
 
 it('does not cache a failed trending build', function () {
+    skipOnRedis('travels the test clock past a cache TTL');
     $this->configureFeed(['trending_sources' => [StaticSource::class => 1.0]]);
 
     StaticSource::$throw = true;

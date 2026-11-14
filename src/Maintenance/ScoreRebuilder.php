@@ -46,7 +46,7 @@ final class ScoreRebuilder
         return [
             'feed' => $feed->name,
             'rows' => $this->scores->count($feed->name),
-            'watermark' => $watermark !== null ? CarbonImmutable::createFromTimestamp((int) $watermark)->toDateTimeString() : null,
+            'watermark' => $watermark !== null ? CarbonImmutable::createFromTimestamp((int) $watermark, date_default_timezone_get())->toDateTimeString() : null,
             'from' => $to->subDays($days)->toDateTimeString(),
             'to' => $to->toDateTimeString(),
             'days' => $days,
