@@ -77,7 +77,7 @@ class BootstrapCommand extends Command
         }
 
         $this->newLine();
-        $healthy = $this->call('recommender:doctor', ['feed' => $name]) === self::SUCCESS;
+        $healthy = $this->call('recommender:doctor', ['feed' => $name, '--probe' => true]) === self::SUCCESS;
 
         $this->components->info($healthy ? "Feed [{$name}] is ready." : "Feed [{$name}] is registered — fix the checks above, then run `php artisan recommender:doctor {$name}`.");
         $model = config("recommender.feeds.{$name}.model");

@@ -272,10 +272,49 @@ final class Health
             $checks[] = $missing === []
                 ? self::ok("{$table} → '{$t['event']}'")
                 : self::fail("{$table} is missing column(s): ".implode(', ', $missing), "Set item_column / user_column / timestamp_column, or per table: '{$table}' => ['event' => '{$t['event']}', 'item' => '...'].");
+            if ($missing === []) {
+                array_push($checks, ...$this->indexChecks($schema, $table, $t['user'], $t['timestamp']));
+            }
 
             if (Value::float($weights[$t['event']] ?? 0) <= 0) {
                 $checks[] = self::warn("Event '{$t['event']}' has no weight", "Add it to 'events' (e.g. '{$t['event']}' => 2.0) or its rows are ignored by update-scores.");
             }
+        }
+
+        return $checks;
+    }
+
+    /**
+     * The two indexes the jobs rely on, checked before anything runs: new
+     * rows by time (update-scores, every 10 minutes) and one user's rows
+     * (build-neighbours, "your recent items" on every personal build).
+     *
+     * @return list<array{level: string, label: string, hint: ?string, stage: string}>
+     */
+    private function indexChecks(\Illuminate\Database\Schema\Builder $schema, string $table, string $user, string $timestamp): array
+    {
+        try { // getIndexes() needs Laravel 10.35+; older versions skip this check
+            $leading = [];
+            foreach ($schema->getIndexes($table) as $index) {
+                $columns = is_array($index['columns'] ?? null) ? $index['columns'] : [];
+                $leading[] = strtolower(Value::string($columns[0] ?? ''));
+            }
+        } catch (Throwable) {
+            return [];
+        }
+
+        $checks = [];
+        if (! in_array(strtolower($timestamp), $leading, true)) {
+            $checks[] = self::warn(
+                "{$table} has no index on {$timestamp}",
+                "update-scores reads new rows by time every few minutes; without it each run scans the whole table, gets slower as it grows and holds locks longer. Add \$table->index('{$timestamp}').",
+            );
+        }
+        if (! in_array(strtolower($user), $leading, true)) {
+            $checks[] = self::warn(
+                "{$table} has no index starting with {$user}",
+                "Personal builds read a user's recent rows and build-neighbours reads users in chunks. Add \$table->index(['{$user}', '{$timestamp}']).",
+            );
         }
 
         return $checks;

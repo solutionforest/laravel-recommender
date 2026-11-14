@@ -7,6 +7,14 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.11.1] — 2026-11-14
+
+Catch slow queries before they run, not only while they run.
+
+### Added
+- **Index check** in `doctor` and the dashboard: each interaction table needs an index on its timestamp column and one starting with its user column; a missing one is a warning with the `$table->index(...)` to add (Laravel 10.35+)
+- **Speed probe**: `recommender:doctor {feed} --probe` (also run by `recommender:bootstrap`) runs each part once on real data — job reads, a personal and a guest list with every source / booster, the catalog tail, the `recommendable` scope / filter and the cards — times each, flags anything over `slow_ms` / `slow_query_ms` and names the slowest SQL. Read-only; works before the first scores exist
+
 ## [0.11.0] — 2026-11-14
 
 Find slow queries in your own code.
@@ -499,7 +507,8 @@ First minor release: a feed is now **configuration only** — tell the package w
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.11.1...HEAD
+[0.11.1]: https://github.com/solutionforest/laravel-recommender/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.10...v0.11.0
 [0.10.10]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.9...v0.10.10
 [0.10.9]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.8...v0.10.9
