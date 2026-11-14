@@ -20,7 +20,7 @@ Correct scores outside UTC, and safer impressions. **If your app timezone is not
 - **`cards_vary_by` variants are capped per card** (`card_variants_max`, default 20, oldest dropped), so unvalidated attribute values cannot grow one cache entry without limit
 
 ### Changed
-- CI: PHP 8.5 with Laravel 10 and 13, and a job that runs the whole suite on a real Redis cache store (`RECOMMENDER_TEST_CACHE=redis`)
+- CI: PHP 8.5 with Laravel 13; Laravel 10 on PHP 8.5 is an install + class-loading check, because Laravel 10's test tools (Testbench 8 / Pest 2) do not install on PHP 8.5; and a job that runs the whole suite on a real Redis cache store (`RECOMMENDER_TEST_CACHE=redis`)
 - README: Laravel 10 support ends with the first release after 31 March 2027
 
 ## [0.10.4] — 2026-11-14

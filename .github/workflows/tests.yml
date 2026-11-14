@@ -29,7 +29,6 @@ jobs:
         include:
           - { php: '8.3', laravel: '10.*', testbench: '8.*', pest: '2.*' }
           - { php: '8.4', laravel: '10.*', testbench: '8.*', pest: '2.*' }
-          - { php: '8.5', laravel: '10.*', testbench: '8.*', pest: '2.*' }
           - { php: '8.3', laravel: '11.*', testbench: '9.*', pest: '3.*' }
           - { php: '8.4', laravel: '11.*', testbench: '9.*', pest: '3.*' }
           - { php: '8.3', laravel: '12.*', testbench: '10.*', pest: '3.*' }
@@ -107,3 +106,34 @@ jobs:
           RECOMMENDER_TEST_CACHE: redis
           REDIS_HOST: 127.0.0.1
           REDIS_PORT: 6379
+
+  # Laravel 10's test stack (Testbench 8 / Pest 2 / paratest) has no PHP 8.5
+  # release, so the suite cannot run there. This checks that the package
+  # installs with Laravel 10 on PHP 8.5 and that every class loads cleanly.
+  laravel10-php85:
+    runs-on: ubuntu-latest
+    name: PHP 8.5 / Laravel 10 / install + load
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          coverage: none
+      - run: |
+          composer config audit.block-insecure false
+          composer require "laravel/framework:10.*" --no-update --no-interaction
+          composer update --no-dev --prefer-dist --no-interaction --no-progress
+      - run: |
+          php -d error_reporting=-1 -d display_errors=1 -r '
+            set_error_handler(function ($no, $msg, $file, $line) { if (! str_contains($file, "/src/")) { return false; } fwrite(STDERR, "$msg in $file:$line\n"); exit(1); });
+            require "vendor/autoload.php";
+            $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator("src"));
+            $n = 0;
+            foreach ($it as $f) {
+                if ($f->getExtension() !== "php" || $f->getFilename() === "helpers.php") { continue; } // autoloaded as a file
+                $class = "SolutionForest\\Recommender\\".str_replace(["src/", "/", ".php"], ["", "\\", ""], $f->getPathname());
+                if (! class_exists($class) && ! interface_exists($class) && ! trait_exists($class) && ! enum_exists($class)) { fwrite(STDERR, "cannot load $class\n"); exit(1); }
+                $n++;
+            }
+            echo "loaded $n classes with Laravel ".Illuminate\Foundation\Application::VERSION." on PHP ".PHP_VERSION."\n";
+          '

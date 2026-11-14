@@ -454,4 +454,4 @@ composer analyse
 
 Stress tests run in the normal suite (~10 s on SQLite). Run them alone or bigger with `RECOMMENDER_STRESS_SCALE=5 vendor/bin/pest --group=stress`. Add `RECOMMENDER_PERF=1` to print the numbers. Measured results for all of these: [performance](performance.md).
 
-CI: PHPStan + PHP 8.3–8.4 × Laravel 10–13 (SQLite) + PHP 8.5 × Laravel 10 and 13 + Laravel 13 / MySQL 8 + Laravel 13 / Redis cache.
+CI: PHPStan + PHP 8.3–8.4 × Laravel 10–13 (SQLite) + PHP 8.5 × Laravel 13 + Laravel 13 / MySQL 8 + Laravel 13 / Redis cache. Laravel 10 on PHP 8.5 is checked for install and class loading only: its test tools (Testbench 8, Pest 2) do not install on PHP 8.5.

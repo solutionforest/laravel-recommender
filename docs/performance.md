@@ -149,7 +149,7 @@ RECOMMENDER_HEAVY=1 RECOMMENDER_TEST_DB=mysql … vendor/bin/pest --group=heavy
 RECOMMENDER_CONCURRENCY=1 RECOMMENDER_TEST_DB=mysql … vendor/bin/pest --group=concurrency
 ```
 
-CI runs the stress, scale and Octane tests on every push: SQLite on PHP 8.3/8.4 × Laravel 10/11/12/13 and PHP 8.5 × Laravel 10/13, plus MySQL 8 and a Redis cache store. The heavy and concurrency tests are opt-in because they need minutes and a real database.
+CI runs the stress, scale and Octane tests on every push: SQLite on PHP 8.3/8.4 × Laravel 10/11/12/13 and PHP 8.5 × Laravel 13, plus MySQL 8 and a Redis cache store. The heavy and concurrency tests are opt-in because they need minutes and a real database.
 
 ## What this means for your app
 
