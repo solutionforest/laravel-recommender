@@ -2,8 +2,8 @@
 
 use SolutionForest\Recommender\Boosters\QualityBooster;
 use SolutionForest\Recommender\Examples\Blog\Sources\FreshPostSource;
-use SolutionForest\Recommender\Examples\Blog\Boosters\SponsoredShopBooster;
-use SolutionForest\Recommender\Examples\Blog\Sources\SponsoredShopSource;
+use SolutionForest\Recommender\Examples\Blog\Boosters\SponsoredAuthorBooster;
+use SolutionForest\Recommender\Examples\Blog\Sources\SponsoredAuthorSource;
 use SolutionForest\Recommender\Sources\CoInteractionSource;
 use SolutionForest\Recommender\Sources\TrendingSource;
 use SolutionForest\Recommender\Examples\Blog\Models\Post;
@@ -11,8 +11,8 @@ use SolutionForest\Recommender\Examples\Blog\Models\Post;
 /*
  * Step 4 — wire the feed. Copy to config/recommender.php in your app.
  *
- * Lab defaults: personalisation first (not latest-first).
- * Sponsors: fill sponsored_author_ids (blog) or sponsored_shop_ids (reviews apps).
+ * Defaults: personalisation first (not latest-first).
+ * Sponsors: fill sponsored_author_ids.
  * Infinite scroll: built in — after ranked + trending posts, the newest published posts follow ('tail').
  */
 return [
@@ -35,7 +35,7 @@ return [
             'trending_size' => 200,
             'seen_max' => 500,
 
-            // Paid / campaign — empty = no effect. Example uses author_id as "shop".
+            // Paid / campaign authors — empty = no effect.
             'sponsored_author_ids' => [
                 // 5, 8,
             ],
@@ -43,11 +43,11 @@ return [
             'sources' => [
                 CoInteractionSource::class => 0.55,
                 TrendingSource::class => 0.25,
-                SponsoredShopSource::class => 0.20,   // inject sponsored posts
+                SponsoredAuthorSource::class => 0.20,   // inject sponsored posts
             ],
             'boosters' => [
                 QualityBooster::class => 0.15,
-                SponsoredShopBooster::class => 0.25,  // rank them higher
+                SponsoredAuthorBooster::class => 0.25,  // rank them higher
             ],
             'exploration_ratio' => 0.05,
             'diversity' => ['author_id' => 1],            // sponsor cannot fill whole page

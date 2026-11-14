@@ -26,13 +26,15 @@ $$
 \mathrm{sim}(a,b)=\frac{|U_a \cap U_b|}{\sqrt{|U_a|\,|U_b|}}
 $$
 
-where $U_x$ is users who interacted with *x* (within `history_days`, capped per user).
+where $U_x$ is users who interacted with *x* (within `history_days`, capped at `history_per_user` items per user). Pairs with fewer than `neighbours_min_co_count` shared users are dropped, and each item keeps its top `neighbours_max` neighbours.
 
-At request time, `CoInteractionSource` loads the user’s recent items and scores:
+At request time, `CoInteractionSource` loads the user’s `recent_items` most recent items and scores every neighbour the user has not interacted with:
 
 $$
 \mathrm{score}(c)=\sum_{i \in \mathrm{recent}} \mathrm{sim}(i,c)\cdot \frac{1}{1+0.1\cdot \mathrm{rank}(i)}
 $$
+
+where $\mathrm{rank}(i)$ is 0 for the most recent item, 1 for the next, and so on.
 
 **Similar items** (`$post->similar(n)`) use the same neighbours directly: the top *n* items *b* by $\mathrm{sim}(a,b)$ for the item *a*, that pass the feed's `recommendable` scope as a guest. No viewer is involved, so the result is the same for everyone and cached per item.
 
@@ -60,7 +62,7 @@ Then scale so the best candidate in the batch is `1.0`.
 
 ## 4. Blend, jitter, explore, diversify
 
-- **Blend:** scores ÷ source max → `Σ weight · score`.
+- **Blend:** scores ÷ source max → `Σ weight · score`, then boosters add `Σ weight · boost` (boost clamped to 0..1) to candidates the sources already returned.
 - **Jitter** (optional, `jitter` = *j* in 0..1, default 0): once per list build, each candidate gets
 
 $$
@@ -68,8 +70,8 @@ $$
 $$
 
   and the list is re-sorted by it. $j=0$ keeps the ranking; $j=1$ is a uniform random order of the candidates; values in between keep strong items near the top while the order changes between builds. The order is fixed while the list is cached, so paging does not repeat. The shared trending list is never jittered.
-- **Explore:** interleave according to `exploration_ratio` when `exploration_sources` are configured (none are configured by default).
-- **Diversify:** greedy cap per group; overflow to later pages.
+- **Explore:** when `exploration_sources` are configured (none in the package defaults), every round(1 / `exploration_ratio`)-th slot (at most every 2nd) takes the next item from the shuffled exploration pool, skipping items already ranked.
+- **Diversify:** greedy cap per group; overflow to later pages (caps are relaxed when a page cannot be filled otherwise).
 
 ## 5. Helpers for your custom sources (`Math`)
 
@@ -79,7 +81,7 @@ When you write a `CandidateSource` / `Booster`, return **any positive floats** �
 |---|---|---|
 | Query order alone (row 0 best) | `Math::fromPosition($i)` | Soonest events, nearest matches |
 | Preference strength × soft order | `Math::fromAffinity($w, $i, step: 0.05)` | Favorite type/host × starts_at order |
-| Newer is better | `Math::fromAge($age, $halfLife)` | Fresh posts (`halfLife` in same unit as `$age`) |
+| Newer is better | `Math::fromAge($age, $halfLife)` | Fresh posts: `exp(−age / halfLife)`, ≈ 0.37 after `halfLife` (same unit as `$age`; a time constant, so the score halves after ≈ 0.69 · `halfLife`) |
 | Scale batch so max = 1 | `Math::normalizeMax($scores)` | Boosters comparing counts |
 | Whole ordered query → scores | `Math::scoreInOrder($rows)` / `scoreInOrder($rows, fn ($row) => $weight)` | Custom sources without a scoring loop |
 | Soft-boost preferred attributes | `Math::preferRanked($ids, $favoriteKeys, $attrById)` | Boosters (“favorite type/host”) |

@@ -9,7 +9,7 @@ flowchart LR
   L[(post_likes)] & V[(post_views)] -->|interactions config| J["update-scores / build-neighbours"]
   J --> R[Recommender]
   P[(posts)] -->|Post::scopeRecommendable| R
-  P --> FS[FreshPostSource] & SS[SponsoredShopSource] --> R
+  P --> FS[FreshPostSource] & SS[SponsoredAuthorSource] --> R
   R -->|Post::toRecommendationCard| API["GET /posts/recommended"]
 ```
 
@@ -18,7 +18,7 @@ flowchart LR
 | `config/recommender.php` | The feed: `model`, `interactions`, weights, `'diversity' => ['author_id' => 1]` |
 | `src/Models/Post.php` | Visibility (published, not mine) + card |
 | `src/Sources/` | Fresh posts (guests) + sponsored posts |
-| `src/Boosters/` | Freshness + sponsored |
+| `src/Boosters/` | Freshness (not wired in the config) + sponsored |
 | `src/Http/` | One-line controller |
 
 ## Try it
@@ -35,10 +35,9 @@ vendor/bin/pest tests/Feature/BlogExampleTest.php
 4. Related posts on a post page: `$post->similar(4)` (cards of the posts liked together with this one; empty until `build-neighbours` found any)
 5. Check it: `php artisan recommender:doctor posts`. The scoring jobs are scheduled by the package — keep Laravel's scheduler running.
 
-## Lab ideas
+## Ideas to try
 
 - **Infinite scroll** — built in: ranked, then trending, then the newest posts (`'tail'`), following `next_cursor`.
-- **Don’t optimise for “latest”** — high Fresh\* collapses cohorts: [tuning](../../docs/tuning.md).
-- **Video covers** — poster URL in `toRecommendationCard()`, not `.mp4` in `<img>`.
-- **Sponsors** — Source + Booster + diversity caps.
+- **Don’t optimise for “latest”** — a high `FreshPostSource` weight shows every user the same new posts: [tuning](../../docs/tuning.md).
+- **Sponsors** — `SponsoredAuthorSource` + `SponsoredAuthorBooster` (`sponsored_author_ids`) + diversity caps.
 - **How we score** — [How we score (maths)](../../docs/maths.md).

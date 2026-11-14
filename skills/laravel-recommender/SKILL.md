@@ -5,7 +5,7 @@ description: >-
   (model + interaction tables), recommendations() helper, config weights, scores /
   neighbours jobs, similar items ($post->similar()), recommender:doctor, the /recommender dashboard, item stats,
   cache locks. Use when adding a recommendation engine, for-you feed, personalised ranking, related posts /
-  "you may also like", co-interaction / trending, inspiration or blog recommendations, or replacing RAND()/Personalize.
+  "you may also like", co-interaction / trending, content or product recommendations, or replacing RAND()/Personalize.
 ---
 
 # Laravel Recommender — simple recommendation engine
@@ -19,7 +19,7 @@ Human docs (prefer linking over pasting):
 | Doc | When |
 |---|---|
 | `vendor/solutionforest/laravel-recommender/docs/tutorial.md` | First scaffold checklist |
-| `…/docs/getting-started.md` | Slower first-time wiring |
+| `…/docs/getting-started.md` | Terms and what your app supplies |
 | `…/docs/reference.md` | API / config / cache locks |
 | `…/docs/tuning.md` | Weight recipes |
 | `…/docs/operations.md` | Go-live / FAQ |
@@ -110,7 +110,7 @@ Recommender::forgetTrending('posts');
 
 ## Custom sources (product rules)
 
-Implement `CandidateSource` / `Booster` / `DiversityGroups` (worked examples: `docs/advanced.md`) when the product needs rules the package does not know (same pet type, related shops, sponsored ids). Keep queries indexed + `LIMIT`.
+Implement `CandidateSource` / `Booster` / `DiversityGroups` (worked examples: `docs/advanced.md`) when the product needs rules the package does not know (same category, e.g. `PetTypeMatchSource` in `examples/reviews`; sponsored ids). Keep queries indexed + `LIMIT`.
 
 **`Context`** (`Support\Context`) is the first argument to those methods — not the HTTP request. `$context->userId` comes from `Recommender::page($feed, $userId, …)` (`null` = guest). Optional model: `page(…, attributes: ['user' => $user])` → `$context->attribute('user')`. Docs: `docs/reference.md` → What is Context? If an attribute changes which items appear (tenant, region), add it to the feed's `list_vary_by`, otherwise one user's cached list leaks across values; a signed-in feed is sequential (follow `next_cursor`, no `total`).
 

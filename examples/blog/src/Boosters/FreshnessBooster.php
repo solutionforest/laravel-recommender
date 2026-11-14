@@ -9,9 +9,9 @@ use SolutionForest\Recommender\Examples\Blog\Models\Post;
 /**
  * Prefer newer items among the *already blended* candidates.
  *
- * Lab lesson: inspiration feeds should NOT optimise for “latest first”.
- * Prefer omitting this booster. If used, keep weight tiny (≈0.05) —
- * a large weight makes every cohort see the same newest cards.
+ * Personal feeds should not optimise for “latest first”: keep the weight
+ * small (≈0.05) or omit this booster — a large weight shows every user the
+ * same newest cards.
  *
  * score = exp(−ageHours / 72), then scaled so the freshest in the batch is 1.0.
  */

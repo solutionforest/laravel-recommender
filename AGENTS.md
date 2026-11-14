@@ -7,9 +7,9 @@ Human docs live under [`docs/`](docs/). Prefer linking there over pasting walls 
 | Doc | Use for |
 |---|---|
 | [docs/tutorial.md](docs/tutorial.md) | First feed: config-only (`make-feed`) or classes (`--classes`) |
-| [docs/getting-started.md](docs/getting-started.md) | First-time wiring (slower) |
+| [docs/getting-started.md](docs/getting-started.md) | Terms and what your app supplies |
 | [docs/how-it-works.md](docs/how-it-works.md) | Mental model |
-| [docs/tuning.md](docs/tuning.md) | Weights / lessons |
+| [docs/tuning.md](docs/tuning.md) | Weights / recipes |
 | [docs/advanced.md](docs/advanced.md) | Own sources / boosters, Context attributes, custom classes, several feeds, A/B, presets, stats, testing |
 | [docs/reference.md](docs/reference.md) | API / config / jobs / cache locks |
 | [docs/operations.md](docs/operations.md) | Go-live / FAQ / scale |
@@ -66,13 +66,13 @@ Historical imports: set `scores_backfill_days` before the first score run. For a
 
 - `Context` = ranking bag for sources/filters/boosters (not HTTP). `$context->userId` from `recommendations($feed, $user)` / `page($feed, $user)`; `null` = guest. See `docs/reference.md` § What is Context?
 - Indexed queries + `LIMIT`; avoid huge `IN (subquery)`.
-- Cards: no viewer-specific fields; poster/thumbnail for video URLs.
+- Cards: no viewer-specific fields.
 
 ## Package maintainers
 
 - Bulk writes only (`write_chunk` / `delete_chunk`).
 - Console commands registered outside CLI (Livewire `Artisan::call`).
-- Support PHP ^8.3 and Illuminate ^11–^13.
+- Support PHP ^8.3 and Illuminate ^10–^13.
 - Keep **README.md thin**; put depth in `docs/`. Update [CHANGELOG.md](CHANGELOG.md) on release (`## [x.y.z]`) and [UPGRADE.md](UPGRADE.md) for behaviour changes, then `git tag -a vX.Y.Z` + `git push origin vX.Y.Z` — [release.yml](.github/workflows/release.yml) publishes the GitHub Release from that changelog section.
 
 ## Common failures
@@ -82,6 +82,5 @@ Historical imports: set `scores_backfill_days` before the first score run. For a
 | Empty / only trending | Jobs never run; backfill too short |
 | No CoInteraction in explain | Neighbours empty |
 | Slow cold build | `source_limit` / bad SQL / SQLite |
-| Same feed for all cohorts | Freshness / explore weight too high |
-| Livewire Ops slow | Debounce live inputs |
-| `locks: no` in status | Cache store lacks LockProvider — use redis or database + `cache_locks` |
+| Same feed for every user | Trending / explore weight too high |
+| `locks: fallback` in status | Cache store lacks LockProvider — use redis or database + `cache_locks` |

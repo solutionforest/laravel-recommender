@@ -18,7 +18,8 @@ return [
     | Cache store
     |--------------------------------------------------------------------------
     | Store for ranked lists, seen-sets, cards, trending, and per-user build locks.
-    | null / empty = Laravel's default CACHE_STORE.
+    | null / empty / 'auto' = Redis when the app has a working Redis store,
+    | otherwise Laravel's default CACHE_STORE.
     |
     | Any store that implements LockProvider works for build locks, including:
     |   - redis     (recommended in production — fast, atomic)
@@ -31,7 +32,7 @@ return [
     | Examples:
     |   RECOMMENDER_CACHE_STORE=redis
     |   RECOMMENDER_CACHE_STORE=database
-    |   (omit) → use CACHE_STORE
+    |   (omit) → Redis if reachable, else CACHE_STORE
     */
     // null / 'auto' = Redis when the app has a working Redis store, else CACHE_STORE.
     'cache_store' => env('RECOMMENDER_CACHE_STORE') ?: null,
@@ -92,7 +93,7 @@ return [
         'min_rebuild_interval' => 60, // page 1 may rebuild an exhausted list at most this often
         'source_limit' => 200,       // max candidates asked from each source
 
-        // "Already seen" set per user (replaces session based exclusion)
+        // "Already seen" set per user
         'seen_ttl' => (int) env('RECOMMENDER_SEEN_TTL', 259200), // seconds, 3 days
         'seen_max' => (int) env('RECOMMENDER_SEEN_MAX', 200),    // most recent N ids kept (packed, ~1.5 KB)
 
@@ -126,9 +127,9 @@ return [
         'build_lock_seconds' => 10,
         'build_lock_wait' => 2,
 
-        // Ranking — see README "Fine-tuning weights".
-        // Inspiration/segments: keep personal sources high; Fresh* / exploration low.
-        // Chronological spice: raise Fresh* + exploration_ratio (cohorts will look more alike).
+        // Ranking — see docs/tuning.md ("Fine-tuning weights").
+        // Personal feeds: keep personal sources high; freshness sources / exploration low.
+        // More recency: raise a freshness source + exploration_ratio (users' feeds will look more alike).
         'sources' => [               // [CandidateSource::class => weight]
             \SolutionForest\Recommender\Sources\CoInteractionSource::class => 0.6,
             \SolutionForest\Recommender\Sources\TrendingSource::class => 0.4,
@@ -150,7 +151,7 @@ return [
         'impressions' => false,
         // 'impressions_after_response' => true,   // false = write inline
         'half_life_days' => 7,
-        // First run only walks this many days; widen for historical imports (README checklist).
+        // First run only walks this many days; widen for historical imports (docs/operations.md).
         'scores_backfill_days' => 30,
         'scores_slice_minutes' => 60,    // update-scores commits per time slice (bounded memory, resumable)
         'scores_retention_days' => 180,  // prune: drop score rows with no event for this long

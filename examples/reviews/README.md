@@ -1,6 +1,6 @@
-# Example: shop reviews / inspiration
+# Example: shop reviews
 
-UGC reviews on shops, with a **custom rule source** (`PetTypeMatchSource`: same pet type as the viewer). An inspiration feed without AWS Personalize / `ORDER BY RAND()`.
+UGC reviews on shops, with a **custom rule source** (`PetTypeMatchSource`: same pet type as the viewer). A personalised review feed instead of `ORDER BY RAND()`.
 
 Covered by [`ReviewsExampleTest`](../../tests/Feature/ReviewsExampleTest.php).
 

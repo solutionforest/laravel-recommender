@@ -1,3 +1,5 @@
+# Performance
+
 Measured results from the package's own performance tests. Each one is a Pest test that **fails** when a count is wrong, an item repeats, a query or memory budget is exceeded, or anything logs a warning or error. The numbers below are what those tests printed. Re-run them on your hardware with the commands at the end.
 
 ## Summary
@@ -11,7 +13,7 @@ Measured results from the package's own performance tests. Each one is a Pest te
 | Many processes on the database cache? | **0 deadlocks, 0 errors** up to 48 processes × 200 pages | Concurrency |
 | Events every minute, bursts? | Every event counted exactly once | Stress |
 | Fast scrolling? | 60 pages in 75–126 ms, 0 repeats, 1 build | Stress |
-| Related items (`similar()`)? | **0 queries** warm, 2 cold; same cost and latency at 2,000 and 10,000 users | Stress |
+| Related items (`similar()`)? | **0 queries** warm, 3 cold; same cost and latency at 2,000 and 10,000 users | Stress |
 | Laravel Octane? | No repeats across requests, impressions written, config isolated per request | Octane |
 
 ## Test machine

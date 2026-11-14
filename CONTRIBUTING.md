@@ -40,7 +40,7 @@ RECOMMENDER_CONCURRENCY=1 RECOMMENDER_TEST_DB=mysql … vendor/bin/pest --group=
 | `Ranking\Ranker` | Sources → filter → blend → boosters → exploration → diversity, and `explain()` |
 | `Insights\ItemStats` | "How good is this item?" (`stats()`) |
 | `Feed\SimilarItems` | "More like this item" (`similar()`): neighbours → filter → cards, cached per item and neighbour version |
-| `Storage\ScoreStore` | The `rec_*` tables |
+| `Storage\ScoreStore`, `NeighbourStore`, `StateStore` | The `rec_*` tables |
 
 Extend through the contracts in `src/Contracts` (sources, boosters, filters, cards, groups, interactions) and feed config. The classes above are `final` and internal: their signatures can change in a minor release.
 
