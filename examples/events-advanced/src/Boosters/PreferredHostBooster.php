@@ -23,7 +23,9 @@ class PreferredHostBooster implements Booster
             return [];
         }
 
-        $hostById = Event::query()->whereIn('id', $ids)->pluck('host_id', 'id')->all();
+        $hostById = Event::query()->whereIn('id', $ids)->get(['id', 'host_id'])
+            ->mapWithKeys(fn (Event $event) => [$event->id => $event->host_id])
+            ->all();
 
         return Math::preferRanked($ids, $favoriteHosts, $hostById);
     }

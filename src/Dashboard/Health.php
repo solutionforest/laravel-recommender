@@ -17,6 +17,7 @@ use SolutionForest\Recommender\Storage\NeighbourStore;
 use SolutionForest\Recommender\Storage\ScoreStore;
 use SolutionForest\Recommender\Storage\StateStore;
 use SolutionForest\Recommender\Support\FeedDefinition;
+use SolutionForest\Recommender\Support\Value;
 use Throwable;
 
 /**
@@ -54,7 +55,7 @@ final class Health
 
         return [
             'enabled' => $this->recommender->enabled(),
-            'cache_store' => is_string($configured) && $configured !== '' ? $configured : (string) config('cache.default', 'default'),
+            'cache_store' => is_string($configured) && $configured !== '' ? $configured : Value::string(config('cache.default', 'default')),
             'locks' => $this->cache->supportsLocks(),
             'feeds' => $this->recommender->feeds(),
         ];
@@ -66,7 +67,7 @@ final class Health
     public function metrics(FeedDefinition $feed, ?CarbonImmutable $now = null): array
     {
         $now ??= CarbonImmutable::now();
-        $conn = $this->db->connection(config('recommender.database_connection'));
+        $conn = $this->db->connection(Value::nullableString(config('recommender.database_connection')));
 
         $raw = $this->state->get("scores:{$feed->name}:watermark");
         $watermark = $raw !== null ? CarbonImmutable::createFromTimestamp((int) $raw, date_default_timezone_get()) : null;
@@ -79,7 +80,7 @@ final class Health
             'lag' => $watermark !== null ? max(0, $now->getTimestamp() - $watermark->getTimestamp()) : null,
             'scores' => (int) (clone $scores)->count(),
             'hot' => (int) (clone $scores)->whereNotNull('hot')->count(),
-            'last_event' => $lastEvent !== null ? (string) $lastEvent : null,
+            'last_event' => $lastEvent !== null ? Value::string($lastEvent) : null,
             'version' => $version,
             'neighbours' => $version === null ? 0 : (int) $conn->table('rec_item_neighbours')
                 ->where('feed', $feed->name)->where('version', $version)->count(),
@@ -141,8 +142,8 @@ final class Health
                 'serving',
             );
         }
-        $store = $this->cache->storeName() ?? (string) config('cache.default');
-        $driver = (string) config("cache.stores.{$store}.driver", $store);
+        $store = $this->cache->storeName() ?? Value::string(config('cache.default'));
+        $driver = Value::string(config("cache.stores.{$store}.driver", $store));
         $checks[] = match ($driver) {
             'redis' => self::ok("Cache: {$store} (best for production)", 'serving'),
             'database' => ['level' => self::OK, 'label' => "Cache: {$store} — fine for small and medium apps", 'hint' => 'For heavy traffic add Redis to the app — the package switches to it automatically. Expired rows are cleaned by recommender:prune.', 'stage' => 'serving'],
@@ -269,7 +270,7 @@ final class Health
                 ? self::ok("{$table} → '{$t['event']}'")
                 : self::fail("{$table} is missing column(s): ".implode(', ', $missing), "Set item_column / user_column / timestamp_column, or per table: '{$table}' => ['event' => '{$t['event']}', 'item' => '...'].");
 
-            if ((float) ($weights[$t['event']] ?? 0) <= 0) {
+            if (Value::float($weights[$t['event']] ?? 0) <= 0) {
                 $checks[] = self::warn("Event '{$t['event']}' has no weight", "Add it to 'events' (e.g. '{$t['event']}' => 2.0) or its rows are ignored by update-scores.");
             }
         }

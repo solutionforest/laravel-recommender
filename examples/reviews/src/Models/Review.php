@@ -4,6 +4,7 @@ namespace SolutionForest\Recommender\Examples\Reviews\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use SolutionForest\Recommender\Eloquent\Recommendable;
 use SolutionForest\Recommender\Support\Context;
 
@@ -35,7 +36,7 @@ class Review extends Model
     {
         $query->where('reviews.published', true)
             ->whereNotNull('reviews.cover_url')
-            ->whereExists(fn ($q) => $q->selectRaw('1')
+            ->whereExists(fn (QueryBuilder $q) => $q->selectRaw('1')
                 ->from('shops')
                 ->whereColumn('shops.id', 'reviews.shop_id')
                 ->where('shops.is_opening', true))

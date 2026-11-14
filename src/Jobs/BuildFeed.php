@@ -8,6 +8,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use SolutionForest\Recommender\Recommender;
+use SolutionForest\Recommender\Support\Value;
 
 /**
  * Pre-builds a user's list in the background (e.g. on login / app open) so
@@ -31,8 +32,8 @@ class BuildFeed implements ShouldQueue, ShouldBeUnique
         public readonly int|string $userId,
         public readonly array $attributes = [],
     ) {
-        $this->onQueue(config('recommender.queue', 'recommender'));
-        if ($connection = config('recommender.queue_connection')) {
+        $this->onQueue(Value::nullableString(config('recommender.queue', 'recommender')));
+        if ($connection = Value::nullableString(config('recommender.queue_connection'))) {
             $this->onConnection($connection);
         }
     }

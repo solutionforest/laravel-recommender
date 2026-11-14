@@ -5,7 +5,6 @@ namespace SolutionForest\Recommender\Eloquent;
 use Illuminate\Database\Eloquent\Model;
 use SolutionForest\Recommender\Contracts\ItemFilter;
 use SolutionForest\Recommender\Support\Context;
-use SolutionForest\Recommender\Support\Ids;
 
 /**
  * Default filter for feeds with a `model`: one primary-key query that keeps
@@ -30,7 +29,7 @@ final class ModelFilter implements ItemFilter
     {
         $instance = new $this->model;
 
-        return Ids::normalizeAll(
+        return RecommendableQuery::ids(
             RecommendableQuery::for($instance, $context)
                 ->whereKey($ids)
                 ->pluck($instance->getQualifiedKeyName())

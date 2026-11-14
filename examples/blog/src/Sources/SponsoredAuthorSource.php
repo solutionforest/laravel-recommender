@@ -4,6 +4,7 @@ namespace SolutionForest\Recommender\Examples\Blog\Sources;
 
 use SolutionForest\Recommender\Contracts\CandidateSource;
 use SolutionForest\Recommender\Support\Context;
+use SolutionForest\Recommender\Support\Value;
 use SolutionForest\Recommender\Examples\Blog\Models\Post;
 
 /**
@@ -17,7 +18,7 @@ class SponsoredAuthorSource implements CandidateSource
     public function candidates(Context $context, int $limit): array
     {
         $ids = array_values(array_unique(array_map(
-            'intval',
+            fn ($id) => Value::int($id),
             (array) $context->feed->get('sponsored_author_ids', [])
         )));
 

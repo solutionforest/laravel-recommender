@@ -7,6 +7,18 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.10.7] — 2026-11-14
+
+PHPStan level 10 (max). No feature changes.
+
+### Changed
+- **Static analysis at PHPStan level 10** for `src/` and the examples (was 8): every value read from config, the cache or a database row is checked or converted to its type before use, through the new `Support\Value` helper (`int`, `float`, `string`, `id`, `map`; same results as a PHP cast for the values these sources hold). No ignores, no baseline
+- A feed's `filter`, `cards`, `groups` or `interactions` class that does not implement its contract now fails with a clear `InvalidArgumentException` naming the feed and key (before: a `TypeError`)
+- Cache entries that are not what the package wrote (e.g. edited by hand) are ignored instead of failing: non-id entries in cached lists are dropped, and a list entry whose `ids` is not an array is treated as missing
+- `FeedDefinition::list()` returns only non-empty strings (`list<string>`)
+
+Stress numbers are unchanged within run-to-run noise (`update-scores` ~91k events/s; `similar()` cold 3 queries / warm 0).
+
 ## [0.10.6] — 2026-11-14
 
 Supported versions in one table; no package code changes.
@@ -450,7 +462,8 @@ First minor release: a feed is now **configuration only** — tell the package w
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.6...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.7...HEAD
+[0.10.7]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.6...v0.10.7
 [0.10.6]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.5...v0.10.6
 [0.10.5]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.4...v0.10.5
 [0.10.4]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.3...v0.10.4

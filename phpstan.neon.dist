@@ -11,5 +11,5 @@ parameters:
         - examples/products/src
         - examples/reviews/src
         - examples/simple/src
-    level: 8
+    level: 10
     treatPhpDocTypesAsCertain: false

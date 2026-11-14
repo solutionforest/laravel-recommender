@@ -10,6 +10,7 @@ use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Support\Facades\Log;
 use SolutionForest\Recommender\Support\FeedDefinition;
 use SolutionForest\Recommender\Support\Ids;
+use SolutionForest\Recommender\Support\Value;
 
 /**
  * Every per-user / per-item value the package keeps lives here, in the cache
@@ -47,7 +48,11 @@ final class FeedCache
             return ['ids' => self::unpack($ids), 'built_at' => (int) $builtAt];
         }
 
-        return is_array($value) && isset($value['ids'], $value['built_at']) ? $value : null;
+        if (is_array($value) && isset($value['ids'], $value['built_at']) && is_array($value['ids'])) {
+            return ['ids' => self::ids($value['ids']), 'built_at' => Value::int($value['built_at'])];
+        }
+
+        return null;
     }
 
     /**
@@ -80,7 +85,7 @@ final class FeedCache
             return self::unpack($value);
         }
 
-        return is_array($value) ? array_values($value) : [];
+        return is_array($value) ? self::ids($value) : [];
     }
 
     /**
@@ -125,7 +130,9 @@ final class FeedCache
         }
 
         try {
-            return $provider->lock($this->key($feed, "seenlock:{$userId}".self::suffix($variant)), 5)->block(2, $write);
+            $added = $provider->lock($this->key($feed, "seenlock:{$userId}".self::suffix($variant)), 5)->block(2, $write);
+
+            return is_array($added) ? self::ids($added) : [];
         } catch (\Illuminate\Contracts\Cache\LockTimeoutException) {
             return $write(); // best effort: never fail a page over a busy lock
         }
@@ -165,6 +172,25 @@ final class FeedCache
         return Ids::normalizeAll($ids);
     }
 
+    /**
+     * The ids of a list read back from the cache (stored as written, so
+     * every entry is an int or string id).
+     *
+     * @param  array<mixed>  $values
+     * @return list<int|string>
+     */
+    private static function ids(array $values): array
+    {
+        $ids = [];
+        foreach ($values as $id) {
+            if (is_int($id) || is_string($id)) {
+                $ids[] = $id;
+            }
+        }
+
+        return $ids;
+    }
+
     public function forgetSeen(FeedDefinition $feed, int|string $userId, ?string $variant = null): void
     {
         $this->store()->forget($this->key($feed, "seen:{$userId}".self::suffix($variant)));
@@ -195,9 +221,9 @@ final class FeedCache
         foreach ($keys as $key => $id) {
             $value = $cached[$key] ?? null;
             if ($variant === null && is_array($value) && ! isset($value['__variants'])) {
-                $found[$id] = $value;
-            } elseif ($variant !== null && is_array($value['__variants'][$variant] ?? null)) {
-                $found[$id] = $value['__variants'][$variant];
+                $found[$id] = Value::map($value);
+            } elseif ($variant !== null && is_array($value) && is_array($value['__variants'] ?? null) && is_array($value['__variants'][$variant] ?? null)) {
+                $found[$id] = Value::map($value['__variants'][$variant]);
             } else {
                 $missing[] = $id;
             }
@@ -265,7 +291,7 @@ final class FeedCache
         $key = $this->key($feed, 'trending'.self::suffix($variant));
         $cached = $this->store()->get($key);
         if (is_array($cached)) {
-            return array_values($cached);
+            return self::ids($cached);
         }
 
         $ids = $build();
@@ -289,7 +315,7 @@ final class FeedCache
     {
         $value = $this->store()->get($this->key($feed, 'trending'.self::suffix($variant)));
 
-        return is_array($value) ? array_values($value) : null;
+        return is_array($value) ? self::ids($value) : null;
     }
 
     /**
@@ -444,7 +470,7 @@ final class FeedCache
 
     public function key(FeedDefinition $feed, string $suffix): string
     {
-        return config('recommender.prefix', 'rec').":{$feed->name}:{$suffix}";
+        return Value::string(config('recommender.prefix', 'rec')).":{$feed->name}:{$suffix}";
     }
 
     /**
@@ -461,11 +487,11 @@ final class FeedCache
             return 0;
         }
 
-        $name = $this->storeName() ?? config('cache.default');
-        $table = (string) (config("cache.stores.{$name}.table") ?: 'cache');
+        $name = $this->storeName() ?? Value::string(config('cache.default'));
+        $table = Value::string(config("cache.stores.{$name}.table") ?: 'cache');
         // LIKE without escaping (escape syntax differs per database); `_` in a
         // prefix may match a little more, so keys are re-checked exactly below.
-        $prefix = $store->getPrefix().config('recommender.prefix', 'rec').':';
+        $prefix = $store->getPrefix().Value::string(config('recommender.prefix', 'rec')).':';
         $db = $store->getConnection();
         $deleted = 0;
         $after = '';
@@ -482,8 +508,8 @@ final class FeedCache
             if ($keys === []) {
                 break;
             }
-            $after = (string) end($keys);
-            $ours = array_values(array_filter($keys, fn ($key) => str_starts_with((string) $key, $prefix)));
+            $after = Value::string(end($keys));
+            $ours = array_values(array_filter($keys, fn ($key) => str_starts_with(Value::string($key), $prefix)));
             if ($ours !== []) {
                 $deleted += $db->table($table)->whereIn('key', $ours)->delete();
             }

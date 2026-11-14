@@ -4,6 +4,7 @@ namespace SolutionForest\Recommender\Eloquent;
 
 use Illuminate\Database\Eloquent\Model;
 use SolutionForest\Recommender\Contracts\DiversityGroups;
+use SolutionForest\Recommender\Support\Value;
 
 /**
  * Default diversity groups for feeds with a `model`: each `diversity` key is
@@ -36,7 +37,10 @@ final class ModelGroups implements DiversityGroups
                 $value = $item->getAttribute($attribute);
                 $groups[$attribute] = is_int($value) || is_string($value) ? $value : (is_scalar($value) ? (string) $value : null);
             }
-            $out[$item->getKey()] = $groups;
+            $key = Value::id($item->getKey());
+            if ($key !== null) {
+                $out[$key] = $groups;
+            }
         }
 
         return $out;

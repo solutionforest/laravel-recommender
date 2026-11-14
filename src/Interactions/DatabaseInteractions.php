@@ -14,6 +14,7 @@ use SolutionForest\Recommender\Contracts\InteractionSource;
 use SolutionForest\Recommender\Support\FeedDefinition;
 use SolutionForest\Recommender\Support\Ids;
 use SolutionForest\Recommender\Support\Interaction;
+use SolutionForest\Recommender\Support\Value;
 
 /**
  * Reads interactions straight from your tables, so most feeds need no
@@ -51,11 +52,11 @@ final class DatabaseInteractions implements InteractionSource
             }
 
             $this->tables[$table] = [
-                'event' => (string) $definition['event'],
-                'item' => (string) ($definition['item'] ?? $this->itemColumn()),
-                'user' => (string) ($definition['user'] ?? $feed->get('user_column', 'user_id')),
-                'timestamp' => (string) ($definition['timestamp'] ?? $feed->get('timestamp_column', 'created_at')),
-                'key' => (string) ($definition['key'] ?? 'id'),
+                'event' => Value::string($definition['event']),
+                'item' => Value::string($definition['item'] ?? $this->itemColumn()),
+                'user' => Value::string($definition['user'] ?? $feed->get('user_column', 'user_id')),
+                'timestamp' => Value::string($definition['timestamp'] ?? $feed->get('timestamp_column', 'created_at')),
+                'key' => Value::string($definition['key'] ?? 'id'),
             ];
         }
     }
@@ -137,7 +138,7 @@ final class DatabaseInteractions implements InteractionSource
                     self::id($row->{$t['user']}),
                     self::id($row->{$t['item']}),
                     $t['event'],
-                    CarbonImmutable::parse($row->{$t['timestamp']}),
+                    self::time($row->{$t['timestamp']}),
                 );
             }
         }
@@ -179,7 +180,7 @@ final class DatabaseInteractions implements InteractionSource
                     ->where($t['timestamp'], '>=', $since)
                     ->get([$t['user'], $t['item'], $t['timestamp']]);
                 foreach ($rows as $row) {
-                    $histories[(string) $row->{$t['user']}][] = [$row->{$t['item']}, (string) $row->{$t['timestamp']}];
+                    $histories[Value::string($row->{$t['user']})][] = [$row->{$t['item']}, Value::string($row->{$t['timestamp']})];
                 }
             }
 
@@ -199,7 +200,7 @@ final class DatabaseInteractions implements InteractionSource
                 ->limit($limit)
                 ->get([$t['item'], $t['timestamp']]);
             foreach ($rows as $row) {
-                $events[] = [$row->{$t['item']}, (string) $row->{$t['timestamp']}];
+                $events[] = [$row->{$t['item']}, Value::string($row->{$t['timestamp']})];
             }
         }
 
@@ -223,10 +224,10 @@ final class DatabaseInteractions implements InteractionSource
     private function itemColumn(): string
     {
         if ($column = $this->feed->get('item_column')) {
-            return (string) $column;
+            return Value::string($column);
         }
         if ($model = $this->feed->get('model')) {
-            return Str::snake(class_basename((string) $model)).'_id';
+            return Str::snake(class_basename(Value::string($model))).'_id';
         }
 
         throw new InvalidArgumentException("Feed [{$this->feed->name}] needs an 'item_column' (or a 'model') to read interactions.");
@@ -254,7 +255,7 @@ final class DatabaseInteractions implements InteractionSource
 
         $out = [];
         foreach ($events as [$item]) {
-            $out[(string) $item] = self::id($item);
+            $out[Value::string($item)] = self::id($item);
             if (count($out) >= $limit) {
                 break;
             }
@@ -265,6 +266,14 @@ final class DatabaseInteractions implements InteractionSource
 
     private static function id(mixed $value): int|string
     {
-        return is_int($value) ? $value : Ids::normalize((string) $value);
+        return is_int($value) ? $value : Ids::normalize(Value::string($value));
+    }
+
+    /** A timestamp column as read from the database (string, or int / DateTime on some drivers). */
+    private static function time(mixed $value): CarbonImmutable
+    {
+        return CarbonImmutable::parse(
+            $value instanceof DateTimeInterface || is_int($value) || is_float($value) ? $value : Value::nullableString($value),
+        );
     }
 }

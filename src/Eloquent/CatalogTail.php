@@ -4,7 +4,6 @@ namespace SolutionForest\Recommender\Eloquent;
 
 use Illuminate\Database\Eloquent\Model;
 use SolutionForest\Recommender\Support\Context;
-use SolutionForest\Recommender\Support\Ids;
 
 /**
  * Newest items the model's `recommendable` scope allows, for when a feed's
@@ -39,7 +38,7 @@ final class CatalogTail
         $order = $this->orderColumn
             ?? ($instance->usesTimestamps() && $instance->getCreatedAtColumn() ? $instance->qualifyColumn($instance->getCreatedAtColumn()) : $key);
 
-        return Ids::normalizeAll(
+        return RecommendableQuery::ids(
             RecommendableQuery::for($instance, $context)
                 ->when($exclude !== [], fn ($q) => $q->whereNotIn($key, $exclude))
                 ->orderByDesc($order)

@@ -37,7 +37,7 @@ final class Bindings
 
         return match (true) {
             is_array($binding) && $binding !== [] => new DatabaseInteractions($feed),
-            is_string($binding) && $binding !== '' => $this->container->make($binding),
+            is_string($binding) && $binding !== '' => $this->make($binding, InteractionSource::class, $feed, 'interactions'),
             default => null,
         };
     }
@@ -45,7 +45,7 @@ final class Bindings
     public function filter(FeedDefinition $feed): ?ItemFilter
     {
         if ($class = $feed->get('filter')) {
-            return $this->container->make($class);
+            return $this->make($class, ItemFilter::class, $feed, 'filter');
         }
 
         return ($model = $this->model($feed)) ? new ModelFilter($model) : null;
@@ -54,7 +54,7 @@ final class Bindings
     public function cards(FeedDefinition $feed): CardTransformer
     {
         if ($class = $feed->get('cards')) {
-            return $this->container->make($class);
+            return $this->make($class, CardTransformer::class, $feed, 'cards');
         }
         if ($model = $this->model($feed)) {
             return new ModelCards($model, $feed);
@@ -66,7 +66,7 @@ final class Bindings
     public function groups(FeedDefinition $feed): ?DiversityGroups
     {
         if ($class = $feed->get('groups')) {
-            return $this->container->make($class);
+            return $this->make($class, DiversityGroups::class, $feed, 'groups');
         }
         $model = $this->model($feed);
 
@@ -87,5 +87,24 @@ final class Bindings
         }
 
         return $model;
+    }
+
+    /**
+     * Resolve a configured class and check it implements the contract.
+     *
+     * @template T of object
+     *
+     * @param  class-string<T>  $contract
+     * @return T
+     */
+    private function make(mixed $class, string $contract, FeedDefinition $feed, string $key): object
+    {
+        $instance = is_string($class) && $class !== '' ? $this->container->make($class) : null;
+        if (! $instance instanceof $contract) {
+            $given = is_string($class) ? $class : get_debug_type($class);
+            throw new InvalidArgumentException("Feed [{$feed->name}] '{$key}' must be a class implementing {$contract}, {$given} given.");
+        }
+
+        return $instance;
     }
 }

@@ -5,6 +5,7 @@ namespace SolutionForest\Recommender;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use SolutionForest\Recommender\Support\Value;
 
 class RecommenderServiceProvider extends ServiceProvider
 {
@@ -82,7 +83,7 @@ class RecommenderServiceProvider extends ServiceProvider
 
         Route::group([
             'domain' => config('recommender.dashboard.domain'),
-            'prefix' => trim((string) config('recommender.dashboard.path', 'recommender'), '/'),
+            'prefix' => trim(Value::string(config('recommender.dashboard.path', 'recommender')), '/'),
             'middleware' => [...(array) config('recommender.dashboard.middleware', ['web']), Http\Authorize::class],
         ], function () {
             Route::get('/', Http\DashboardController::class)->name('recommender.dashboard');

@@ -4,6 +4,7 @@ namespace SolutionForest\Recommender\Examples\Blog\Boosters;
 
 use SolutionForest\Recommender\Contracts\Booster;
 use SolutionForest\Recommender\Support\Context;
+use SolutionForest\Recommender\Support\Value;
 use SolutionForest\Recommender\Examples\Blog\Models\Post;
 
 /**
@@ -21,7 +22,7 @@ class SponsoredAuthorBooster implements Booster
         }
 
         $sponsored = array_flip(array_map(
-            'intval',
+            fn ($id) => Value::int($id),
             (array) $context->feed->get('sponsored_author_ids', [])
         ));
 

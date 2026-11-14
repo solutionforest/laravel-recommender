@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\DB;
 use SolutionForest\Recommender\Contracts\Booster;
 use SolutionForest\Recommender\Scoring\Math;
 use SolutionForest\Recommender\Support\Context;
+use SolutionForest\Recommender\Support\Value;
 
 /** Soft boost for events that already have discussion. */
 class CommentHeatBooster implements Booster
@@ -22,8 +23,8 @@ class CommentHeatBooster implements Booster
             ->pluck(DB::raw('count(*) as total'), 'event_id');
 
         $heat = collect($ids)
-            ->filter(fn ($id) => (int) ($counts[$id] ?? 0) > 0)
-            ->mapWithKeys(fn ($id) => [$id => log1p((int) $counts[$id])])
+            ->filter(fn ($id) => Value::int($counts[$id] ?? 0) > 0)
+            ->mapWithKeys(fn ($id) => [$id => log1p(Value::int($counts[$id]))])
             ->all();
 
         return Math::normalizeMax($heat);

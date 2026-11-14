@@ -4,8 +4,10 @@ namespace SolutionForest\Recommender\Storage;
 
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\DatabaseManager;
+use Illuminate\Database\Query\Builder;
 use SolutionForest\Recommender\Scoring\Math;
 use SolutionForest\Recommender\Support\Ids;
+use SolutionForest\Recommender\Support\Value;
 
 /**
  * rec_item_scores: one row per item, updated incrementally.
@@ -37,12 +39,12 @@ final class ScoreStore
             $now = now();
             foreach ($part as $id => $delta) {
                 $old = $existing->get((string) $id);
-                $hot = $old?->hot === null ? null : (float) $old->hot;
+                $hot = $old?->hot === null ? null : Value::float($old->hot);
                 if ($delta['hot'] !== null) {
                     $hot = Math::logAddExp($hot, $delta['hot']);
                 }
                 $last = $delta['last'] ?? null;
-                $oldLast = $old?->last_event_at ? \Carbon\Carbon::parse($old->last_event_at) : null;
+                $oldLast = $old?->last_event_at ? \Carbon\Carbon::parse(Value::string($old->last_event_at)) : null;
                 if ($oldLast && (! $last || $oldLast->greaterThan($last))) {
                     $last = $oldLast;
                 }
@@ -51,8 +53,8 @@ final class ScoreStore
                     'feed' => $feed,
                     'item_id' => (string) $id,
                     'hot' => $hot,
-                    'positive' => (int) ($old->positive ?? 0) + $delta['positive'],
-                    'exposure' => (int) ($old->exposure ?? 0) + $delta['exposure'],
+                    'positive' => Value::int($old->positive ?? 0) + $delta['positive'],
+                    'exposure' => Value::int($old->exposure ?? 0) + $delta['exposure'],
                     'last_event_at' => $last ? \Carbon\Carbon::instance($last)->toDateTimeString() : null,
                     'updated_at' => $now,
                 ];
@@ -92,11 +94,11 @@ final class ScoreStore
         do {
             $ids = $this->connection()->table('rec_item_scores')
                 ->where('feed', $feed)
-                ->where(function ($q) use ($cutoff) {
+                ->where(function (Builder $q) use ($cutoff) {
                     $q->where('last_event_at', '<', $cutoff)->orWhereNull('last_event_at');
                 })
                 // Still being shown (impressions): keep.
-                ->where(function ($q) use ($cutoff) {
+                ->where(function (Builder $q) use ($cutoff) {
                     $q->where('last_shown_at', '<', $cutoff)->orWhereNull('last_shown_at');
                 })
                 ->orderBy('id')
@@ -134,7 +136,7 @@ final class ScoreStore
                 if ($ids !== []) {
                     $count = $this->connection()->table($table)->whereIn('id', $ids)->update($values);
                     $reset += $table === 'rec_item_scores' ? $count : 0;
-                    $after = (int) end($ids);
+                    $after = Value::int(end($ids));
                 }
             } while (count($ids) === $chunk);
         }
@@ -184,7 +186,10 @@ final class ScoreStore
             return;
         }
 
-        $existing = array_flip(array_map('strval', $query($ids)->pluck('item_id')->all()));
+        $existing = [];
+        foreach ($query($ids)->pluck('item_id') as $itemId) {
+            $existing[Value::string($itemId)] = true;
+        }
         $missing = array_values(array_filter($ids, fn (string $id) => ! isset($existing[$id])));
         if ($missing === []) {
             return; // created by another request meanwhile and already counted by our UPDATE
@@ -240,7 +245,7 @@ final class ScoreStore
                 ->whereIn('day', array_values(array_unique(array_column($part, 'day'))))
                 ->get(['item_id', 'day', 'positive', 'exposure']);
             foreach ($query as $row) {
-                $existing[$row->item_id.'|'.substr((string) $row->day, 0, 10)] = $row;
+                $existing[Value::string($row->item_id).'|'.substr(Value::string($row->day), 0, 10)] = $row;
             }
 
             $rows = [];
@@ -250,8 +255,8 @@ final class ScoreStore
                     'feed' => $feed,
                     'item_id' => $row['item_id'],
                     'day' => $row['day'],
-                    'positive' => (int) ($old->positive ?? 0) + $row['positive'],
-                    'exposure' => (int) ($old->exposure ?? 0) + $row['exposure'],
+                    'positive' => Value::int($old->positive ?? 0) + $row['positive'],
+                    'exposure' => Value::int($old->exposure ?? 0) + $row['exposure'],
                 ];
             }
             $this->connection()->table('rec_item_daily')->upsert($rows, ['feed', 'item_id', 'day'], ['positive', 'exposure']);
@@ -277,10 +282,10 @@ final class ScoreStore
                 ->selectRaw('item_id, sum(positive) as positive, sum(exposure) as exposure, sum(impressions) as impressions')
                 ->get();
             foreach ($rows as $row) {
-                $out[Ids::normalize((string) $row->item_id)] = [
-                    'positive' => (int) $row->positive,
-                    'exposure' => (int) $row->exposure,
-                    'impressions' => (int) $row->impressions,
+                $out[Ids::normalize(Value::string($row->item_id))] = [
+                    'positive' => Value::int($row->positive),
+                    'exposure' => Value::int($row->exposure),
+                    'impressions' => Value::int($row->impressions),
                 ];
             }
         }
@@ -319,19 +324,19 @@ final class ScoreStore
                 ->whereIn('item_id', array_map('strval', $part))
                 ->get(['item_id', 'hot', 'positive', 'exposure', 'impressions', 'last_event_at']);
             foreach ($found as $row) {
-                $rows[Ids::normalize((string) $row->item_id)] = [
-                    'hot' => $row->hot === null ? null : (float) $row->hot,
-                    'positive' => (int) $row->positive,
-                    'exposure' => (int) $row->exposure,
-                    'impressions' => (int) $row->impressions,
-                    'last_event_at' => $row->last_event_at === null ? null : (string) $row->last_event_at,
+                $rows[Ids::normalize(Value::string($row->item_id))] = [
+                    'hot' => $row->hot === null ? null : Value::float($row->hot),
+                    'positive' => Value::int($row->positive),
+                    'exposure' => Value::int($row->exposure),
+                    'impressions' => Value::int($row->impressions),
+                    'last_event_at' => Value::nullableString($row->last_event_at),
                 ];
             }
         }
 
         $max = $this->connection()->table('rec_item_scores')->where('feed', $feed)->max('hot');
 
-        return ['rows' => $rows, 'max_hot' => $max === null ? null : (float) $max];
+        return ['rows' => $rows, 'max_hot' => $max === null ? null : Value::float($max)];
     }
 
     public function count(string $feed): int
@@ -357,10 +362,10 @@ final class ScoreStore
             return [];
         }
 
-        $max = (float) $rows->first()->hot;
+        $max = Value::float($rows->first()->hot);
         $out = [];
         foreach ($rows as $row) {
-            $out[Ids::normalize($row->item_id)] = exp((float) $row->hot - $max);
+            $out[Ids::normalize(Value::string($row->item_id))] = exp(Value::float($row->hot) - $max);
         }
 
         return $out;
@@ -383,10 +388,10 @@ final class ScoreStore
                 ->whereIn('item_id', array_map('strval', $part))
                 ->get(['item_id', 'positive', 'exposure', 'impressions']);
             foreach ($rows as $row) {
-                $out[Ids::normalize($row->item_id)] = [
-                    'positive' => (int) $row->positive,
-                    'exposure' => (int) $row->exposure,
-                    'impressions' => (int) $row->impressions,
+                $out[Ids::normalize(Value::string($row->item_id))] = [
+                    'positive' => Value::int($row->positive),
+                    'exposure' => Value::int($row->exposure),
+                    'impressions' => Value::int($row->impressions),
                 ];
             }
         }
@@ -396,6 +401,6 @@ final class ScoreStore
 
     private function connection(): ConnectionInterface
     {
-        return $this->db->connection(config('recommender.database_connection'));
+        return $this->db->connection(Value::nullableString(config('recommender.database_connection')));
     }
 }

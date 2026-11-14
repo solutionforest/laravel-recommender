@@ -7,6 +7,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use SolutionForest\Recommender\Dashboard\Health;
 use SolutionForest\Recommender\Recommender;
+use SolutionForest\Recommender\Support\Value;
 use Throwable;
 
 /**
@@ -61,7 +62,7 @@ final class DashboardController
             'legend' => $legend,
             'maxScore' => max([0.0001, ...array_column($explain['rows'] ?? [], 'score')]),
             // Explain runs a full build: never repeat it on a timer.
-            'refresh' => $explain === null ? max(0, (int) config('recommender.dashboard.refresh', 10)) : 0,
+            'refresh' => $explain === null ? max(0, Value::int(config('recommender.dashboard.refresh', 10))) : 0,
         ]);
     }
 

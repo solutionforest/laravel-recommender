@@ -5,6 +5,7 @@ namespace SolutionForest\Recommender\Examples\EventsAdvanced\Support;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use SolutionForest\Recommender\Scoring\Math;
+use SolutionForest\Recommender\Support\Value;
 
 /**
  * “What has this user joined most?” — types and hosting parties.
@@ -47,7 +48,7 @@ final class JoinPreferences
             ->get();
 
         return $rows->values()->mapWithKeys(
-            fn ($row, int $rank) => [(int) $row->key => Math::fromAffinity((float) $row->joins, $rank, step: 1.0)]
+            fn ($row, int $rank) => [Value::int($row->key) => Math::fromAffinity(Value::float($row->joins), $rank, step: 1.0)]
         );
     }
 }
