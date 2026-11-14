@@ -1,5 +1,9 @@
 # Upgrade guide
 
+## From 0.11.1 to 0.11.2
+
+Nothing to change (docs and screenshots only).
+
 ## From 0.11.0 to 0.11.1
 
 Nothing to change. `doctor` may now warn about missing indexes on your interaction tables; add the index it suggests. Try `php artisan recommender:doctor {feed} --probe` once before going live.

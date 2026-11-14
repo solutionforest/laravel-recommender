@@ -7,6 +7,14 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.11.2] — 2026-11-14
+
+Screenshots and docs for the latest changes. No package changes.
+
+### Docs
+- New screenshots of the dashboard (healthy, failing checks with the new index and slow-source warnings, explain, dark mode) and of `recommender:doctor`, `recommender:bootstrap` (now with the speed probe) and the new `recommender:doctor --probe`
+- README, dashboard guide and operations describe the speed checks, the index check and `--probe`
+
 ## [0.11.1] — 2026-11-14
 
 Catch slow queries before they run, not only while they run.
@@ -507,7 +515,8 @@ First minor release: a feed is now **configuration only** — tell the package w
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.11.1...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.11.2...HEAD
+[0.11.2]: https://github.com/solutionforest/laravel-recommender/compare/v0.11.1...v0.11.2
 [0.11.1]: https://github.com/solutionforest/laravel-recommender/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.10...v0.11.0
 [0.10.10]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.9...v0.10.10
