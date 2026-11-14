@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<psalm errorLevel="8" resolveFromConfigFile="true" findUnusedCode="false" findUnusedBaselineEntry="false"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="https://getpsalm.org/schema/config"
+       xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd">
+    <!-- Security scan only: run psalm with this config and taint analysis on; CI fails on Tainted issues (see .github/workflows/security.yml and CONTRIBUTING.md). -->
+    <projectFiles>
+        <directory name="src"/>
+        <ignoreFiles><directory name="vendor"/></ignoreFiles>
+    </projectFiles>
+    <plugins>
+        <pluginClass class="Psalm\LaravelPlugin\Plugin"/>
+    </plugins>
+</psalm>

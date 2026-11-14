@@ -24,11 +24,24 @@ final class FeedDefinition
      */
     public static function make(string $name, array $defaults, array $feed): self
     {
+        return new self(self::validName($name), array_replace($defaults, $feed));
+    }
+
+    /**
+     * Feed names go into cache keys and (as bound values) into queries, so
+     * only letters, digits, `_`, `-` and `.` are allowed.
+     *
+     * @psalm-taint-escape sql
+     * @psalm-taint-escape html
+     * @psalm-taint-escape has_quotes
+     */
+    private static function validName(string $name): string
+    {
         if ($name === '' || preg_match('/[^A-Za-z0-9_\-.]/', $name)) {
             throw new InvalidArgumentException("Invalid recommender feed name [{$name}].");
         }
 
-        return new self($name, array_replace($defaults, $feed));
+        return $name;
     }
 
     public function get(string $key, mixed $default = null): mixed

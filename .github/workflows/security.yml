@@ -1,0 +1,64 @@
+name: security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '17 3 * * 1' # weekly, so new advisories show up without a push
+
+jobs:
+  # Known vulnerabilities in the dependencies an app installs with the package.
+  audit:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        laravel: ['10.*', '11.*', '12.*', '13.*']
+    name: Composer audit / Laravel ${{ matrix.laravel }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+      - run: |
+          composer config audit.block-insecure false
+          composer remove --dev larastan/larastan phpstan/phpstan orchestra/testbench pestphp/pest --no-update --no-interaction
+          composer require "laravel/framework:${{ matrix.laravel }}" --no-update --no-interaction
+          composer update --no-dev --prefer-dist --no-interaction --no-progress
+      - name: composer audit
+        run: |
+          if [ "${{ matrix.laravel }}" = "10.*" ] || [ "${{ matrix.laravel }}" = "11.*" ]; then
+            # Laravel 10 and 11 no longer get security fixes, so their advisories stay open: report, don't fail.
+            composer audit --no-dev || echo "::warning title=Laravel ${{ matrix.laravel }} advisories::This Laravel version is end of life and has known advisories that will not be fixed."
+          else
+            composer audit --no-dev
+          fi
+
+  # Static taint analysis: request / user input flowing into SQL, HTML, shell, files, …
+  taint:
+    runs-on: ubuntu-latest
+    name: Psalm taint analysis
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+      - run: |
+          composer config audit.block-insecure false
+          composer require "laravel/framework:13.*" "orchestra/testbench:11.*" "pestphp/pest:4.*" --dev --no-update --no-interaction
+          composer require vimeo/psalm psalm/plugin-laravel --dev --no-update --no-interaction
+          composer update --prefer-dist --no-interaction --no-progress
+      - name: psalm --taint-analysis
+        run: |
+          vendor/bin/psalm --config=psalm-taint.xml --taint-analysis --no-cache --no-progress --output-format=json > psalm.json || true
+          php -r '
+            $issues = json_decode((string) file_get_contents("psalm.json"), true);
+            if (! is_array($issues)) { fwrite(STDERR, "psalm did not produce a report\n"); exit(1); }
+            $taint = array_filter($issues, fn ($i) => str_starts_with($i["type"], "Tainted"));
+            foreach ($taint as $i) { echo "::error file={$i["file_name"]},line={$i["line_from"]}::{$i["type"]}: {$i["message"]}\n"; }
+            echo count($taint)." taint issue(s)\n";
+            exit($taint === [] ? 0 : 1);
+          '

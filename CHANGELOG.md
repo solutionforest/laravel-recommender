@@ -7,6 +7,19 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.10.8] — 2026-11-14
+
+Security checks in CI. No behaviour changes.
+
+### Added
+- **Security workflow** (every PR, `main`, weekly): `composer audit` of the runtime dependencies for Laravel 10–13 (Laravel 10 and 11 report-only: both are end of life and have advisories that will not be fixed, e.g. CVE-2026-48019), and **Psalm taint analysis** of `src/` that fails on any `Tainted*` finding. See [SECURITY.md](SECURITY.md#automated-checks)
+- Dependabot updates for the CI actions; on the repository: Dependabot alerts and security updates, secret scanning with push protection
+
+### Changed
+- Feed names are validated in one place (`FeedDefinition::validName()`), which the taint analysis recognises. Its first run flagged the dashboard's `?feed=` reaching a query: not exploitable (the value must name a configured feed, names are limited to `[A-Za-z0-9_-.]`, and it is a bound parameter), now provably so
+- CI: `actions/checkout@v5` (v4 ran on a deprecated Node version)
+- README supported-versions table: Laravel 11 no longer gets security fixes from Laravel (since March 2026); Laravel 12 needs 12.60+ for Laravel's own fixes
+
 ## [0.10.7] — 2026-11-14
 
 PHPStan level 10 (max). No feature changes.
@@ -462,7 +475,8 @@ First minor release: a feed is now **configuration only** — tell the package w
 - Blog example under `examples/blog`
 - Docs: getting started, how we recommend, how we score, tuning, ops
 
-[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.7...HEAD
+[Unreleased]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.8...HEAD
+[0.10.8]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.7...v0.10.8
 [0.10.7]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.6...v0.10.7
 [0.10.6]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.5...v0.10.6
 [0.10.5]: https://github.com/solutionforest/laravel-recommender/compare/v0.10.4...v0.10.5
