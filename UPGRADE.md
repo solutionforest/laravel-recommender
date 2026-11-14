@@ -1,5 +1,9 @@
 # Upgrade guide
 
+## From 0.11.0 to 0.11.1
+
+Nothing to change. `doctor` may now warn about missing indexes on your interaction tables; add the index it suggests. Try `php artisan recommender:doctor {feed} --probe` once before going live.
+
 ## From 0.10.x to 0.11.0
 
 Nothing to change. `doctor` and the dashboard may now show **Slow …** warnings for your own sources, scopes, cards or interaction-table queries; tune the limits with `slow_ms`, `slow_query_ms`, `slow_scores_seconds` and `slow_neighbours_seconds` on the feed.

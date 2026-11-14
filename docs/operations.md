@@ -152,7 +152,22 @@ A custom source that wants the newest items of 30 owners (e.g. the shops or auth
 
 The package's own queries are bounded and measured ([performance](performance.md)). What it cannot control is the code you plug in: a source with a `whereHas` on a big relationship, a `recommendable` scope that joins three tables, cards that lazy-load relations, or interaction tables without indexes. These stay invisible until pages get slow — or until `update-scores` runs so long that the next run overlaps and they wait on each other's locks.
 
-So the package watches them for you, at the cost of one timer per call:
+**Catch it before it happens.** Two checks run before any job or user hits the code:
+
+- **Indexes** (every `doctor` run and the dashboard): each interaction table needs an index on its timestamp column (`update-scores` reads new rows by time) and one starting with its user column (personal builds and `build-neighbours` read per user). A missing one is a warning with the exact `$table->index(...)` to add. Needs Laravel 10.35+.
+- **Speed probe** (`php artisan recommender:doctor posts --probe`, also run by `recommender:bootstrap`): runs each part once on real data — the job reads (last hour of interactions, first chunk of users, one user's recent items), a personal list for a recent user and the guest list with every source / booster timed, the catalog tail, the `recommendable` scope / filter and the cards for one page — and shows the time of each, flags anything over `slow_ms` / `slow_query_ms`, and names the slowest SQL. Read-only, and it works before the first scores exist (it uses catalog items then).
+
+```
+Speed probe (each part once, on real data):
+✓ update-scores: read the last hour — 0.8 ms · 4 events
+✓ personal list for user 7 — 0.7 ms · 12 items
+✓   source CoInteractionSource — 0.2 ms
+! visibility check (recommendable scope / filter) for 36 items — 840 ms (limit 200 ms)
+!   filter recommendable scope (Post) — 838 ms
+✓ cards for one page — 1.5 ms · 12 cards
+```
+
+**While it runs**, the package keeps watching, at the cost of one timer per call:
 
 | What | Reported when | Where |
 |---|---|---|

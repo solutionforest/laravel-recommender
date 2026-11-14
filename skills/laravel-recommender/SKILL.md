@@ -53,7 +53,7 @@ It writes `feeds.{name}` with `preset` (catalog / social / events — feed keys 
 
    Custom queries (single events table, joins): `make-feed posts --classes` scaffolds `InteractionSource` / `ItemFilter` / `CardTransformer` under `app/Recommendation/{Feed}/`.
 
-3. **Check it**: `php artisan recommender:doctor {feed}` — tables, columns, event weights, classes, and **Slow …** warnings (a source / scope / cards call over `slow_ms`, SQL over `slow_query_ms` during the jobs, long job runs); fix what it reports.
+3. **Check it**: `php artisan recommender:doctor {feed}` — tables, columns, event weights, classes, and **Slow …** warnings (a source / scope / cards call over `slow_ms`, SQL over `slow_query_ms` during the jobs, long job runs, missing indexes on interaction tables); fix what it reports. Add `--probe` to run each part once on real data and time it before going live.
 
 4. **Cook once**
 

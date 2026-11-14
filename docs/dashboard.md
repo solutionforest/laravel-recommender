@@ -40,6 +40,7 @@ Each bar is the item's score split by source (the parts add up to the score). **
 | Scores | `update-scores` never ran, or is more than 1 hour behind (warning) |
 | Neighbours | `build-neighbours` never ran, or produced an empty graph (warning) |
 | Cache | the cache store cannot lock (concurrent builds are last-write-wins) or does not persist between requests (`array` / `null`) (warning) |
+| Indexes | an interaction table has no index on its timestamp column, or none starting with its user column (warning, with the `$table->index(...)` to add; Laravel 10.35+) |
 | Speed | in the last 7 days, a call into your code was slower than `slow_ms` (source, booster, `recommendable` scope / filter, cards, groups, catalog tail), or a SQL query took longer than `slow_query_ms` while `update-scores` / `build-neighbours` ran, or the last job run took longer than `slow_scores_seconds` / `slow_neighbours_seconds` (warning, with what to fix). See [operations → slow queries](operations.md#slow-queries-in-your-code) |
 
 Dark mode follows the operating system; the **Theme** button overrides it and is remembered:
@@ -85,6 +86,7 @@ Set `RECOMMENDER_DASHBOARD=false` to remove the route entirely.
 ```bash
 php artisan recommender:doctor          # every feed
 php artisan recommender:doctor posts    # one feed
+php artisan recommender:doctor posts --probe   # + run each part once on real data and time it (read-only)
 ```
 
 It prints the same checks and exits with a non-zero code when any check fails, so you can run it in a deploy script or CI after migrations.

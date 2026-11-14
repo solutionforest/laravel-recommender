@@ -39,6 +39,9 @@ final class SlowWatch
 
     private string $job = '';
 
+    /** @var list<array{kind: string, name: string, ms: float}>|null  every timing while a probe runs */
+    private ?array $capture = null;
+
     public function __construct(
         private readonly FeedCache $cache,
         private readonly StateStore $state,
@@ -61,6 +64,9 @@ final class SlowWatch
             return $call();
         } finally {
             $ms = (hrtime(true) - $start) / 1e6;
+            if ($this->capture !== null) {
+                $this->capture[] = ['kind' => $kind, 'name' => $name, 'ms' => $ms];
+            }
             if ($ms >= $feed->int('slow_ms', 200)) {
                 $this->record($feed, 'serving', $kind, $name, $ms);
             }
@@ -94,15 +100,41 @@ final class SlowWatch
     /** Database listener (registered by the service provider). */
     public function query(QueryExecuted $event): void
     {
+        if ($this->capture !== null) {
+            $this->capture[] = ['kind' => 'query', 'name' => self::sql($event->sql), 'ms' => (float) $event->time];
+        }
         $feed = $this->jobFeed;
         if ($feed === null || $event->time < $feed->int('slow_query_ms', 1000)) {
             return;
         }
-        $sql = (string) preg_replace('/\s+/', ' ', trim($event->sql));
+        $sql = self::sql($event->sql);
         if (str_contains($sql, 'rec_state')) {
             return; // our own bookkeeping, never the cause
         }
-        $this->record($feed, $this->job === 'build-neighbours' ? 'neighbours' : 'scores', 'query', mb_substr($sql, 0, 300), (float) $event->time);
+        $this->record($feed, $this->job === 'build-neighbours' ? 'neighbours' : 'scores', 'query', $sql, (float) $event->time);
+    }
+
+    /**
+     * Run $call and return every part timing and SQL query it caused
+     * (used by the speed probe).
+     *
+     * @template T
+     *
+     * @param  callable(): T  $call
+     * @return array{0: T, 1: list<array{kind: string, name: string, ms: float}>}
+     */
+    public function capture(callable $call): array
+    {
+        $outer = $this->capture;
+        $this->capture = [];
+        try {
+            $result = $call();
+            $captured = $this->capture;
+
+            return [$result, $captured];
+        } finally {
+            $this->capture = $outer === null ? null : array_merge($outer, $this->capture ?? []);
+        }
     }
 
     /**
@@ -205,6 +237,11 @@ final class SlowWatch
             $part instanceof \SolutionForest\Recommender\Eloquent\CatalogTail => "catalog tail ({$model})",
             default => class_basename($part),
         };
+    }
+
+    private static function sql(string $sql): string
+    {
+        return mb_substr((string) preg_replace('/\s+/', ' ', trim($sql)), 0, 300);
     }
 
     private static function runKey(FeedDefinition $feed, string $job): string
