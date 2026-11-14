@@ -10,7 +10,7 @@ description: >-
 
 # Laravel Recommender — simple recommendation engine
 
-Package: `solutionforest/laravel-recommender` (PHP **8.3+**, Laravel **10–13**).
+Package: `solutionforest/laravel-recommender` (PHP **8.3–8.5**, Laravel **10–13**; Laravel 10 is best-effort until the first release after 31 March 2027 — see README → Supported versions).
 
 Self-hosted “for you” feeds: item–item collaborative filtering + time-decayed trending + optional custom sources. **Not** a neural net / AWS Personalize.
 

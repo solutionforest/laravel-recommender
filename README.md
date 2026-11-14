@@ -28,9 +28,20 @@ Imagine a reader likes post A. If other readers interacted with both A and B, po
 
 Your app records the interactions (or lets `$post->recordInteraction($user, 'like')` write them with your feed's mapping) and controls visibility and card fields. Cards are shared across viewers, so add viewer-specific fields separately. The package stores derived scores, daily counters and neighbours in four `rec_*` tables. When ranked and trending items run out, feeds with a model can continue with the newest eligible items. See [how it works](docs/how-it-works.md) for the full flow and [operations](docs/operations.md#seen-memory-and-impressions) for memory and impression costs.
 
+## Supported versions
+
+| Laravel | PHP 8.3 | PHP 8.4 | PHP 8.5 | Support |
+|---|:---:|:---:|:---:|---|
+| 13.x | ✅ | ✅ | ✅ | Full. Also tested on MySQL 8 and with a Redis cache store |
+| 12.x | ✅ | ✅ | ✅ | Full |
+| 11.x | ✅ | ✅ | ✅ | Full. On PHP 8.5, Laravel 11 itself prints deprecation notices; the package works |
+| 10.x | ✅ | ✅ | ⚠️ | Best-effort until the first release after **31 March 2027**. Laravel 10 gets no security fixes. On PHP 8.5 CI only checks that the package installs and loads: Laravel 10's test tools do not run on PHP 8.5 |
+
+✅ = the full test suite runs in [CI](.github/workflows/tests.yml) on every push (SQLite). PHP 8.2 and older are not supported. Other databases (PostgreSQL, MariaDB) and cache stores with locks should work but are not tested in CI.
+
 ## Your first feed
 
-Requires PHP 8.3+ and Laravel 10, 11, 12, or 13. Laravel 10 is past its end of life (no more security fixes from Laravel), so its support here is best-effort and will be dropped in the first release after 31 March 2027; plan your upgrade. In an app with a `Post` model and interaction tables (`post_likes`, `post_views` with `user_id`, `post_id`, `created_at`):
+In an app with a `Post` model and interaction tables (`post_likes`, `post_views` with `user_id`, `post_id`, `created_at`):
 
 **1. Install and set up**
 

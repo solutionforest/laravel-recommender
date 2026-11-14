@@ -9,10 +9,14 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [0.10.6] — 2026-11-14
 
-Release process only; no package changes.
+Supported versions in one table; no package code changes.
 
 ### Docs
+- README: **Supported versions** table (Laravel 10–13 × PHP 8.3–8.5), showing what CI tests and the Laravel 10 end date
 - Release steps: `main` is protected (all CI checks must pass before merge, no direct pushes); releases go through a pull request, then the merge commit is tagged
+
+### Changed
+- CI: the full suite also runs on PHP 8.5 with Laravel 11 and 12
 
 ## [0.10.5] — 2026-11-14
 
