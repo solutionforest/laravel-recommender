@@ -41,13 +41,13 @@ GitHub Releases are automated: push a `v*.*.*` tag → [`.github/workflows/relea
 
 1. Move notes out of `## [Unreleased]` into a new `## [x.y.z] — YYYY-MM-DD` section (Keep a Changelog).
 2. Add upgrade steps to [`UPGRADE.md`](../UPGRADE.md) for anything that changes behaviour, and bump `extra.branch-alias` in `composer.json` on a new minor (e.g. `0.11.x-dev`).
-3. Commit on `main`, wait for [tests](../.github/workflows/tests.yml) to go green.
-4. Tag and push:
+3. Open a pull request with these changes. `main` is protected: every [tests](../.github/workflows/tests.yml) job and PHPStan must pass before it can merge (admins included), and direct pushes to `main` are rejected.
+4. Merge it, then tag the merge commit on `main` and push the tag:
 
 ```bash
-git tag -a v0.10.4 -m "v0.10.4"
-git push origin main
-git push origin v0.10.4
+git checkout main && git pull
+git tag -a v0.10.6 -m "v0.10.6"
+git push origin v0.10.6
 ```
 
 5. Confirm the Release on GitHub (notes = that CHANGELOG section). Re-run from **Actions → release → Run workflow** if you only need to refresh notes for an existing tag.
