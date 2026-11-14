@@ -106,6 +106,7 @@ return [
 
         // Rendered card cache
         'card_ttl' => 3600,
+        'card_variants_max' => 20,  // cards_vary_by: variants kept per card (oldest dropped)
         // Cache cards separately per attribute, e.g. ['locale'] or ['locale', 'tenant']
         // ('locale' defaults to app()->getLocale()). Empty = one card for everyone.
         'cards_vary_by' => [],
@@ -149,6 +150,9 @@ return [
         // the seen window; guests: once per page). Written after the response.
         // Quality then uses positive ÷ impressions instead of ÷ exposure.
         'impressions' => false,
+        // Guest pages have no seen-set, so each reload counts again; off by
+        // default so anonymous traffic cannot push an item's quality down.
+        'impressions_guests' => false,
         // 'impressions_after_response' => true,   // false = write inline
         'half_life_days' => 7,
         // First run only walks this many days; widen for historical imports (docs/operations.md).

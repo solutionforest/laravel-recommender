@@ -117,6 +117,7 @@ $query->where('tenant_id', $context->attribute('tenant'));
 The ranked list, the shared trending list (guests and the fallback), `warm()` and `explain()` then keep one copy per value. The seen-set is split per `tenant` too (tenants have different items); `device` and `locale` keep one shared seen-set by default (override with `seen_vary_by`). It is bounded, so sharing it reduces repeats but does not guarantee their absence. Rules:
 
 - List every attribute that changes the candidates; leaving one out is unsafe. Attributes that only change how a card looks belong in `cards_vary_by`.
+- Validate values that come from the request (e.g. only supported locales). Each distinct value is a separate list or card variant; cards keep at most `card_variants_max` (20) variants each.
 - A cache key is not authorization: your `recommendable` scope must still filter by tenant.
 - Every value multiplies the cached lists per user, so vary by few, low-cardinality attributes.
 - Pass the same attributes to `warm($feed, $user, attributes: [...])`, `forgetUser($feed, $user, [...])` and `explain($feed, $user, attributes: [...])`.

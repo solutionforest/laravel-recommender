@@ -35,6 +35,7 @@ jobs:
           - { php: '8.4', laravel: '12.*', testbench: '10.*', pest: '3.*' }
           - { php: '8.3', laravel: '13.*', testbench: '11.*', pest: '4.*' }
           - { php: '8.4', laravel: '13.*', testbench: '11.*', pest: '4.*' }
+          - { php: '8.5', laravel: '13.*', testbench: '11.*', pest: '4.*' }
     name: PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }} / SQLite
     steps:
       - uses: actions/checkout@v4
@@ -80,3 +81,61 @@ jobs:
           DB_PORT: 3306
           DB_DATABASE: rec_test
           DB_USERNAME: root
+
+  redis:
+    runs-on: ubuntu-latest
+    name: PHP 8.4 / Laravel 13 / Redis cache
+    services:
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
+        options: --health-cmd="redis-cli ping" --health-interval=10s --health-timeout=5s --health-retries=5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_sqlite, redis
+          coverage: none
+      - run: |
+          composer config audit.block-insecure false
+          composer require "laravel/framework:13.*" "orchestra/testbench:11.*" "pestphp/pest:4.*" --dev --no-update --no-interaction
+          composer update --prefer-dist --no-interaction --no-progress
+      - run: vendor/bin/pest
+        env:
+          RECOMMENDER_TEST_CACHE: redis
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: 6379
+
+  # Laravel 10's test stack (Testbench 8 / Pest 2 / paratest) has no PHP 8.5
+  # release, so the suite cannot run there. This checks that the package
+  # installs with Laravel 10 on PHP 8.5 and that every class loads cleanly.
+  laravel10-php85:
+    runs-on: ubuntu-latest
+    name: PHP 8.5 / Laravel 10 / install + load
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          coverage: none
+      - run: |
+          composer config audit.block-insecure false
+          # the dev tools (larastan, Testbench, Pest) have no Laravel 10 + PHP 8.5 release
+          composer remove --dev larastan/larastan phpstan/phpstan orchestra/testbench pestphp/pest --no-update --no-interaction
+          composer require "laravel/framework:10.*" --no-update --no-interaction
+          composer update --no-dev --prefer-dist --no-interaction --no-progress
+      - run: |
+          php -d error_reporting=-1 -d display_errors=1 -r '
+            set_error_handler(function ($no, $msg, $file, $line) { if (! str_contains($file, "/src/")) { return false; } fwrite(STDERR, "$msg in $file:$line\n"); exit(1); });
+            require "vendor/autoload.php";
+            $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator("src"));
+            $n = 0;
+            foreach ($it as $f) {
+                if ($f->getExtension() !== "php" || $f->getFilename() === "helpers.php") { continue; } // autoloaded as a file
+                $class = "SolutionForest\\Recommender\\".str_replace(["src/", "/", ".php"], ["", "\\", ""], $f->getPathname());
+                if (! class_exists($class) && ! interface_exists($class) && ! trait_exists($class) && ! enum_exists($class)) { fwrite(STDERR, "cannot load $class\n"); exit(1); }
+                $n++;
+            }
+            echo "loaded $n classes with Laravel ".Illuminate\Foundation\Application::VERSION." on PHP ".PHP_VERSION."\n";
+          '

@@ -133,6 +133,7 @@ function freshCache(): \SolutionForest\Recommender\Feed\FeedCache
 }
 
 it('picks Redis automatically when the app has a working Redis store', function () {
+    skipOnRedis('fakes the redis store with the array driver');
     config(['recommender.cache_store' => null, 'cache.stores.redis' => ['driver' => 'array']]); // stands in for a reachable Redis
 
     expect(freshCache()->storeName())->toBe('redis')
@@ -140,6 +141,7 @@ it('picks Redis automatically when the app has a working Redis store', function 
 });
 
 it('falls back to the default store when Redis is configured but unreachable', function () {
+    skipOnRedis('replaces the redis connection config');
     config([
         'recommender.cache_store' => null,
         'cache.stores.redis' => ['driver' => 'redis', 'connection' => 'nowhere'],

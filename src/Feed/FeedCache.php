@@ -216,7 +216,14 @@ final class FeedCache
                     // drops every language / tenant at once.
                     $existing = $cached[$key] ?? null;
                     $variants = is_array($existing) && is_array($existing['__variants'] ?? null) ? $existing['__variants'] : [];
+                    unset($variants[$variant]);
                     $variants[$variant] = $card;
+                    // Bounded: unvalidated attribute values (e.g. ?locale=…) must
+                    // not grow one cache entry without limit. Oldest go first.
+                    $max = max(1, $feed->int('card_variants_max', 20));
+                    if (count($variants) > $max) {
+                        $variants = array_slice($variants, -$max, null, true);
+                    }
                     $toCache[$key] = ['__variants' => $variants];
                 }
             }
@@ -309,8 +316,9 @@ final class FeedCache
     {
         $key = $this->key($feed, 'neighbours-version');
         $cached = $this->store()->get($key);
-        if (is_int($cached)) {
-            return $cached;
+        // Redis keeps integers unserialized and returns them as strings.
+        if (is_int($cached) || (is_string($cached) && ctype_digit($cached))) {
+            return (int) $cached;
         }
         if ($cached === 'none') {
             return null;

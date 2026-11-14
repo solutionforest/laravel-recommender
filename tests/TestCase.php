@@ -19,6 +19,9 @@ abstract class TestCase extends Orchestra
         ArrayFilter::reset();
         ArrayCards::reset();
         StaticSource::reset();
+        if (getenv('RECOMMENDER_TEST_CACHE') === 'redis') {
+            $this->app['cache']->store('redis')->flush(); // Redis outlives the test; start clean
+        }
     }
 
     protected function getPackageProviders($app): array
@@ -46,6 +49,19 @@ abstract class TestCase extends Orchestra
             ]);
         }
         $app['config']->set('cache.default', 'array');
+        if (getenv('RECOMMENDER_TEST_CACHE') === 'redis') {
+            // Optional: run the suite with a real Redis cache store, e.g.
+            // RECOMMENDER_TEST_CACHE=redis REDIS_HOST=127.0.0.1 vendor/bin/pest (needs phpredis or predis/predis)
+            $app['config']->set('database.redis.client', getenv('REDIS_CLIENT') ?: (extension_loaded('redis') ? 'phpredis' : 'predis'));
+            $app['config']->set('database.redis.default', [
+                'host' => getenv('REDIS_HOST') ?: '127.0.0.1',
+                'port' => getenv('REDIS_PORT') ?: '6379',
+                'database' => getenv('REDIS_DB') ?: '0',
+            ]);
+            $app['config']->set('database.redis.cache', $app['config']->get('database.redis.default'));
+            $app['config']->set('cache.default', 'redis');
+            $app['config']->set('recommender.cache_store', 'redis');
+        }
         $app['config']->set('recommender.feeds', [
             'reviews' => [
                 'sources' => [StaticSource::class => 1.0],

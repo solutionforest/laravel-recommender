@@ -69,7 +69,7 @@ final class Health
         $conn = $this->db->connection(config('recommender.database_connection'));
 
         $raw = $this->state->get("scores:{$feed->name}:watermark");
-        $watermark = $raw !== null ? CarbonImmutable::createFromTimestamp((int) $raw) : null;
+        $watermark = $raw !== null ? CarbonImmutable::createFromTimestamp((int) $raw, date_default_timezone_get()) : null;
         $version = $this->neighbours->activeVersion($feed->name);
         $scores = $conn->table('rec_item_scores')->where('feed', $feed->name);
         $lastEvent = (clone $scores)->max('last_event_at');

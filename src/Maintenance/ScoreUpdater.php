@@ -45,7 +45,7 @@ final class ScoreUpdater
         $key = "scores:{$feed->name}:watermark";
         $stored = $this->state->get($key);
         $from = $stored !== null
-            ? CarbonImmutable::createFromTimestamp((int) $stored)
+            ? CarbonImmutable::createFromTimestamp((int) $stored, date_default_timezone_get()) // Carbon 3 defaults to UTC; the tables hold app-local times
             : $to->subDays($feed->int('scores_backfill_days', 30));
 
         if ($from->greaterThanOrEqualTo($to)) {
