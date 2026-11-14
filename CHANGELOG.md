@@ -7,6 +7,9 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Docs
+- Release steps: `main` is protected (all CI checks must pass before merge, no direct pushes); releases go through a pull request, then the merge commit is tagged
+
 ## [0.10.5] — 2026-11-14
 
 Correct scores outside UTC, and safer impressions. **If your app timezone is not UTC, run `recommender:rebuild-scores` after upgrading** (see UPGRADE).
