@@ -69,9 +69,11 @@ it('flags a part that is slower than its limit', function () {
 
     $rows = app(SpeedProbe::class)->run(Recommender::feed('articles'));
 
+    // Both interaction tables answer in ~0 ms, so either can be the slowest one
+    // (and identifier quoting differs: SQLite ", MySQL `).
     expect(array_unique(array_column($rows, 'slow')))->toBe([true])
         ->and($rows[0]['detail'])->toContain('slowest SQL')
-        ->and($rows[0]['detail'])->toContain('article_likes');
+        ->and($rows[0]['detail'])->toMatch('/article_(likes|views)/');
 });
 
 it('prints the probe in doctor --probe', function () {
