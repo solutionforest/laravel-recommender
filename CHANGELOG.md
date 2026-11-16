@@ -7,6 +7,25 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.12.2] — 2026-11-16
+
+Docs and examples catch up with attribute match and the speed checks. No package code changes.
+
+### Docs
+- **Attribute match everywhere it belongs**, not only in the reference:
+  - README;
+  - how it works (big picture, pipeline, algorithms);
+  - tuning (recipe E "new items should show up", `match_pool` / `match_values` knobs, two pitfalls);
+  - tutorial troubleshooting;
+  - maths (the similarity formula and seed recency `1/(1+0.1·rank)`);
+  - advanced (try `AttributeMatchSource` before writing a "same category" source).
+- Speed checks: advanced usage and the tutorial say how `slow_ms` and `recommender:doctor {feed} --probe` find a slow source, scope or card.
+
+### Changed
+- `examples/events-advanced`: **attribute match for brand-new events**. `match` on `type_id` / `host_id` / `district_id` + `AttributeMatchSource` in `sources`, the three `(column, created_at)` indexes in the migration, and a test: a just-published event with no interactions reaches the workshop fan's feed and `similar()`.
+- `examples/simple` README: one-line add-ons (`similar()`, attribute match, `jitter`). Every example's "check it" step uses `recommender:doctor {feed} --probe`.
+- `composer.json` branch alias: `dev-main` is `0.12.x-dev` (was still `0.11.x-dev`).
+
 ## [0.12.1] — 2026-11-16
 
 Re-release of 0.12.0. No code changes. The 0.12.0 tag was first published on the feature commit and later moved to the changelog commit; Packagist keeps the first, so use 0.12.1 (identical code, changelog entry included).
