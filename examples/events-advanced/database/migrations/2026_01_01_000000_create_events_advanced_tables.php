@@ -21,6 +21,10 @@ return new class extends Migration
             $table->boolean('published')->default(true);
             $table->timestamp('starts_at')->nullable()->index();
             $table->timestamps();
+            // Attribute match reads the newest events per value through these.
+            $table->index(['type_id', 'created_at']);
+            $table->index(['host_id', 'created_at']);
+            $table->index(['district_id', 'created_at']);
         });
 
         foreach (['event_views', 'event_likes', 'event_joins', 'event_comments'] as $table) {

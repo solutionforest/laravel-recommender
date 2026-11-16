@@ -93,6 +93,8 @@ That's it. The response is Laravel's paginator JSON (with `next_cursor` for infi
 
 For a related-posts block, `$post->similar(6)` returns the cards of the posts most often liked together with this one. See [similar items](docs/reference.md#similar-items-related-posts).
 
+Brand-new items have no likes yet, so nobody has liked them together with anything. Add a `match` config (same category, shared tags, a similar price) and they still appear in `similar()`, and in personal feeds through `AttributeMatchSource`. Nothing extra is stored and there is no extra job. See [attribute match](docs/reference.md#new-items-attribute-match).
+
 **[Follow the first-feed tutorial →](docs/tutorial.md)** for other table shapes, custom classes and troubleshooting.
 
 ## Choose your next step

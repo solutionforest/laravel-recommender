@@ -11,6 +11,7 @@ If you only need the simple feed, use [`../events`](../events/) instead.
 | Event `type_id` | Yes | `FavoriteTypeSource` + `PreferredTypeBooster` (most-joined types) |
 | Comments (`event_comments`) | Yes | `comment` interaction (trending + CF) + `CommentHeatBooster` (busy threads) |
 | view / like / join | Yes | Same as events (`join` strongest; `comment` between like and join) |
+| **Brand-new events** (no views / joins yet) | Yes | `match` config + `AttributeMatchSource`: same type, host and district as the user's recent joins; `$event->similar()` falls back to it |
 
 Covered by [`EventsAdvancedExampleTest`](../../tests/Feature/EventsAdvancedExampleTest.php).
 
@@ -25,6 +26,7 @@ flowchart LR
   D --> R
   T --> R
   H --> R
+  E2[(events: type / host / district)] --> AM[AttributeMatchSource] --> R
   B --> R
   E[(events)] -->|Event::scopeRecommendable| R
   R --> CT[EventCardTransformer] --> API["GET /events/recommended"]
@@ -61,6 +63,21 @@ src/
   Support/JoinPreferences.php
 ```
 
+## New events: attribute match
+
+An event is new by nature: nobody has joined it before it is announced, so co-interaction has nothing to go on. The `match` config finds events by their own columns:
+
+```php
+'match' => ['type_id' => 2.0, 'host_id' => 1.5, 'district_id' => 1.0],
+'sources' => [/* … */ AttributeMatchSource::class => 0.12, /* … */],
+```
+
+- In the feed, `AttributeMatchSource` adds upcoming events like the ones the user joined recently. Only the newest events per value are read, through the `(type_id, created_at)` / `(host_id, created_at)` / `(district_id, created_at)` indexes in the migration.
+- `$event->similar(6)` shows related events even before anyone joined. The `recommendable` scope still applies, so drafts, past events and your own events are never shown.
+- `recommender:doctor events` checks the columns and indexes.
+
+How it scores and what it costs: [reference → attribute match](../../docs/reference.md#new-items-attribute-match).
+
 Interactions, visibility and diversity come from config and the model. The card stays a class on purpose: it needs comment counts for every event at once, which a per-model `toRecommendationCard()` would turn into one query per event. A `cards` class always wins over the model.
 
 ## Write sources like English
@@ -81,7 +98,7 @@ Full guide: [docs/maths.md §5](../../docs/maths.md). Tune **config source weigh
 ## Use in your app
 
 1. Copy `src/` folders → `app/Recommendation/Events`, and the model's scopes into your `Event` model.
-2. Merge feed `events` into `config/recommender.php` and run `php artisan recommender:doctor events`.
+2. Merge feed `events` into `config/recommender.php` (and the three `(column, created_at)` indexes from the migration) and run `php artisan recommender:doctor events --probe` to check the setup and time each part on your data.
 3. Map `host_id` / `district_id` / `type_id` / comments to your schema.
 4. Route: `Route::get('/events/recommended', fn (Request $r) => Event::recommendedFor($r->user()));` — jobs are scheduled by the package.
 5. Tune weights: raise district for local apps, host for organiser loyalty, type for taste, `comment` / `CommentHeatBooster` when discussion matters.

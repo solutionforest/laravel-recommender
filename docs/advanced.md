@@ -61,7 +61,9 @@ Add it with a weight; weights are relative and every source is normalised to 0..
 ],
 ```
 
-Rules of thumb: one or two indexed queries with a `LIMIT`; return `[]` for guests when the rule is personal; scores only need to be comparable within your source. Sources are resolved from the container, so constructor injection works. A source that throws is logged and skipped — the feed still serves. Helpers for turning queries into scores (`Math::scoreInOrder`, `fromAge`, `fromAffinity`) are in [maths §5](maths.md). Full examples: `examples/reviews` (`PetTypeMatchSource`) and `examples/events-advanced` (district, host, type).
+Rules of thumb: one or two indexed queries with a `LIMIT`; return `[]` for guests when the rule is personal; scores only need to be comparable within your source. Sources are resolved from the container, so constructor injection works. A source that throws is logged and skipped — the feed still serves. Helpers for turning queries into scores (`Math::scoreInOrder`, `fromAge`, `fromAffinity`) are in [maths §5](maths.md). Full examples: `examples/reviews` (`PetTypeMatchSource`) and `examples/events-advanced` (district, host, type). For "same category / tags / price as what the user liked", try the built-in `AttributeMatchSource` with a `match` config before writing a class ([attribute match](reference.md#new-items-attribute-match)).
+
+Every call into your source is timed while serving; one slower than `slow_ms` (200 ms) shows up in `recommender:doctor` and on the dashboard. Before going live, `php artisan recommender:doctor {feed} --probe` runs it once on real data and names its slowest SQL.
 
 To add items *only occasionally* (discovery), list the source under `exploration_sources` instead: it gets `exploration_ratio` of the slots, interleaved, rather than a blend weight.
 

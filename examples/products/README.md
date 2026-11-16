@@ -51,6 +51,6 @@ vendor/bin/pest tests/Feature/ProductsExampleTest.php
 1. Merge the feed from `config/recommender.php` into yours (`model` → your model class).
 2. Copy the model's `scopeRecommendable()` and `toRecommendationCard()` into your model, and add `use Recommendable;`.
 3. Route: `Route::get('/products/recommended', fn (Request $r) => Product::recommendedFor($r->user()));`
-4. Check it: `php artisan recommender:doctor products`. The scoring jobs are scheduled by the package — keep Laravel's scheduler running.
+4. Check it: `php artisan recommender:doctor products --probe` (setup, indexes, and the time of each part on your data). The scoring jobs are scheduled by the package — keep Laravel's scheduler running.
 
 Add any other table as a new event: `'product_shares' => 'share'`, then give `share` a weight under `events`.

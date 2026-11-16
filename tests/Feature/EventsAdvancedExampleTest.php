@@ -129,6 +129,25 @@ it('serves guests without district or host affinity', function () {
         ->not->toContain(6);
 });
 
+it('finds a brand-new event like the ones a user joined (attribute match)', function () {
+    // Just published: nobody has viewed, liked or joined it, so it has no neighbours.
+    Event::create(['id' => 60, 'host_id' => 201, 'district_id' => 12, 'type_id' => 2, 'title' => 'New workshop', 'published' => true, 'starts_at' => now()->addWeek()]);
+    $user = new GenericUser(['id' => 1]);
+    Recommender::forgetUser('events', $user);
+
+    $rows = collect(Recommender::explain('events', 1, 50));
+    $new = $rows->firstWhere('id', 60);
+
+    expect($new)->not->toBeNull()
+        ->and(array_keys($new['sources']))->toContain('AttributeMatchSource')
+        ->and(Recommender::page('events', $user, 1, 20)->ids)->toContain(60);
+
+    // Related events for an event without neighbours: same type + host first.
+    expect(array_column(Event::find(60)->similar(3), 'id'))->toContain(2)
+        ->not->toContain(5)  // draft
+        ->not->toContain(50); // past
+});
+
 it('passes recommender:doctor with the config-only feed', function () {
     $this->artisan('recommender:doctor', ['feed' => 'events'])->assertSuccessful();
 });

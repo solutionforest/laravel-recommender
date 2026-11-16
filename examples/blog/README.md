@@ -33,7 +33,7 @@ vendor/bin/pest tests/Feature/BlogExampleTest.php
 2. Copy the model's `scopeRecommendable()` and `toRecommendationCard()` into your model, and add `use Recommendable;`.
 3. Route: `Route::get('/posts/recommended', fn (Request $r) => Post::recommendedFor($r->user()));`
 4. Related posts on a post page: `$post->similar(4)` (cards of the posts liked together with this one). A new post has no likes yet: with the `match` config on `post_tag`, it gets the posts sharing its tags instead ([attribute match](../../docs/reference.md#new-items-attribute-match))
-5. Check it: `php artisan recommender:doctor posts`. The scoring jobs are scheduled by the package — keep Laravel's scheduler running.
+5. Check it: `php artisan recommender:doctor posts --probe` (setup, indexes, and the time of each part on your data). The scoring jobs are scheduled by the package — keep Laravel's scheduler running.
 
 ## Ideas to try
 
