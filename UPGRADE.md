@@ -1,5 +1,9 @@
 # Upgrade guide
 
+## From 0.12.1 to 0.12.2
+
+Nothing to change (docs and examples only). Copied `examples/events-advanced`? Its migration now adds `(type_id, created_at)`, `(host_id, created_at)` and `(district_id, created_at)` indexes for attribute match.
+
 ## From 0.11.1 to 0.11.2
 
 Nothing to change (docs and screenshots only).

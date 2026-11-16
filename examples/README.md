@@ -1,14 +1,14 @@
 # Examples
 
-These integrations are exercised by Pest. Every example is a **config-only feed** — `model` + `interactions` in the config, a `recommendable` scope and `toRecommendationCard()` on the model — plus custom sources and boosters where the product needs its own rules. Each picks a named `preset` (`catalog`, `social` or `events`) and only overrides what it needs; `simple` uses the package defaults. Controllers are one line: `return Post::recommendedFor($request->user());`. Related-items blocks are one call too: `$post->similar(6)`. New items without interactions are covered by attribute match: `products` (category + price, also in the feed) and `blog` (tags, for related posts). Adapt schemas, namespaces and weights before using them in your application. Writing your own sources and boosters: [advanced usage](../docs/advanced.md).
+These integrations are exercised by Pest. Every example is a **config-only feed** — `model` + `interactions` in the config, a `recommendable` scope and `toRecommendationCard()` on the model — plus custom sources and boosters where the product needs its own rules. Each picks a named `preset` (`catalog`, `social` or `events`) and only overrides what it needs; `simple` uses the package defaults. Controllers are one line: `return Post::recommendedFor($request->user());`. Related-items blocks are one call too: `$post->similar(6)`. New items without interactions are covered by attribute match: `products` (category + price, also in the feed), `events-advanced` (type + host + district: every event is new before anyone joins) and `blog` (tags, for related posts). Check any of them with `php artisan recommender:doctor {feed} --probe`. Adapt schemas, namespaces and weights before using them in your application. Writing your own sources and boosters: [advanced usage](../docs/advanced.md).
 
 | Example | Shows | Test |
 |---|---|---|
-| [`simple/`](simple/) | **Start here** — config only: `model` + interaction tables, no classes | `SimpleExampleTest` |
+| [`simple/`](simple/) | **Start here** — config only: `model` + interaction tables, no classes; one-line add-ons (similar, attribute match, jitter) | `SimpleExampleTest` |
 | [`blog/`](blog/) | Likes + views → posts; sponsored source + booster; one post per author per page | `BlogExampleTest` |
 | [`products/`](products/) | **Three events** (`view` / `like` / `purchase`) → catalog | `ProductsExampleTest` |
 | [`events/`](events/) | **Meetup listing** (`view` / `like` / `join`) → recommended events | `EventsExampleTest` |
-| [`events-advanced/`](events-advanced/) | `events/` + district, host party, type and comments as custom sources / boosters; a custom `CardTransformer` for comment counts | `EventsAdvancedExampleTest` |
+| [`events-advanced/`](events-advanced/) | `events/` + district, host party, type and comments as custom sources / boosters; **attribute match for brand-new events**; a custom `CardTransformer` for comment counts | `EventsAdvancedExampleTest` |
 | [`reviews/`](reviews/) | Shop UGC + custom `PetTypeMatchSource` | `ReviewsExampleTest` |
 
 ## `Context` in examples

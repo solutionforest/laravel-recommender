@@ -133,7 +133,7 @@ Route::get('/posts/recommended', fn (Request $request) => Post::recommendedFor($
 
 Visit `/posts/recommended`. The JSON is Laravel's simple-paginator shape for a signed-in user (`data`, `current_page`, `next_page_url`, …; guests get the full paginator with `total` and `links`) plus `origin` (`personal`, `trending` or `tail`), `has_more` and `next_cursor`; `?page=` is read automatically. `Recommender::page('posts', $request->user())` does the same and returns a `FeedPage` you can also turn into `toPaginator()` for Blade. The exact cards depend on your transformer and data. A guest gets trending. An authenticated user's list can contain trending candidates even when its origin is `personal`.
 
-On a post's own page, `$post->similar(4)` returns the cards of the posts most often liked together with it: the same for every viewer, cached per post, and empty until `build-neighbours` has found neighbours for it. See [reference → similar items](reference.md#similar-items-related-posts).
+On a post's own page, `$post->similar(4)` returns the cards of the posts most often liked together with it: the same for every viewer, cached per post, and empty until `build-neighbours` has found neighbours for it. See [reference → similar items](reference.md#similar-items-related-posts). For brand-new posts, add a `match` config (e.g. same category or shared tags) and `similar()` falls back to items with the same attributes: [attribute match](reference.md#new-items-attribute-match).
 
 A signed-in feed is sequential: each request serves the next unseen batch, so a refresh advances it and page numbers are not stable offsets — follow `next_cursor` to continue. Repeat requests, concurrent clients and resets can affect results. Guests use offset paging over the shared trending list. See [reference](reference.md#serving-a-feed).
 
@@ -158,6 +158,8 @@ Gate::define('viewRecommender', fn ($user) => $user->is_admin);
 | Symptom | Check |
 |---|---|
 | Not sure what is wrong | Run `php artisan recommender:doctor posts` or open `/recommender`. |
+| Pages or jobs are slow | Run `php artisan recommender:doctor posts --probe`: it times each source, your scope and the cards on real data, names the slowest SQL and lists missing indexes. |
+| New posts never appear, `similar()` is empty for them | Expected without interactions. Add a `match` config and `AttributeMatchSource` ([tuning → recipe E](tuning.md#recipes)). |
 | Feed is not configured | Inspect `feeds.posts`, command output and Laravel config cache. |
 | SQL error | Match generated table, ID, foreign key and timestamp columns to your schema. |
 | Empty `data` | Check recent eligible events, score rows, filter rules and card transformer; inspect application logs. A new event needs to be older than one minute before scoring. |

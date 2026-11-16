@@ -5,6 +5,7 @@
 1. Users **view / like** items in *your* tables — this package does not copy those rows.
 2. Every **~10 minutes** a job updates a small “how hot is this item?” score.
 3. **Once a night** another job stores “people who liked *this* also liked *what?*” (neighbours). The same neighbours also answer `$post->similar()` for related-posts blocks, read per item and cached.
+   Brand-new items have no neighbours yet. With a `match` config they are found **by their own attributes** (same category, tags, price), live and bounded, with nothing stored: `similar()` falls back to it, and `AttributeMatchSource` adds them to personal feeds.
 4. When they open “for you”, the package builds a personal ranked list, remembers what they saw, and serves the next page from cache.
 5. **Guests** get a shared trending list. A new user may receive trending candidates in a personal list.
 6. When ranked and trending items run out, feeds with a `model` continue with the **newest** items the user may see (the catalog tail), so scrolling does not hit a wall.
@@ -65,6 +66,7 @@ sequenceDiagram
 flowchart LR
   A1[CoInteractionSource] --> M
   A2[TrendingSource] --> M
+  A4[AttributeMatchSource, optional] --> M
   A3[Your sources] --> M
   X[Exploration sources] --> M
   M[Merge candidates] --> F[recommendable scope / ItemFilter]
@@ -87,6 +89,7 @@ flowchart LR
 ## Two algorithms (short)
 
 - **Item–item CF** — nightly neighbours; at request time score from the user’s recent items.  
+- **Attribute match** (optional, `match`): items that share a column value or tags with the user's recent items, newest per value first; also the `similar()` fallback for items without neighbours.  
 - **Time-decayed `hot`** — stored in log space, updated with log-sum-exp so trending stays correct without replaying history.
 
 Full formulas: [How we score (maths)](maths.md).

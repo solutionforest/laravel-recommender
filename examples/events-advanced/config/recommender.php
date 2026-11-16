@@ -9,6 +9,7 @@ use SolutionForest\Recommender\Examples\EventsAdvanced\Sources\FreshEventSource;
 use SolutionForest\Recommender\Examples\EventsAdvanced\Boosters\PreferredHostBooster;
 use SolutionForest\Recommender\Examples\EventsAdvanced\Boosters\PreferredTypeBooster;
 use SolutionForest\Recommender\Examples\EventsAdvanced\Sources\SameDistrictSource;
+use SolutionForest\Recommender\Sources\AttributeMatchSource;
 use SolutionForest\Recommender\Sources\CoInteractionSource;
 use SolutionForest\Recommender\Sources\TrendingSource;
 use SolutionForest\Recommender\Examples\EventsAdvanced\Models\Event;
@@ -39,12 +40,21 @@ return [
             'seen_max' => 500,
             'source_limit' => 100,
 
+            // An event is new by nature: nobody has joined it yet, so it has no
+            // neighbours. Attribute match finds events like the ones a user just
+            // joined (same type, host, district), and similar() falls back to it.
+            'match' => [
+                'type_id' => 2.0,
+                'host_id' => 1.5,
+                'district_id' => 1.0,
+            ],
             'sources' => [
-                SameDistrictSource::class => 0.22,
-                FavoriteTypeSource::class => 0.18,
-                FavoriteHostSource::class => 0.18,
-                CoInteractionSource::class => 0.22,
-                TrendingSource::class => 0.20,
+                SameDistrictSource::class => 0.20,
+                FavoriteTypeSource::class => 0.16,
+                FavoriteHostSource::class => 0.16,
+                AttributeMatchSource::class => 0.12, // "more like what you just joined", new events included
+                CoInteractionSource::class => 0.18,
+                TrendingSource::class => 0.18,
             ],
             'boosters' => [
                 PreferredTypeBooster::class => 0.12,

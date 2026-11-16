@@ -105,6 +105,22 @@ Recommender::forgetUser('reviews', $userId);
 Recommender::forgetTrending('reviews');
 ```
 
+**E. New items should show up before anyone interacted (catalog, events, marketplaces)**
+
+```php
+'match' => [
+    'category_id' => 2.0,                               // same category
+    'price' => ['weight' => 1.0, 'type' => 'range'],    // close price (scoring only)
+],
+'sources' => [
+    CoInteractionSource::class => 0.50,
+    AttributeMatchSource::class => 0.15,                // "more like what you just liked", new items included
+    TrendingSource::class => 0.35,
+],
+```
+
+Start `AttributeMatchSource` around 0.10–0.20: it is the only source that can reach an item nobody has touched yet, but it does not know what people liked together. Raise it for catalogs where most items are short-lived (events, listings, jobs). Each match column needs a `(column, created_at)` index; `recommender:doctor` tells you which one is missing. Worked examples: `examples/products` (category + price) and `examples/events-advanced` (type + host + district).
+
 ## Knobs that are not weights
 
 | Knob | Effect |
@@ -113,7 +129,8 @@ Recommender::forgetTrending('reviews');
 | `jitter` | Randomness per list build (0 … 1). `1` = uniform random order of the candidates, like a classic `ORDER BY RAND()` feed; `0.3` keeps the best near the top but varies the order between builds |
 | `half_life_days` | How fast trending forgets old events |
 | `history_days` / `neighbours_min_co_count` | Neighbour graph density |
-| `recent_items` | How many recent items seed co-interaction |
+| `recent_items` | How many recent items seed co-interaction (and attribute match) |
+| `match_pool` / `match_values` | Attribute match: candidates read per call (200) and seed values looked up (12). Wider pool, linear cost |
 | `feed_size` / `trending_size` / `seen_max` | Unique scroll length |
 | `diversity` | Cap per group (author, category, …) per page; groups come from model attributes, or a `groups` class |
 
@@ -123,6 +140,8 @@ Recommender::forgetTrending('reviews');
 |---|---|
 | "Latest first" fights personalisation | Keep freshness as a small weight |
 | Empty `CoInteractionSource` | Neighbours never built, history too short, or `neighbours_min_co_count` too high |
+| New items never appear (and `similar()` is empty for them) | Nobody interacted yet, so no neighbours: add a `match` config and `AttributeMatchSource` (recipe E) |
+| A source or your scope is slow | `recommender:doctor {feed} --probe` times each part and names the slowest SQL; the dashboard flags anything over `slow_ms` while serving |
 | Slow cold builds | Each source: indexed query + `LIMIT`; for "newest per owner" prefer a bounded `UNION ALL` of per-owner `LIMIT`s ([operations](operations.md#your-sql-matters)) |
 | Big per-user history | Use recent ids (`recent_items`); don't load thousands of rows to keep 20 |
 | Empty first page for new users | Trending helps; filtering, missing cards or sparse data can still give an empty page |

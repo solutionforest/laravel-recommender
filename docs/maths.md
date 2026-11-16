@@ -38,6 +38,19 @@ where $\mathrm{rank}(i)$ is 0 for the most recent item, 1 for the next, and so o
 
 **Similar items** (`$post->similar(n)`) use the same neighbours directly: the top *n* items *b* by $\mathrm{sim}(a,b)$ for the item *a*, that pass the feed's `recommendable` scope as a guest. No viewer is involved, so the result is the same for everyone and cached per item.
 
+**Attribute match** (`match` config) scores a candidate *c* against a seed *s* by its own attributes, without any interactions:
+
+$$
+\mathrm{sim}_{\text{attr}}(s,c)=\frac{\sum_k w_k\,\mathrm{sim}_k(s,c)}{\sum_k w_k},\qquad
+\mathrm{sim}_k=\begin{cases}
+1 \text{ if equal, else } 0 & \text{column}\\
+\dfrac{|A\cap B|}{|A\cup B|} & \text{tag table (Jaccard)}\\
+1-\dfrac{|a-b|}{\max(|a|,|b|)} & \texttt{range}
+\end{cases}
+$$
+
+`similar()` uses it with the item itself as the only seed when the item has no neighbours. `AttributeMatchSource` uses the user's `recent_items` as seeds and adds the per-seed scores, each weighted by its recency $1/(1+0.1\,\mathrm{rank}(s))$ (rank 0 = most recent). Candidates are only the newest items for the seeds' strongest values (`match_values`, `match_pool`), so the cost does not grow with the catalog.
+
 ## 2. Trending `hot`
 
 $$

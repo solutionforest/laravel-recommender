@@ -31,6 +31,16 @@ Route::get('/articles/for-you', fn (Request $request) => Article::recommendedFor
 
 Returning the page gives Laravel's paginator JSON (`?page=` is read automatically). Run Laravel's scheduler; the package schedules score and neighbour updates by default.
 
+Check it: `php artisan recommender:doctor articles --probe`. It checks the setup and indexes and times each part on your data.
+
+Optional, each one line of config or code:
+
+| Want | Add |
+|---|---|
+| A "related articles" block | `$article->similar(6)`: articles liked together with this one, no config |
+| New articles in the feed and in `similar()` before anyone liked them | `'match' => ['author_id' => 1.0]` + `AttributeMatchSource` in `sources`, plus an `(author_id, created_at)` index ([attribute match](../../docs/reference.md#new-items-attribute-match); worked examples: [`products/`](../products/), [`events-advanced/`](../events-advanced/)) |
+| A shuffled "discover" order that still never repeats while scrolling | `'jitter' => 1.0` ([tuning](../../docs/tuning.md)) |
+
 | File | Role |
 |---|---|
 | [config/recommender.php](config/recommender.php) | The whole feed |
