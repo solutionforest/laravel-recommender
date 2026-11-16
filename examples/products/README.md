@@ -20,6 +20,26 @@ flowchart LR
 
 Similar items are built from `positive_events` (like + purchase), not every view. `'diversity' => ['seller_id' => 1]` keeps one product per seller per page.
 
+### New products (attribute match)
+
+A product nobody has viewed, liked or bought yet has no neighbours. The feed's `match` config finds it by its own attributes:
+
+```php
+'match' => [
+    'category_id' => 2.0,                             // same category
+    'price' => ['weight' => 1.0, 'type' => 'range'],  // similar price
+],
+'sources' => [
+    CoInteractionSource::class => 0.50,
+    AttributeMatchSource::class => 0.15,   // "more like what you just liked", new products included
+    TrendingSource::class => 0.35,
+],
+```
+
+- `AttributeMatchSource` shows a new jacket to someone who just liked a jacket at a similar price.
+- `$product->similar(4)` falls back to the same category and price for products without neighbours.
+- Each call scores at most `match_pool` (200) candidates in a fixed number of queries; nothing is stored. Details: [reference → attribute match](../../docs/reference.md#new-items-attribute-match).
+
 ## Try it
 
 ```bash

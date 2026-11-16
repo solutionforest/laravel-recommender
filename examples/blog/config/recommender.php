@@ -40,6 +40,12 @@ return [
                 // 5, 8,
             ],
 
+            // A new post has no likes yet, so no neighbours: $post->similar()
+            // falls back to posts sharing its tags.
+            'match' => [
+                'tags' => ['weight' => 1.0, 'table' => 'post_tag', 'item' => 'post_id', 'value' => 'tag_id'],
+            ],
+
             'sources' => [
                 CoInteractionSource::class => 0.55,
                 TrendingSource::class => 0.25,

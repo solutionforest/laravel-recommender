@@ -121,3 +121,17 @@ it('surfaces sponsored author posts via source and booster', function () {
 it('passes recommender:doctor with the config-only feed', function () {
     $this->artisan('recommender:doctor', ['feed' => 'posts'])->assertSuccessful();
 });
+
+it('finds related posts for a new post by its tags (attribute match)', function () {
+    DB::table('post_tag')->insert([
+        ['post_id' => 1, 'tag_id' => 10], ['post_id' => 1, 'tag_id' => 11],
+        ['post_id' => 5, 'tag_id' => 10],
+        ['post_id' => 13, 'tag_id' => 10], ['post_id' => 13, 'tag_id' => 11], // the new post
+    ]);
+    Post::create(['id' => 13, 'author_id' => 113, 'title' => 'Brand new', 'published' => true]);
+
+    // Post 1 has neighbours (liked with 2): those win.
+    expect(array_column(Post::find(1)->similar(3), 'id'))->toBe([2])
+        // Post 13 has none yet: posts sharing its tags, the closest first.
+        ->and(array_column(Post::find(13)->similar(3), 'id'))->toBe([1, 5]);
+});
