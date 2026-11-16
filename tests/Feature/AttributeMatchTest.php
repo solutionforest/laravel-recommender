@@ -13,7 +13,19 @@ use SolutionForest\Recommender\Tests\Fixtures\Gadget;
  * Attribute match: items like these from their own category / tags / price,
  * for items nobody has interacted with yet. Bounded pool, nothing stored.
  */
+function dropGadgetTables(): void
+{
+    foreach (['gadget_likes', 'gadget_tag', 'gadgets'] as $table) {
+        Schema::dropIfExists($table);
+    }
+}
+
+// Tables are created per test. On MySQL, DDL survives the test (unlike
+// in-memory SQLite), so drop them before and after each test.
+afterEach(fn () => dropGadgetTables());
+
 beforeEach(function () {
+    dropGadgetTables();
     Schema::create('gadgets', function (Blueprint $table) {
         $table->id();
         $table->unsignedBigInteger('category_id')->index();
