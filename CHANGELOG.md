@@ -7,6 +7,10 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.12.1] — 2026-11-16
+
+Re-release of 0.12.0. No code changes. The 0.12.0 tag was first published on the feature commit and later moved to the changelog commit; Packagist keeps the first, so use 0.12.1 (identical code, changelog entry included).
+
 ## [0.12.0] — 2026-11-16
 
 Attribute match for new items.
