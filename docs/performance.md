@@ -14,6 +14,7 @@ Measured results from the package's own performance tests. Each one is a Pest te
 | Events every minute, bursts? | Every event counted exactly once | Stress |
 | Fast scrolling? | 60 pages in 75–126 ms, 0 repeats, 1 build | Stress |
 | Related items (`similar()`)? | **0 queries** warm, 3 cold; same cost and latency at 2,000 and 10,000 users | Stress |
+| New items (attribute match)? | **5 queries**, p95 **7 ms** for 20 seeds on SQLite at 1M items; **13 ms** on MariaDB at 200k. Flat from 20k to 1M items, also with 20,000 items per category | Stress |
 | Laravel Octane? | No repeats across requests, impressions written, config isolated per request | Octane |
 
 ## Test machine
@@ -67,6 +68,23 @@ SQLite gives the same numbers at 100k and 500k events (scale 1 and 5): **serving
 | 10,000 | 1.89 ms | 0.11 ms | 3 / 0 |
 
 Re-measured for v0.10.3, where a cold build also runs the `recommendable` scope (one query). Nothing is stored per user, so the cost follows items, not users. Asserted: the same query count at both sizes (cold ≤ 3, warm 0) and no large latency jump.
+
+### Attribute match: 20,000 to 1,000,000 items
+
+`AttributeMatchStressTest`: the same 200 items on two catalog sizes (500 categories, 3 of 2,000 tags per item, a price), `match` on category + tags + price. "1 seed" is the `similar()` path, "20 seeds" a personal feed's `AttributeMatchSource`. Measured 2026-11-16 on the test machine above.
+
+| Items | Driver | 1 seed p50 / p95 | 20 seeds p50 / p95 | `similar(6)` cold p95 / warm p95 | Queries 1 seed / similar cold / warm |
+|---|---|---|---|---|---|
+| 20,000 | SQLite | 2.5 / 2.9 ms | 5.4 / 5.8 ms | 4.2 / 0.07 ms | 5 / 7 / 0 |
+| 200,000 | SQLite | 4.5 / 4.9 ms | 6.8 / 7.2 ms | 6.5 / 0.06 ms | 5 / 7 / 0 |
+| 100,000 | SQLite | 3.3 / 3.8 ms | 5.6 / 6.2 ms | 5.1 / 0.06 ms | 5 / 7 / 0 |
+| 1,000,000 | SQLite | 4.4 / 4.9 ms | 6.8 / 7.3 ms | 6.5 / 0.07 ms | 5 / 7 / 0 |
+| 20,000 | MariaDB | 4.7 / 6.7 ms | 8.3 / 10.5 ms | 8.9 / 0.08 ms | 5 / 7 / 0 |
+| 200,000 | MariaDB | 8.0 / 10.3 ms | 11.0 / 13.0 ms | 13.4 / 0.08 ms | 5 / 7 / 0 |
+
+**Dense catalog** (10 categories, 50 tags: about 20,000 items per category at 200k), MariaDB: 1 seed p95 10.0 ms, 20 seeds p95 12.5 ms at 200,000 items, the same as the sparse catalog. `EXPLAIN` shows each per-value lookup as an index range on `(category_id, created_at)` / `(tag_id, gadget_id)` with no filesort, stopping at its `LIMIT`.
+
+The first version of this feature sorted **every** item sharing a value before taking the newest 200. On the dense catalog that grew from 36 ms to **174 ms** (20 seeds, 20k → 200k items, SQLite). Reading a capped number of newest items per value fixed it, and reading attribute values once instead of in the scoring loop took 20 seeds from 21 ms to 7 ms. Asserted: the same query count at both sizes, and no large latency jump. The default run uses 10,000 and 100,000 items; `RECOMMENDER_STRESS_SCALE=2` gives the 20k / 200k rows above, `=10` the 1M row.
 
 ## 2. Interaction frequency: `StressTest`
 

@@ -243,9 +243,16 @@ Neighbours need people to interact first, so a brand-new item has none: it is mi
 
 - **Two uses.** `similar()` falls back to it for an item without neighbours (automatic once `match` is set). `AttributeMatchSource` in `sources` adds candidates like the user's recent items to personal feeds (nothing for guests).
 - **Similarity** = Σ weight · per-attribute similarity / Σ weight: 1 for an equal value, |A ∩ B| / |A ∪ B| for tags, 1 − |a − b| / max(|a|, |b|) for a `range`. Several seeds (a user's recent items) add up, recent ones counting more.
-- **Bounded, nothing stored.** No similarity table and no all-pairs job: each call loads the seeds' values, then **at most `match_pool` (200) candidates** that share a value (newest first, the `recommendable` scope applied), then their tags, and scores only those. That is a fixed number of queries (2 + 2 per tag table) whatever the catalog or user count; `similar()` caches the result per item like neighbours.
-- At least one equal-value column or tag table is required (a `range` only scores candidates, it cannot find them). Index each column, and each tag table on (value, item) and (item, value): `recommender:doctor` checks the columns, tables and indexes.
-- New items surface because the pool is newest first; raise `match_pool` for a wider pool at a linear cost.
+- **Bounded, nothing stored.** No similarity table and no all-pairs job. Each call:
+  1. loads the seeds' values;
+  2. takes their strongest values (at most `match_values`, 12), and for each value only its **newest** items, about `match_pool / values` per value (200 in total), through an index: one `UNION ALL` query;
+  3. loads those candidates by primary key with the `recommendable` scope;
+  4. loads their tags, and scores only those candidates.
+
+  That's a fixed number of queries (3 + 2 per tag table), and the rows read follow `match_pool`, **not how many items share a category or tag**. `similar()` caches the result per item like neighbours.
+- **Indexes:** each match column as `(column, created_at)`, and each tag table on `(value, item)` and `(item, value)`. Tag lookups take the newest items by key, which suits auto-increment ids. `recommender:doctor` checks the columns, tables and indexes.
+- At least one equal-value column or tag table is required (a `range` only scores candidates, it cannot find them).
+- New items surface because each value's newest items are read first. Raise `match_pool` or `match_values` for a wider pool, at a linear cost. Measured at 1,000,000 items: [performance → attribute match](performance.md#attribute-match-20000-to-1000000-items).
 
 ### How good is an item?
 
@@ -375,7 +382,7 @@ Per feed (defaults, overridable in `feeds.*`). `seen_max` / `seen_ttl` also read
 | `card_ttl` | 3600 | card cache |
 | `card_variants_max` | 20 | `cards_vary_by` variants kept per card; the oldest is dropped. Validate attribute values from requests (e.g. a `locale` whitelist) |
 | `similar_ttl` | 3600 | `similar()` id list per item (keyed by neighbour version, so a rebuild switches over at once) |
-| `match` / `match_pool` | null / 200 | [attribute match](#new-items-attribute-match): attributes and weights, max candidates per call |
+| `match` / `match_pool` / `match_values` | null / 200 / 12 | [attribute match](#new-items-attribute-match): attributes and weights, candidates read per call, seed values looked up |
 | `cards_vary_by` | `[]` | cache cards per attribute, e.g. `['locale']` (`locale` defaults to the app locale) |
 | `list_vary_by` | `[]` | keep the ranked list, trending list and background build per attribute value, e.g. `['tenant']` (see [advanced](advanced.md#passing-extra-context)) |
 | `seen_vary_by` | `tenant` if in `list_vary_by`, else none | split the seen-set per attribute; `device` / `locale` stay shared by default |
