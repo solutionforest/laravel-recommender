@@ -7,6 +7,10 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.12.0] — 2026-11-16
+
+Attribute match for new items.
+
 ### Added
 - **Attribute match for new items**: a feed's `match` config (columns with an equal value, tag tables by overlap, numeric `range` closeness, each with a weight) finds items by their own attributes. `similar()` falls back to it for items without neighbours, and the new `AttributeMatchSource` adds "more like what you just liked" candidates, new items included, to personal feeds. Bounded: the seeds' strongest values (`match_values`, 12), the newest items per value through an index, `match_pool` (200) candidates in total, in a fixed number of queries; nothing stored, no all-pairs job. Stress-tested up to 1,000,000 items (SQLite) and 200,000 (MariaDB), with flat latency
 - `recommender:doctor` / the dashboard check the `match` config, its columns, tag tables and their indexes
