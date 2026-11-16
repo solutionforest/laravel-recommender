@@ -180,6 +180,13 @@ return [
         'neighbours_max_shards' => 64,
         'similar_ttl' => 3600,           // similar(): cached ids per item (a rebuild switches over at once)
 
+        // Attribute match (new items without interactions): AttributeMatchSource
+        // and the similar() fallback. Column => weight (same value), tags via
+        // ['table' => 'post_tag', 'item' => 'post_id', 'value' => 'tag_id'],
+        // numbers via ['type' => 'range']. Bounded: at most match_pool candidates.
+        'match' => null,
+        'match_pool' => 200,
+
         // Batch sizes for bulk writes / deletes (never row by row)
         'write_chunk' => 500,
         'delete_chunk' => 5000,

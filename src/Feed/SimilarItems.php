@@ -2,8 +2,9 @@
 
 namespace SolutionForest\Recommender\Feed;
 
-use SolutionForest\Recommender\Insights\SlowWatch;
 use Carbon\CarbonImmutable;
+use SolutionForest\Recommender\Content\AttributeMatcher;
+use SolutionForest\Recommender\Insights\SlowWatch;
 use SolutionForest\Recommender\Eloquent\ModelCards;
 use SolutionForest\Recommender\Storage\NeighbourStore;
 use SolutionForest\Recommender\Support\Bindings;
@@ -30,6 +31,10 @@ use SolutionForest\Recommender\Support\Ids;
  * cache, so rendering them cannot be relied on to apply the scope: a card
  * cached for one `list_vary_by` value (e.g. another tenant) would otherwise
  * pass for every value.
+ *
+ * With a `match` config, an item without neighbours (new, or too few
+ * shared readers) falls back to items with the same attributes
+ * (AttributeMatcher): a bounded pool, cached the same way.
  */
 final class SimilarItems
 {
@@ -38,6 +43,7 @@ final class SimilarItems
         private readonly FeedCache $cache,
         private readonly Bindings $bindings,
         private readonly SlowWatch $watch,
+        private readonly AttributeMatcher $matcher,
     ) {
     }
 
@@ -51,26 +57,18 @@ final class SimilarItems
         $id = Ids::normalize($id);
 
         $version = $this->cache->neighbourVersion($feed, fn () => $this->neighbours->activeVersion($feed->name));
-        if ($version === null) {
+        $fallback = $this->matcher->configured($feed);
+        if ($version === null && ! $fallback) {
             return [];
         }
 
-        $variant = Variants::list($feed, $attributes);
-        $built = false;
-        $ids = $this->cache->similar($feed, $id, $version, $variant, function () use ($feed, $id, $version, $attributes, &$built) {
-            $built = true;
-
-            return $this->ids($feed, $id, $version, $attributes);
-        });
-
-        // A list just built empty may come from a cached version that a
-        // rebuild has since replaced (its rows are gone), e.g. when the
-        // builder runs with another cache store than this server. Recheck
-        // once: one query, only when building an empty list.
-        if ($built && $ids === [] && ($active = $this->neighbours->activeVersion($feed->name)) !== null && $active !== $version) {
-            $this->cache->forgetNeighbourVersion($feed);
-            $ids = $this->cache->similar($feed, $id, $active, $variant, fn () => $this->ids($feed, $id, $active, $attributes));
-        }
+        $ids = $this->cache->similar(
+            $feed,
+            $id,
+            $version ?? 0, // never built: only the attribute fallback can answer
+            Variants::list($feed, $attributes),
+            fn () => $this->ids($feed, $id, $version, $fallback, $attributes),
+        );
 
         return $this->render($feed, $ids, $limit, $attributes);
     }
@@ -84,13 +82,22 @@ final class SimilarItems
      * @param  array<string, mixed>  $attributes
      * @return list<int|string>
      */
-    private function ids(FeedDefinition $feed, int|string $id, int $version, array $attributes): array
+    private function ids(FeedDefinition $feed, int|string $id, ?int $version, bool $fallback, array $attributes): array
     {
-        $ids = [];
-        foreach ($this->neighbours->neighboursOf($feed->name, [$id], $version)[$id] ?? [] as [$neighbour]) {
-            if ((string) $neighbour !== (string) $id) {
-                $ids[] = $neighbour;
-            }
+        $ids = $version === null ? [] : $this->neighbourIds($feed, $id, $version);
+
+        // Empty may also mean a cached version that a rebuild has since
+        // replaced (its rows are gone), e.g. when the builder runs with
+        // another cache store than this server. Recheck once: one query,
+        // only when building an empty list.
+        if ($ids === [] && $version !== null && ($active = $this->neighbours->activeVersion($feed->name)) !== null && $active !== $version) {
+            $this->cache->forgetNeighbourVersion($feed);
+            $ids = $this->neighbourIds($feed, $id, $active);
+        }
+
+        $context = new Context($feed, null, [], $attributes, CarbonImmutable::now());
+        if ($ids === [] && $fallback) {
+            $ids = array_keys($this->watch->measure($feed, 'source', 'match', fn () => $this->matcher->scores($feed, [$id], $context, $feed->int('neighbours_max', 30))));
         }
         if ($ids === []) {
             return [];
@@ -100,11 +107,26 @@ final class SimilarItems
         // from the shared card cache, so the scope does not run for an item
         // whose card another variant (e.g. tenant) has already cached.
         if (($filter = $this->bindings->filter($feed)) !== null) {
-            $allowed = array_flip(array_map('strval', $this->watch->measure($feed, 'filter', SlowWatch::name($feed, $filter), fn () => $filter->allowed(new Context($feed, null, [], $attributes, CarbonImmutable::now()), $ids))));
+            $allowed = array_flip(array_map('strval', $this->watch->measure($feed, 'filter', SlowWatch::name($feed, $filter), fn () => $filter->allowed($context, $ids))));
             $ids = array_values(array_filter($ids, fn ($candidate) => isset($allowed[(string) $candidate])));
         }
 
         return Ids::normalizeAll(array_keys($this->cards($feed, $ids, $attributes)));
+    }
+
+    /**
+     * @return list<int|string>
+     */
+    private function neighbourIds(FeedDefinition $feed, int|string $id, int $version): array
+    {
+        $ids = [];
+        foreach ($this->neighbours->neighboursOf($feed->name, [$id], $version)[$id] ?? [] as [$neighbour]) {
+            if ((string) $neighbour !== (string) $id) {
+                $ids[] = $neighbour;
+            }
+        }
+
+        return $ids;
     }
 
     /**
