@@ -15,7 +15,7 @@ flowchart LR
 
 | Path | Role |
 |---|---|
-| `config/recommender.php` | The feed: `model`, `interactions`, weights, `'diversity' => ['author_id' => 1]` |
+| `config/recommender.php` | The feed: `model`, `interactions`, weights, `'diversity' => ['author_id' => 1]`, `match` on tags (related posts for new posts) |
 | `src/Models/Post.php` | Visibility (published, not mine) + card |
 | `src/Sources/` | Fresh posts (guests) + sponsored posts |
 | `src/Boosters/` | Freshness (not wired in the config) + sponsored |
@@ -32,7 +32,7 @@ vendor/bin/pest tests/Feature/BlogExampleTest.php
 1. Merge the feed from `config/recommender.php` into yours (`model` → your model class).
 2. Copy the model's `scopeRecommendable()` and `toRecommendationCard()` into your model, and add `use Recommendable;`.
 3. Route: `Route::get('/posts/recommended', fn (Request $r) => Post::recommendedFor($r->user()));`
-4. Related posts on a post page: `$post->similar(4)` (cards of the posts liked together with this one; empty until `build-neighbours` found any)
+4. Related posts on a post page: `$post->similar(4)` (cards of the posts liked together with this one). A new post has no likes yet: with the `match` config on `post_tag`, it gets the posts sharing its tags instead ([attribute match](../../docs/reference.md#new-items-attribute-match))
 5. Check it: `php artisan recommender:doctor posts`. The scoring jobs are scheduled by the package — keep Laravel's scheduler running.
 
 ## Ideas to try

@@ -28,6 +28,14 @@ return new class extends Migration
             $table->timestamp('created_at')->nullable()->index();
         });
 
+        // Tags (attribute match: posts sharing tags, for posts without neighbours yet).
+        Schema::create('post_tag', function (Blueprint $table) {
+            $table->unsignedBigInteger('post_id');
+            $table->unsignedBigInteger('tag_id');
+            $table->index(['tag_id', 'post_id']);
+            $table->index(['post_id', 'tag_id']);
+        });
+
         Schema::create('post_views', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id')->index();
@@ -39,6 +47,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('post_views');
+        Schema::dropIfExists('post_tag');
         Schema::dropIfExists('post_likes');
         Schema::dropIfExists('posts');
     }

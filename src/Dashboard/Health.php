@@ -137,6 +137,7 @@ final class Health
             ...$this->bindingChecks($feed),
             ...$this->pipelineChecks($feed, $this->metrics($feed, $now)),
             ...$this->speedChecks($feed),
+            ...$this->matchChecks($feed),
         ];
         if (! $this->recommender->enabled($feed->name)) {
             $checks[] = self::warn(
@@ -279,6 +280,65 @@ final class Health
             if (Value::float($weights[$t['event']] ?? 0) <= 0) {
                 $checks[] = self::warn("Event '{$t['event']}' has no weight", "Add it to 'events' (e.g. '{$t['event']}' => 2.0) or its rows are ignored by update-scores.");
             }
+        }
+
+        return $checks;
+    }
+
+    /**
+     * The `match` config (attribute fallback): valid, its columns and tag
+     * tables exist, and they are indexed (every call filters on them).
+     *
+     * @return list<array{level: string, label: string, hint: ?string, stage: string}>
+     */
+    private function matchChecks(FeedDefinition $feed): array
+    {
+        if ($feed->get('match') === null || $feed->get('match') === []) {
+            return [];
+        }
+
+        try {
+            [$model, $columns, $sets] = \SolutionForest\Recommender\Content\AttributeMatcher::definition($feed);
+            $instance = new $model;
+            $schema = $instance->getConnection()->getSchemaBuilder();
+            $table = $instance->getTable();
+            $leading = fn (string $t) => array_map(
+                fn (array $index) => strtolower(Value::string((is_array($index['columns'] ?? null) ? $index['columns'] : [])[0] ?? '')),
+                $schema->getIndexes($t),
+            );
+        } catch (Throwable $e) {
+            return [self::fail('match: '.$e->getMessage())];
+        }
+
+        $checks = [];
+        foreach ($columns as $name => $column) {
+            if (! $schema->hasColumn($table, $name)) {
+                $checks[] = self::fail("match: {$table} has no column {$name}");
+            } elseif ($column['type'] === 'match' && ! in_array(strtolower($name), $leading($table), true)) {
+                $checks[] = self::warn("match: {$table} has no index on {$name}", "Every attribute-match call reads the newest items per value. Add \$table->index(['{$name}', 'created_at']).");
+            } else {
+                $checks[] = self::ok("match: {$table}.{$name} ({$column['type']})");
+            }
+        }
+        foreach ($sets as $name => $set) {
+            if (! $schema->hasTable($set['table'])) {
+                $checks[] = self::fail("match: tag table [{$set['table']}] does not exist");
+
+                continue;
+            }
+            $missing = array_values(array_filter([$set['item'], $set['value']], fn (string $c) => ! $schema->hasColumn($set['table'], $c)));
+            if ($missing !== []) {
+                $checks[] = self::fail("match: {$set['table']} is missing column(s): ".implode(', ', $missing));
+
+                continue;
+            }
+            $indexes = $leading($set['table']);
+            foreach ([$set['value'] => [$set['value'], $set['item']], $set['item'] => [$set['item'], $set['value']]] as $first => $indexColumns) {
+                if (! in_array(strtolower($first), $indexes, true)) {
+                    $checks[] = self::warn("match: {$set['table']} has no index starting with {$first}", "Add \$table->index(['".implode("', '", $indexColumns)."']).");
+                }
+            }
+            $checks[] = self::ok("match: {$set['table']} ({$name})");
         }
 
         return $checks;

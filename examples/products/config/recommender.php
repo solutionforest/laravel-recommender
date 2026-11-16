@@ -1,6 +1,8 @@
 <?php
 
 use SolutionForest\Recommender\Examples\Products\Sources\FreshProductSource;
+use SolutionForest\Recommender\Sources\AttributeMatchSource;
+use SolutionForest\Recommender\Sources\CoInteractionSource;
 use SolutionForest\Recommender\Sources\TrendingSource;
 use SolutionForest\Recommender\Examples\Products\Models\Product;
 
@@ -27,6 +29,19 @@ return [
             'feed_size' => 200,
             'trending_size' => 200,
             'seen_max' => 500,
+
+            // New products have no likes or purchases yet: find them by their own
+            // attributes. similar() falls back to this for products without
+            // neighbours; AttributeMatchSource adds them to personal feeds.
+            'match' => [
+                'category_id' => 2.0,                             // same category
+                'price' => ['weight' => 1.0, 'type' => 'range'],  // similar price
+            ],
+            'sources' => [                                       // the catalog preset's, plus attribute match
+                CoInteractionSource::class => 0.50,
+                AttributeMatchSource::class => 0.15,
+                TrendingSource::class => 0.35,
+            ],
 
             'diversity' => ['seller_id' => 1],
             'trending_sources' => [

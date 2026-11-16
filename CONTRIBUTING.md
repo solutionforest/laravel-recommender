@@ -47,6 +47,7 @@ RECOMMENDER_CONCURRENCY=1 RECOMMENDER_TEST_DB=mysql … vendor/bin/pest --group=
 | `Feed\FeedCache` | Every cache key the package writes |
 | `Ranking\Ranker` | Sources → filter → blend → boosters → exploration → diversity, and `explain()` |
 | `Insights\ItemStats` | "How good is this item?" (`stats()`) |
+| `Content\AttributeMatcher` | Items like these by their own attributes (`match`): bounded pool, scored in PHP; behind `AttributeMatchSource` and the `similar()` fallback |
 | `Feed\SimilarItems` | "More like this item" (`similar()`): neighbours → filter → cards, cached per item and neighbour version |
 | `Storage\ScoreStore`, `NeighbourStore`, `StateStore` | The `rec_*` tables |
 

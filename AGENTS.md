@@ -46,7 +46,8 @@ Do **not** invent an external ML service for this package’s job. Prefer packag
 - `list_vary_by` (e.g. `['tenant']`) → required when an attribute passed via `attributes:` changes which items appear: lists, trending and `warm()` are kept per value (the `recommendable` scope must still enforce tenancy)
 - Signed-in feeds are sequential (a refresh advances the feed; JSON is the simple paginator, no `total`) → follow `next_cursor`
 - `$model->recordInteraction($user, 'like', once: true)` → writes the row with the feed's table/columns (plain insert; `once` only for unique (user, item) like tables, never views; ambiguous event → pass `table:`)
-- `similar()` reads the nightly neighbours (no new table); `similar_ttl` caches the id list per item and neighbour version; capped at `neighbours_max`; empty until the item has neighbours
+- `similar()` reads the nightly neighbours (no new table); `similar_ttl` caches the id list per item and neighbour version; capped at `neighbours_max`; empty until the item has neighbours unless `match` is set
+- `match` (category column, tag table, numeric `range`, each weighted) → attribute fallback for `similar()` and `AttributeMatchSource` for new items; bounded pool `match_pool`, nothing stored, checked by `doctor`
 - `tail` (default on) → newest items after ranked + trending · `impressions` (opt-in) → best-effort first serve within the bounded seen window (guests per page), normally written on HTTP termination → quality uses impressions as denominator
 - After changes: `Recommender::forgetUser` / `forgetTrending`
 

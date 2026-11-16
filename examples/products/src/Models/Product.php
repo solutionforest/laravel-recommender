@@ -10,6 +10,8 @@ use SolutionForest\Recommender\Support\Context;
 /**
  * @property int $id
  * @property int $seller_id
+ * @property int|null $category_id
+ * @property float|null $price
  * @property string $title
  * @property bool $published
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -22,6 +24,7 @@ class Product extends Model
 
     protected $casts = [
             'published' => 'boolean',
+            'price' => 'float',
     ];
 
     /**
@@ -42,6 +45,8 @@ class Product extends Model
             'id' => $this->id,
             'title' => $this->title,
             'seller_id' => $this->seller_id,
+            'category_id' => $this->category_id,
+            'price' => $this->price,
             'published_at' => $this->created_at?->toIso8601String(),
         ];
     }

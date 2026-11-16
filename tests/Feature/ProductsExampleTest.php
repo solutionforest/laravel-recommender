@@ -93,3 +93,19 @@ it('serves guests trending products', function () {
 it('passes recommender:doctor with the config-only feed', function () {
     $this->artisan('recommender:doctor', ['feed' => 'products'])->assertSuccessful();
 });
+
+it('shows a brand-new product from the category a user just liked (attribute match)', function () {
+    // Product 8 (liked by user 1) is a 120.00 jacket; product 20 is new: no views, likes or purchases.
+    Product::find(8)->update(['category_id' => 7, 'price' => 120]);
+    Product::find(9)->update(['category_id' => 3, 'price' => 15]);
+    Product::create(['id' => 20, 'seller_id' => 120, 'title' => 'New jacket', 'category_id' => 7, 'price' => 110, 'created_at' => now(), 'updated_at' => now()]);
+    Recommender::forgetUser('products', 1);
+
+    $ids = collect($this->actingAs(new GenericUser(['id' => 1]))->getJson('/products/recommended')->json('data'))->pluck('id');
+
+    expect($ids)->toContain(20)     // found by category + price, before anyone interacted with it
+        ->and($ids->first())->toBe(9); // co-purchases still lead
+
+    // The new product has no neighbours: similar() falls back to the same category.
+    expect(array_column(Product::find(20)->similar(3), 'id'))->toBe([8]);
+});
