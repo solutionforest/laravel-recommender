@@ -14,12 +14,13 @@ return new class extends Migration
         Schema::create('products', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('seller_id')->index();
-            $table->unsignedBigInteger('category_id')->nullable()->index(); // attribute match: same category
+            $table->unsignedBigInteger('category_id')->nullable(); // attribute match: same category
             $table->decimal('price', 10, 2)->nullable();                     // attribute match: similar price
             $table->string('title');
             $table->boolean('published')->default(true);
             $table->timestamps();
             $table->index('created_at');
+            $table->index(['category_id', 'created_at']); // attribute match: newest per category
         });
 
         foreach (['product_views', 'product_likes', 'product_purchases'] as $table) {

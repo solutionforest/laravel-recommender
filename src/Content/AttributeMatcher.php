@@ -21,19 +21,24 @@ use SolutionForest\Recommender\Support\Value;
  *         'tags' => ['weight' => 1.0, 'table' => 'post_tag', 'item' => 'post_id', 'value' => 'tag_id'], // overlap (Jaccard)
  *         'price' => ['weight' => 0.5, 'type' => 'range'],        // closeness (a numeric column)
  *     ],
- *     'match_pool' => 200,
+ *     'match_pool' => 200,    // candidates read per call, split across values
+ *     'match_values' => 12,   // the seeds' strongest values looked up
  *
  * Nothing is stored and nothing compares all pairs. Per call: the seeds'
- * values (one query, plus one per tag table), then at most `match_pool`
- * candidates that share at least one value (one query, newest first, the
- * `recommendable` scope applied), then their tags (one query per tag
- * table). Only those candidates are scored, in PHP:
+ * values (one query, plus one per tag table); for their strongest values
+ * (at most `match_values`) the newest items of each, about
+ * `match_pool / values` per value, read through an index (one UNION ALL
+ * query); those candidates by primary key with the `recommendable` scope
+ * (one query); their tags (one query per tag table). The work follows
+ * match_pool, never how many items share a category or tag. Only those
+ * candidates are scored, in PHP:
  *
  *     similarity(a, b) = Σ weight · sim_attribute(a, b) / Σ weight
  *
  * with sim = 1 for an equal value, |A ∩ B| / |A ∪ B| for tags, and
- * 1 − |a − b| / max(|a|, |b|) for a range. Index each match column and
- * each tag table on (value, item) and (item, value).
+ * 1 − |a − b| / max(|a|, |b|) for a range. Index each match column as
+ * (column, created_at) and each tag table on (value, item) and (item,
+ * value); tag lookups take the newest items by key.
  */
 final class AttributeMatcher
 {
@@ -75,57 +80,73 @@ final class AttributeMatcher
             $seedSets[$name] = self::setValues($instance, $set, $seeds);
         }
 
-        // 2. A bounded pool of candidates sharing at least one value.
-        /** @var list<\Closure(Builder<Model>): void> $shared */
-        $shared = [];
-        foreach ($columns as $name => $column) {
-            if ($column['type'] !== 'match') {
-                continue;
-            }
-            $values = [];
-            foreach ($seedRows as $row) {
-                $value = $row->getAttribute($name);
+        // 2. A bounded pool: the seeds' strongest values (at most
+        //    `match_values`), and for each value only its newest items,
+        //    read through an index — so the cost follows match_pool, not
+        //    how many items share a category or tag. One UNION ALL query.
+        $values = [];   // "attribute\0value" => [attribute, value, weight]
+        foreach ($seeds as $position => $seedId) {
+            $recency = 1 / (1 + 0.1 * $position);
+            foreach ($columns as $name => $column) {
+                $value = $column['type'] === 'match' ? ($seedRows[(string) $seedId] ?? null)?->getAttribute($name) : null;
                 if (is_int($value) || (is_string($value) && $value !== '')) {
-                    $values[(string) $value] = $value;
+                    $slot = $name."\0".$value;
+                    $values[$slot] = [$name, $value, ($values[$slot][2] ?? 0.0) + $column['weight'] * $recency];
                 }
             }
-            if ($values !== []) {
-                $column = $instance->qualifyColumn($name);
-                $shared[] = function (Builder $q) use ($column, $values): void {
-                    $q->orWhereIn($column, array_values($values));
-                };
-            }
-        }
-        foreach ($sets as $name => $set) {
-            $values = [];
-            foreach ($seedSets[$name] as $itemValues) {
-                foreach ($itemValues as $value) {
-                    $values[(string) $value] = $value;
+            foreach ($sets as $name => $set) {
+                foreach (array_keys($seedSets[$name][(string) $seedId] ?? []) as $value) {
+                    $slot = $name."\0".$value;
+                    $values[$slot] = [$name, $value, ($values[$slot][2] ?? 0.0) + $set['weight'] * $recency];
                 }
             }
-            if ($values !== []) {
-                $shared[] = function (Builder $q) use ($qualifiedKey, $set, $values): void {
-                    $q->orWhereIn($qualifiedKey, function (QueryBuilder $sub) use ($set, $values): void {
-                        $sub->from($set['table'])->whereIn($set['value'], array_values($values))->select($set['item']);
-                    });
-                };
+        }
+        if ($values === []) {
+            return [];
+        }
+        uasort($values, fn (array $a, array $b) => $b[2] <=> $a[2]);
+        $values = array_slice($values, 0, max(1, $feed->int('match_values', 12)));
+        $pool = max(1, $feed->int('match_pool', 200));
+        $perValue = max(10, (int) ceil($pool / count($values)));
+
+        $created = $instance->usesTimestamps() && $instance->getCreatedAtColumn() ? $instance->getCreatedAtColumn() : null;
+        $union = null;
+        foreach ($values as [$name, $value]) {
+            if (isset($columns[$name])) {
+                // Index (column, created_at): a short range scan, newest first.
+                $branch = $instance->newQuery()->toBase()
+                    ->select([$key.' as candidate'])
+                    ->where($name, $value)
+                    ->when($created !== null, fn (QueryBuilder $q) => $q->orderByDesc((string) $created))
+                    ->orderByDesc($key)
+                    ->limit($perValue);
+            } else {
+                // Index (value, item): newest by key, no join or sort over the whole tag.
+                $set = $sets[$name];
+                $branch = $instance->getConnection()->table($set['table'])
+                    ->select([$set['item'].' as candidate'])
+                    ->where($set['value'], $value)
+                    ->orderByDesc($set['item'])
+                    ->limit($perValue);
+            }
+            // Wrapped so every database accepts ORDER BY / LIMIT per branch.
+            $wrapped = $instance->getConnection()->query()->fromSub($branch, 'b'.($union === null ? 0 : count($union->unions ?? []) + 1))->select('candidate');
+            $union = $union === null ? $wrapped : $union->unionAll($wrapped);
+        }
+
+        $ids = [];
+        foreach ($union?->pluck('candidate') ?? [] as $candidate) {
+            if (($id = Value::id($candidate)) !== null && ! in_array((string) $id, array_map('strval', $seeds), true)) {
+                $ids[(string) $id] = Ids::normalize($id);
             }
         }
-        if ($shared === []) {
+        if ($ids === []) {
             return [];
         }
 
-        $order = $instance->usesTimestamps() && $instance->getCreatedAtColumn() ? $instance->qualifyColumn($instance->getCreatedAtColumn()) : $qualifiedKey;
+        // 3. Those candidates that may be shown (the recommendable scope), by primary key.
         $pool = RecommendableQuery::for($instance, $context)
-            ->whereNotIn($qualifiedKey, $seeds)
-            ->where(function (Builder $q) use ($shared): void {
-                foreach ($shared as $apply) {
-                    $apply($q);
-                }
-            })
-            ->orderByDesc($order)
-            ->orderByDesc($qualifiedKey)
-            ->limit(max(1, $feed->int('match_pool', 200)))
+            ->whereKey(array_values($ids))
             ->get(array_map(fn (string $c) => $instance->qualifyColumn($c), [$key, ...array_keys($columns)]));
 
         $candidates = [];
@@ -142,23 +163,37 @@ final class AttributeMatcher
             $poolSets[$name] = self::setValues($instance, $set, array_column($candidates, 0));
         }
 
-        // 3. Score the pool against every seed (recent seeds weigh more).
+        // 4. Score the pool against every seed (recent seeds weigh more).
+        //    Values are read from the models once: getAttribute() in the
+        //    inner loop would dominate the cost.
+        $read = function (?Model $row) use ($columns): array {
+            $values = [];
+            foreach ($columns as $name => $column) {
+                $values[$name] = $row?->getAttribute($name);
+            }
+
+            return $values;
+        };
+        $seedValues = [];
+        foreach ($seeds as $position => $seedId) {
+            $seedValues[$position] = [(string) $seedId, $read($seedRows[(string) $seedId] ?? null), 1 / (1 + 0.1 * $position)];
+        }
         $totalWeight = array_sum(array_column($columns, 'weight')) + array_sum(array_column($sets, 'weight'));
         $scores = [];
         foreach ($candidates as [$id, $candidate]) {
+            $values = $read($candidate);
             $score = 0.0;
-            foreach ($seeds as $position => $seedId) {
-                $seed = $seedRows[(string) $seedId] ?? null;
+            foreach ($seedValues as [$seedKey, $seed, $recency]) {
                 $similarity = 0.0;
                 foreach ($columns as $name => $column) {
                     $similarity += $column['weight'] * ($column['type'] === 'match'
-                        ? self::equal($seed?->getAttribute($name), $candidate->getAttribute($name))
-                        : self::closeness($seed?->getAttribute($name), $candidate->getAttribute($name)));
+                        ? self::equal($seed[$name], $values[$name])
+                        : self::closeness($seed[$name], $values[$name]));
                 }
                 foreach ($sets as $name => $set) {
-                    $similarity += $set['weight'] * self::jaccard($seedSets[$name][(string) $seedId] ?? [], $poolSets[$name][(string) $id] ?? []);
+                    $similarity += $set['weight'] * self::jaccard($seedSets[$name][$seedKey] ?? [], $poolSets[$name][(string) $id] ?? []);
                 }
-                $score += ($similarity / $totalWeight) / (1 + 0.1 * $position);
+                $score += ($similarity / $totalWeight) * $recency;
             }
             if ($score > 0) {
                 $scores[$id] = $score;
@@ -215,7 +250,7 @@ final class AttributeMatcher
     /**
      * @param  array{weight: float, table: string, item: string, value: string}  $set
      * @param  list<int|string>  $ids
-     * @return array<string, list<int|string>> item id => values
+     * @return array<string, array<string, true>> item id => set of values (as keys, for fast overlap)
      */
     private static function setValues(Model $model, array $set, array $ids): array
     {
@@ -225,7 +260,7 @@ final class AttributeMatcher
             $item = Value::id($row->{$set['item']} ?? null);
             $value = Value::id($row->{$set['value']} ?? null);
             if ($item !== null && $value !== null) {
-                $out[(string) $item][] = $value;
+                $out[(string) $item][(string) $value] = true;
             }
         }
 
@@ -252,15 +287,18 @@ final class AttributeMatcher
     }
 
     /**
-     * @param  list<int|string>  $a
-     * @param  list<int|string>  $b
+     * |A ∩ B| / |A ∪ B| on value sets keyed by value.
+     *
+     * @param  array<string, true>  $a
+     * @param  array<string, true>  $b
      */
     private static function jaccard(array $a, array $b): float
     {
-        $a = array_unique(array_map('strval', $a));
-        $b = array_unique(array_map('strval', $b));
-        $union = count(array_unique([...$a, ...$b]));
+        if ($a === [] || $b === []) {
+            return 0.0;
+        }
+        $shared = count(array_intersect_key($a, $b));
 
-        return $union === 0 ? 0.0 : count(array_intersect($a, $b)) / $union;
+        return $shared / (count($a) + count($b) - $shared);
     }
 }

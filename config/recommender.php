@@ -183,9 +183,11 @@ return [
         // Attribute match (new items without interactions): AttributeMatchSource
         // and the similar() fallback. Column => weight (same value), tags via
         // ['table' => 'post_tag', 'item' => 'post_id', 'value' => 'tag_id'],
-        // numbers via ['type' => 'range']. Bounded: at most match_pool candidates.
+        // numbers via ['type' => 'range']. Bounded: the seeds' strongest values
+        // (match_values), newest items per value via an index, match_pool in total.
         'match' => null,
         'match_pool' => 200,
+        'match_values' => 12,
 
         // Batch sizes for bulk writes / deletes (never row by row)
         'write_chunk' => 500,

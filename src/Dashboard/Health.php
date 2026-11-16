@@ -315,7 +315,7 @@ final class Health
             if (! $schema->hasColumn($table, $name)) {
                 $checks[] = self::fail("match: {$table} has no column {$name}");
             } elseif ($column['type'] === 'match' && ! in_array(strtolower($name), $leading($table), true)) {
-                $checks[] = self::warn("match: {$table} has no index on {$name}", "Every attribute-match call looks candidates up by it. Add \$table->index('{$name}').");
+                $checks[] = self::warn("match: {$table} has no index on {$name}", "Every attribute-match call reads the newest items per value. Add \$table->index(['{$name}', 'created_at']).");
             } else {
                 $checks[] = self::ok("match: {$table}.{$name} ({$column['type']})");
             }

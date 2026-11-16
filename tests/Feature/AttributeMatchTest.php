@@ -28,10 +28,11 @@ beforeEach(function () {
     dropGadgetTables();
     Schema::create('gadgets', function (Blueprint $table) {
         $table->id();
-        $table->unsignedBigInteger('category_id')->index();
+        $table->unsignedBigInteger('category_id');
         $table->decimal('price', 8, 2);
         $table->boolean('published')->default(true);
         $table->timestamps();
+        $table->index(['category_id', 'created_at']);
     });
     Schema::create('gadget_tag', function (Blueprint $table) {
         $table->unsignedBigInteger('gadget_id');
@@ -93,12 +94,13 @@ it('ranks candidates by weighted category, tag and price similarity', function (
         ->and($scores)->not->toHaveKey(1);  // never the seed itself
 });
 
-it('keeps the candidate pool bounded and newest first', function () {
-    config(['recommender.feeds.gadgets.match_pool' => 1]);
+it('reads only the seeds\' strongest values, newest items first per value', function () {
+    // One value only: the category (weight 2) beats each tag (weight 1), so
+    // item 4 (other category, same tags) is never read.
+    config(['recommender.feeds.gadgets.match_values' => 1]);
     $this->app->forgetInstance(\SolutionForest\Recommender\Recommender::class);
 
-    // Newest sharing a value is 4 (created last among 2..4).
-    expect(array_keys(app(AttributeMatcher::class)->scores(Recommender::feed('gadgets'), [1], gadgetContext(), 10)))->toBe([4]);
+    expect(array_keys(app(AttributeMatcher::class)->scores(Recommender::feed('gadgets'), [1], gadgetContext(), 10)))->toBe([2, 3]);
 });
 
 it('feeds new items to signed-in users from what they interacted with', function () {
@@ -142,8 +144,8 @@ it('runs a fixed number of queries, whatever the catalog size', function () {
     }
     $large = $count(fn () => $matcher->scores($feed, [1], gadgetContext(), 10));
 
-    // seeds + seed tags + pool + pool tags
-    expect($small)->toBe(4)->and($large)->toBe($small);
+    // seeds + seed tags + one UNION ALL of per-value lookups + candidates by key + their tags
+    expect($small)->toBe(5)->and($large)->toBe($small);
 
     // similar(): cold = version + match queries + filter + cards; warm = none.
     $gadget = Gadget::find(2);
