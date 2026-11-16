@@ -215,10 +215,37 @@ Recommender::similar('posts', $post, 6, ['locale' => 'en']);   // cards_vary_by 
 - **Nothing new is stored.** It reads the item's one `rec_item_neighbours` row. The list of showable ids is cached per item for `similar_ttl` (3600 s) and keyed by the neighbour version, so a rebuild switches over at once.
 - **Cost:** warm, cache reads only; cold, one neighbours row, one filter query (the `recommendable` scope or your `filter`) and one card query for cards not cached yet. The first call after a rebuild also reads the active neighbour version once per feed.
 - **Hidden items** are left out when the list is built. An item hidden later drops out when its card is forgotten (`Recommendable` does that on save); until the list expires it costs one card query per call.
-- **Empty** until the item has neighbours (new items, or too few co-interactions: `neighbours_min_co_count`). Hide the block, or fall back to your own query (e.g. newest posts in the same category). `$limit` is capped at `neighbours_max` (30).
+- **Empty** until the item has neighbours (new items, or too few co-interactions: `neighbours_min_co_count`), unless the feed has a [`match` config](#new-items-attribute-match): then items with the same category / tags / price fill in. Otherwise hide the block, or fall back to your own query. `$limit` is capped at `neighbours_max` (30).
 - **After a rebuild** the next call uses the new neighbours. A server whose cache the builder does not share notices on its next cold call for an item without a cached list.
 - **Pass a loaded model or a validated id.** Every id gets its own cache entry. An empty result (an unknown id, or an item without neighbours yet) is kept for 60 s only, but passing a raw request parameter (`Recommender::similar('posts', $request->id)`) still lets callers write cache entries for made-up ids.
 - **The on/off switch does not turn it off.** With `RECOMMENDER_ENABLED=false` (or `'enabled' => false` on the feed) `similar()` keeps serving the last built neighbours, which get older while the scheduled jobs are paused. Hide the block yourself if that matters.
+
+### New items: attribute match
+
+Neighbours need people to interact first, so a brand-new item has none: it is missing from `similar()` and from personal feeds built on co-interaction. With a `match` config the feed also finds items **by their own attributes**:
+
+```php
+'posts' => [
+    'model' => Post::class,
+    'interactions' => ['post_likes' => 'like', 'post_views' => 'view'],
+    'match' => [
+        'category_id' => 2.0,                                                                  // same value
+        'tags' => ['weight' => 1.0, 'table' => 'post_tag', 'item' => 'post_id', 'value' => 'tag_id'], // tag overlap
+        'price' => ['weight' => 0.5, 'type' => 'range'],                                       // closeness (scoring only)
+    ],
+    'sources' => [
+        CoInteractionSource::class => 0.5,
+        AttributeMatchSource::class => 0.2,   // "more like what you just liked", new items included
+        TrendingSource::class => 0.3,
+    ],
+],
+```
+
+- **Two uses.** `similar()` falls back to it for an item without neighbours (automatic once `match` is set). `AttributeMatchSource` in `sources` adds candidates like the user's recent items to personal feeds (nothing for guests).
+- **Similarity** = Σ weight · per-attribute similarity / Σ weight: 1 for an equal value, |A ∩ B| / |A ∪ B| for tags, 1 − |a − b| / max(|a|, |b|) for a `range`. Several seeds (a user's recent items) add up, recent ones counting more.
+- **Bounded, nothing stored.** No similarity table and no all-pairs job: each call loads the seeds' values, then **at most `match_pool` (200) candidates** that share a value (newest first, the `recommendable` scope applied), then their tags, and scores only those. That is a fixed number of queries (2 + 2 per tag table) whatever the catalog or user count; `similar()` caches the result per item like neighbours.
+- At least one equal-value column or tag table is required (a `range` only scores candidates, it cannot find them). Index each column, and each tag table on (value, item) and (item, value): `recommender:doctor` checks the columns, tables and indexes.
+- New items surface because the pool is newest first; raise `match_pool` for a wider pool at a linear cost.
 
 ### How good is an item?
 
@@ -348,6 +375,7 @@ Per feed (defaults, overridable in `feeds.*`). `seen_max` / `seen_ttl` also read
 | `card_ttl` | 3600 | card cache |
 | `card_variants_max` | 20 | `cards_vary_by` variants kept per card; the oldest is dropped. Validate attribute values from requests (e.g. a `locale` whitelist) |
 | `similar_ttl` | 3600 | `similar()` id list per item (keyed by neighbour version, so a rebuild switches over at once) |
+| `match` / `match_pool` | null / 200 | [attribute match](#new-items-attribute-match): attributes and weights, max candidates per call |
 | `cards_vary_by` | `[]` | cache cards per attribute, e.g. `['locale']` (`locale` defaults to the app locale) |
 | `list_vary_by` | `[]` | keep the ranked list, trending list and background build per attribute value, e.g. `['tenant']` (see [advanced](advanced.md#passing-extra-context)) |
 | `seen_vary_by` | `tenant` if in `list_vary_by`, else none | split the seen-set per attribute; `device` / `locale` stay shared by default |
