@@ -1,5 +1,9 @@
 # Upgrade guide
 
+## From 0.12.3 to 0.12.4
+
+Nothing to change (CI and docs only). PHP 8.6 is tested with Laravel 13.
+
 ## From 0.12.2 to 0.12.3
 
 Nothing to change. Feeds that `recommender:bootstrap` / `make-feed` already wrote keep working; new ones use the short `['view' => 1.0]` syntax.

@@ -7,6 +7,14 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.12.4] — 2026-11-19
+
+Tested on PHP 8.6.
+
+### Changed
+- CI: **PHP 8.6** with Laravel 13 (Pest 5 / PHPUnit 13; Pest 4 cannot install on 8.6). The full suite passes on PHP 8.6.0-dev with no deprecations from the package. Non-blocking while CI gets 8.6 as a nightly build. Laravel 12 is not tested on 8.6: its own code raises 8.6 deprecations
+- README: a PHP 8.6 column in the supported-versions table; the video section keeps the preview and link, without the chapter table
+
 ## [0.12.3] — 2026-11-19
 
 A video tutorial, and tidier config from `bootstrap`.

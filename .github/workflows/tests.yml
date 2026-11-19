@@ -38,7 +38,14 @@ jobs:
           - { php: '8.3', laravel: '13.*', testbench: '11.*', pest: '4.*' }
           - { php: '8.4', laravel: '13.*', testbench: '11.*', pest: '4.*' }
           - { php: '8.5', laravel: '13.*', testbench: '11.*', pest: '4.*' }
+          # PHP 8.6 (GA 19 Nov 2026), Laravel 13 only. Pest 4's paratest caps
+          # PHP at 8.5, so this job runs Pest 5 / PHPUnit 13. Laravel 12 installs
+          # on 8.6 but its own code raises 8.6 deprecations (spl_object_hash,
+          # SessionHandlerInterface::create_sid); Laravel 10 and 11 do not
+          # install. Non-blocking while setup-php serves 8.6 nightly builds.
+          - { php: '8.6', laravel: '13.*', testbench: '11.*', pest: '5.*', experimental: true }
     name: PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }} / SQLite
+    continue-on-error: ${{ matrix.experimental == true }}
     steps:
       - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
