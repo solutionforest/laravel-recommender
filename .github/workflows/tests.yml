@@ -38,7 +38,13 @@ jobs:
           - { php: '8.3', laravel: '13.*', testbench: '11.*', pest: '4.*' }
           - { php: '8.4', laravel: '13.*', testbench: '11.*', pest: '4.*' }
           - { php: '8.5', laravel: '13.*', testbench: '11.*', pest: '4.*' }
+          # PHP 8.6 (GA 19 Nov 2026). Pest 4's paratest caps PHP at 8.5, so
+          # Laravel 13 runs on Pest 5 / PHPUnit 13 there. Laravel 10 and 11 do
+          # not resolve on 8.6 (end of life). Non-blocking while 8.6 is new.
+          - { php: '8.6', laravel: '12.*', testbench: '10.*', pest: '3.*', experimental: true }
+          - { php: '8.6', laravel: '13.*', testbench: '11.*', pest: '5.*', experimental: true }
     name: PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }} / SQLite
+    continue-on-error: ${{ matrix.experimental == true }}
     steps:
       - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
