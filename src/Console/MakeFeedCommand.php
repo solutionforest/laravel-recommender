@@ -480,8 +480,8 @@ class MakeFeedCommand extends Command
             return;
         }
 
-        $eventsExport = var_export($events, true);
-        $positiveExport = var_export($positive, true);
+        $eventsExport = self::inlineArray($events);
+        $positiveExport = self::inlineArray($positive);
 
         // A named preset brings sources, boosters and exploration; without one
         // write them out so the feed is easy to tune.
@@ -567,6 +567,23 @@ PHP;
         }
 
         return implode("\n", $lines);
+    }
+
+    /**
+     * `['view' => 1.0, 'like' => 4.0]` / `['like']`: short, one-line array
+     * syntax like the rest of the config file (var_export writes `array (` blocks).
+     *
+     * @param  array<int|string, scalar>  $values
+     */
+    private static function inlineArray(array $values): string
+    {
+        $parts = [];
+        foreach ($values as $key => $value) {
+            $exported = is_float($value) && floor($value) === $value ? number_format($value, 1, '.', '') : var_export($value, true);
+            $parts[] = array_is_list($values) ? $exported : var_export($key, true).' => '.$exported;
+        }
+
+        return '['.implode(', ', $parts).']';
     }
 
     private function printModelSnippet(string $feed, string $modelFqcn, string $owner, string $published, string $title): void
