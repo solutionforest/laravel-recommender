@@ -7,8 +7,15 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.12.3] — 2026-11-19
+
+A video tutorial, and tidier config from `bootstrap`.
+
 ### Fixed
 - `recommender:bootstrap` / `make-feed` write `events` and `positive_events` in the short one-line array syntax of the config file (`['view' => 1.0, 'like' => 4.0]`), not as `var_export` `array (` blocks
+
+### Docs
+- **Video tutorial** in the README: "your first feed in 80 seconds" (`art/video/tutorial.mp4`, 1:22, with a GIF preview and chapter times). Recorded on a fresh Laravel 13 app: real terminal output, live JSON feed and dashboard. Scripts to regenerate it are in `art/video/source` (`art/` is not shipped with `composer require`)
 
 ## [0.12.2] — 2026-11-16
 

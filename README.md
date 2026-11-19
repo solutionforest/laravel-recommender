@@ -18,6 +18,25 @@ Your interactions → scheduled score updates → ranked items → JSON or Blade
 
 **You provide:** item and interaction tables, visibility rules, and the fields to display. **The package provides:** ranking, cached lists, a shared trending feed, and tools to inspect results. Your app decides when to record interactions; the package also offers an explicit write helper. New or sparse data may produce trending results or an empty feed.
 
+## Video: your first feed in 80 seconds
+
+[![Video tutorial: install, bootstrap, model, route, JSON feed and dashboard](art/video/tutorial-preview.gif)](art/video/tutorial.mp4)
+
+**[▶ Watch the full tutorial (1:22, MP4)](art/video/tutorial.mp4)**: a fresh Laravel 13 app, start to finish. Every terminal scene is real output; the JSON and the dashboard are recorded live.
+
+| Time | Step |
+|---|---|
+| 0:03 | Your tables: posts, likes and views |
+| 0:08 | `composer require solutionforest/laravel-recommender` |
+| 0:15 | `php artisan recommender:bootstrap posts`: migrate, register, first scores, checks and speed probe |
+| 0:26 | The config it wrote |
+| 0:32 | The model: visibility scope and card |
+| 0:38 | The route |
+| 0:42 | The personal feed as JSON |
+| 0:49 | `$post->similar(4)` for related posts |
+| 0:57 | `recommender:explain`: why a user gets each item |
+| 1:06 | The dashboard |
+
 ## How we recommend
 
 Imagine a reader likes post A. If other readers interacted with both A and B, post B can become a suggestion. Popular recent posts can also appear, and you can add your own rules.
