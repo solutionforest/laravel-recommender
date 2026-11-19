@@ -7,6 +7,9 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- `recommender:bootstrap` / `make-feed` write `events` and `positive_events` in the short one-line array syntax of the config file (`['view' => 1.0, 'like' => 4.0]`), not as `var_export` `array (` blocks
+
 ## [0.12.2] — 2026-11-16
 
 Docs and examples catch up with attribute match and the speed checks. No package code changes.

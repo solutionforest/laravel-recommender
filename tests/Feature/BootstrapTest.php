@@ -50,6 +50,19 @@ it('sets up a working feed in one command', function () {
         ->and(app(Recommender::class)->page('shop', 1)->ids)->not->toBeEmpty();
 });
 
+it('writes the feed in the short array syntax of the config file', function () {
+    $this->artisan('recommender:bootstrap', bootstrapArgs())->assertSuccessful();
+
+    $written = (string) file_get_contents(config_path('recommender.php'));
+    $feed = (require config_path('recommender.php'))['feeds']['shop'];
+
+    expect($written)->not->toContain('array (')
+        ->and($written)->toContain("'events' => ['view' => 1.0, 'like' => 4.0, 'purchase' => 10.0],")
+        ->and($written)->toContain("'positive_events' => ['like', 'purchase'],")
+        ->and($feed['events'])->toBe(['view' => 1.0, 'like' => 4.0, 'purchase' => 10.0])
+        ->and($feed['positive_events'])->toBe(['like', 'purchase']);
+});
+
 it('runs migrations first unless skipped', function () {
     $this->artisan('recommender:bootstrap', bootstrapArgs(['--skip-migrate' => true]))->assertSuccessful();
     $this->artisan('recommender:bootstrap', bootstrapArgs(['name' => 'shop2']))->expectsOutputToContain('Migrate')->assertSuccessful();
